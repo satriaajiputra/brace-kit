@@ -181,9 +181,19 @@ export function formatRequest(provider, messages, tools = [], options = {}) {
 }
 
 function formatOpenAI(provider, messages, model, tools, options = {}) {
+  // Process messages to ensure proper format for multimodal content
+  const processedMessages = messages.map(msg => {
+    // If content is an array (multimodal), keep it as is
+    if (Array.isArray(msg.content)) {
+      return msg;
+    }
+    // Otherwise, keep the original message
+    return msg;
+  });
+
   const body = {
     model,
-    messages,
+    messages: processedMessages,
     stream: true,
   };
   if (tools.length > 0) {
@@ -307,6 +317,33 @@ function formatGemini(provider, messages, model, tools, options = {}) {
           },
         ],
       });
+    } else if (msg.role === 'user' && Array.isArray(msg.content)) {
+      // Multimodal user message with images
+      const parts = [];
+      for (const item of msg.content) {
+        if (item.type === 'text') {
+          parts.push({ text: item.text });
+        } else if (item.type === 'image_url') {
+          // Convert base64 image to Gemini format
+          const imageUrl = item.image_url?.url || item.image_url;
+          if (imageUrl) {
+            // Extract mime type and data from base64 data URL
+            const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              const [, mimeType, base64Data] = match;
+              parts.push({
+                inlineData: {
+                  mimeType,
+                  data: base64Data,
+                },
+              });
+            }
+          }
+        }
+      }
+      if (parts.length > 0) {
+        contents.push({ role: 'user', parts });
+      }
     } else {
       // Regular user message
       contents.push({

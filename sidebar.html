@@ -75,6 +75,12 @@
 
     <!-- Input Area -->
     <div id="input-area">
+      <div id="file-preview" class="hidden">
+        <div class="file-preview-list"></div>
+        <button id="btn-clear-files" class="context-clear" title="Remove all files">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
       <div id="selection-preview" class="hidden">
         <div class="selection-badge">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
@@ -89,6 +95,10 @@
           <button id="btn-attach" class="input-icon-btn" title="Attach page context">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
           </button>
+          <button id="btn-upload" class="input-icon-btn" title="Upload file (image, txt, csv, pdf)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </button>
+          <input type="file" id="file-input" class="hidden" accept="image/*,.txt,.csv,.pdf" multiple>
         </div>
         <textarea id="chat-input" placeholder="Ask about this page..." rows="1"></textarea>
         <button id="btn-send" class="send-btn" title="Send message">

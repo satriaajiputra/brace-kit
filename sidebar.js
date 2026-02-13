@@ -35,6 +35,8 @@ const state = {
   // Fetched models cache per provider
   fetchedModels: {}, // { [providerId]: { models: [], fetchedAt: timestamp } }
   fetchingModels: false,
+  // File attachments
+  attachments: [], // { id, file, type, data, name, size }
 };
 
 const MEMORY_CATEGORIES = ['style', 'interests', 'expertise', 'preferences', 'personal'];
@@ -100,6 +102,11 @@ function initRefs() {
   refs.btnClearMemories = $('#btn-clear-memories');
   refs.geminiOptions = $('#gemini-options');
   refs.googleSearchToggle = $('#google-search-toggle');
+  refs.btnUpload = $('#btn-upload');
+  refs.fileInput = $('#file-input');
+  refs.filePreview = $('#file-preview');
+  refs.filePreviewList = $('.file-preview-list');
+  refs.btnClearFiles = $('#btn-clear-files');
 }
 
 // ==================== INIT ====================
@@ -344,6 +351,11 @@ function bindEvents() {
   refs.btnGrabSelection.addEventListener('click', grabSelection);
   refs.btnClearContext.addEventListener('click', clearPageContext);
   refs.btnClearSelection.addEventListener('click', clearSelection);
+
+  // File upload
+  refs.btnUpload.addEventListener('click', () => refs.fileInput.click());
+  refs.fileInput.addEventListener('change', handleFileSelect);
+  refs.btnClearFiles.addEventListener('click', clearAllFiles);
 
   // Settings changes
   refs.providerSelect.addEventListener('change', onProviderChange);
@@ -822,6 +834,235 @@ function clearSelection() {
   refs.selectionText.textContent = '';
 }
 
+// ==================== FILE ATTACHMENT ====================
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_IMAGE_DIMENSION = 1024;
+const ALLOWED_FILE_TYPES = {
+  'image/jpeg': 'image',
+  'image/png': 'image',
+  'image/gif': 'image',
+  'image/webp': 'image',
+  'text/plain': 'text',
+  'text/csv': 'text',
+  'application/pdf': 'pdf',
+};
+
+async function handleFileSelect(e) {
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
+
+  for (const file of files) {
+    await processFile(file);
+  }
+
+  // Reset file input so same files can be selected again
+  refs.fileInput.value = '';
+  updateFilePreview();
+}
+
+async function processFile(file) {
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    addAttachment({
+      id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      file,
+      type: 'error',
+      name: file.name,
+      error: 'File too large (max 2MB)',
+    });
+    return;
+  }
+
+  const fileType = ALLOWED_FILE_TYPES[file.type];
+  if (!fileType) {
+    addAttachment({
+      id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      file,
+      type: 'error',
+      name: file.name,
+      error: 'Unsupported file type',
+    });
+    return;
+  }
+
+  try {
+    if (fileType === 'image') {
+      await processImageFile(file);
+    } else if (fileType === 'text') {
+      await processTextFile(file);
+    } else if (fileType === 'pdf') {
+      await processPdfFile(file);
+    }
+  } catch (err) {
+    addAttachment({
+      id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      file,
+      type: 'error',
+      name: file.name,
+      error: err.message,
+    });
+  }
+}
+
+async function processImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize image if needed
+        let { width, height } = img;
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        // Draw to canvas and get base64
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Get base64 data (JPEG for smaller size)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+        addAttachment({
+          id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          file,
+          type: 'image',
+          name: file.name,
+          data: dataUrl,
+          width,
+          height,
+        });
+        resolve();
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function processTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      addAttachment({
+        id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        type: 'text',
+        name: file.name,
+        data: e.target.result,
+      });
+      resolve();
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
+}
+
+async function processPdfFile(file) {
+  // For PDF, we'll try to extract text using a simple approach
+  // In a production app, you might want to use a PDF parsing library
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      // For now, we'll store the PDF as base64 and note that it needs special handling
+      // The actual text extraction would need a PDF library like pdf.js
+      addAttachment({
+        id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        type: 'pdf',
+        name: file.name,
+        data: e.target.result,
+        note: 'PDF content extraction requires server-side processing or pdf.js library',
+      });
+      resolve();
+    };
+    reader.onerror = () => reject(new Error('Failed to read PDF'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function addAttachment(attachment) {
+  state.attachments.push(attachment);
+  updateFilePreview();
+}
+
+function removeAttachment(id) {
+  state.attachments = state.attachments.filter((a) => a.id !== id);
+  updateFilePreview();
+}
+
+function clearAllFiles() {
+  state.attachments = [];
+  updateFilePreview();
+}
+
+function updateFilePreview() {
+  if (state.attachments.length === 0) {
+    refs.filePreview.classList.add('hidden');
+    return;
+  }
+
+  refs.filePreview.classList.remove('hidden');
+  refs.filePreviewList.innerHTML = '';
+
+  for (const att of state.attachments) {
+    const item = document.createElement('div');
+    item.className = `file-preview-item ${att.type}`;
+
+    if (att.type === 'error') {
+      item.innerHTML = `
+        <div class="file-info">
+          <span class="file-error">${escapeHtml(att.name)}: ${escapeHtml(att.error)}</span>
+        </div>
+        <button class="file-remove" data-id="${att.id}" title="Remove">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      `;
+    } else if (att.type === 'image') {
+      item.innerHTML = `
+        <img src="${att.data}" alt="${escapeHtml(att.name)}">
+        <div class="file-info">
+          <span class="file-name">${escapeHtml(att.name)}</span>
+        </div>
+        <button class="file-remove" data-id="${att.id}" title="Remove">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      `;
+    } else {
+      // text or pdf
+      const icon = att.type === 'pdf' ? '📄' : '📃';
+      item.innerHTML = `
+        <div class="file-info">
+          <span>${icon}</span>
+          <span class="file-name">${escapeHtml(att.name)}</span>
+        </div>
+        <button class="file-remove" data-id="${att.id}" title="Remove">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      `;
+    }
+
+    item.querySelector('.file-remove').addEventListener('click', () => {
+      removeAttachment(att.id);
+    });
+
+    refs.filePreviewList.appendChild(item);
+  }
+}
+
 // ==================== CHAT ====================
 function newChat() {
   // Save current conversation before creating new one
@@ -831,6 +1072,7 @@ function newChat() {
   state.currentRequestId = null;
   clearPageContext();
   clearSelection();
+  clearAllFiles();
 
   createNewConversation();
   refs.messages.innerHTML = '';
@@ -840,7 +1082,11 @@ function newChat() {
 
 async function sendMessage() {
   const text = refs.chatInput.value.trim();
-  if (!text || state.isStreaming) return;
+  const hasAttachments = state.attachments.length > 0;
+  const validAttachments = state.attachments.filter(a => a.type !== 'error');
+
+  // Allow sending if there's text OR valid attachments
+  if ((!text && validAttachments.length === 0) || state.isStreaming) return;
 
   // Hide welcome
   refs.welcome.classList.add('hidden');
@@ -852,15 +1098,16 @@ async function sendMessage() {
 
   // Auto-title from first user message
   if (state.messages.length === 0) {
-    autoTitleConversation(text);
+    autoTitleConversation(text || `Attached: ${validAttachments.map(a => a.name).join(', ')}`);
   }
 
-  // Build user message with context
+  // Build user message content
   let userContent = text;
+  let messageAttachments = null;
 
   // Attach page context if available
   if (state.pageContext) {
-    userContent = `[Page Context]\nTitle: ${state.pageContext.pageTitle}\nURL: ${state.pageContext.pageUrl}\n${state.pageContext.metaDescription ? `Description: ${state.pageContext.metaDescription}\n` : ''}\nContent:\n${state.pageContext.content}\n\n[User Message]\n${text}`;
+    userContent = `[Page Context]\nTitle: ${state.pageContext.pageTitle}\nURL: ${state.pageContext.pageUrl}\n${state.pageContext.metaDescription ? `Description: ${state.pageContext.metaDescription}\n` : ''}\nContent:\n${state.pageContext.content}\n\n[User Message]\n${text || ''}`;
   }
 
   // Attach selected text if available
@@ -868,17 +1115,47 @@ async function sendMessage() {
     const selPrefix = state.pageContext
       ? '' // already has page context
       : `[From: ${state.selectedText.pageTitle}]\n`;
-    userContent = `${selPrefix}[Selected Text]\n"${state.selectedText.selectedText}"\n\n[User Message]\n${text}`;
+    userContent = `${selPrefix}[Selected Text]\n"${state.selectedText.selectedText}"\n\n[User Message]\n${text || ''}`;
+  }
+
+  // Add file attachments to message
+  if (validAttachments.length > 0) {
+    messageAttachments = validAttachments.map(att => ({
+      type: att.type,
+      name: att.name,
+      data: att.data,
+    }));
+
+    // For text files, append content to message
+    const textAttachments = validAttachments.filter(a => a.type === 'text');
+    for (const att of textAttachments) {
+      userContent += `\n\n[File: ${att.name}]\n${att.data}`;
+    }
+
+    // For PDFs, add note
+    const pdfAttachments = validAttachments.filter(a => a.type === 'pdf');
+    for (const att of pdfAttachments) {
+      userContent += `\n\n[File: ${att.name}]\n[PDF file attached - text extraction not available in browser]`;
+    }
   }
 
   // Add to state
-  state.messages.push({ role: 'user', content: userContent, displayContent: text });
-  addMessage('user', text);
+  const messageData = { role: 'user', content: userContent, displayContent: text };
+  if (messageAttachments && messageAttachments.some(a => a.type === 'image')) {
+    messageData.attachments = messageAttachments.filter(a => a.type === 'image');
+  }
+  state.messages.push(messageData);
 
-  // Clear input & selection
+  // Render message with attachment indicators
+  const displayText = text || (validAttachments.length > 0 ? `[Attached: ${validAttachments.map(a => a.name).join(', ')}]` : '');
+  const imageAttachments = messageAttachments?.filter(a => a.type === 'image') || null;
+  addMessage('user', displayText, false, imageAttachments);
+
+  // Clear input, selection, and attachments
   refs.chatInput.value = '';
   refs.chatInput.style.height = 'auto';
   clearSelection();
+  clearAllFiles();
 
   // Build messages for API
   const apiMessages = buildAPIMessages();
@@ -988,6 +1265,28 @@ function buildAPIMessages() {
         name: msg.name, // Required for Gemini functionResponse mapping
         content: msg.content,
       });
+    } else if (msg.role === 'user' && msg.attachments && msg.attachments.length > 0) {
+      // User message with image attachments - use multimodal format
+      const content = [];
+
+      // Add text content if present
+      if (msg.content) {
+        content.push({ type: 'text', text: msg.content });
+      }
+
+      // Add image attachments
+      for (const att of msg.attachments) {
+        if (att.type === 'image') {
+          content.push({
+            type: 'image_url',
+            image_url: {
+              url: att.data,
+            },
+          });
+        }
+      }
+
+      msgs.push({ role: msg.role, content });
     } else {
       msgs.push({ role: msg.role, content: msg.content });
     }
@@ -1221,7 +1520,7 @@ async function handleToolCalls(toolCalls) {
 }
 
 // ==================== MESSAGE RENDERING ====================
-function addMessage(role, content, isStreaming = false) {
+function addMessage(role, content, isStreaming = false, attachments = null) {
   const container = refs.messages;
 
   const msgEl = document.createElement('div');
@@ -1249,6 +1548,27 @@ function addMessage(role, content, isStreaming = false) {
 
   msgEl.appendChild(roleLabel);
   msgEl.appendChild(bubble);
+
+  // Add attachment thumbnails for user messages
+  if (role === 'user' && attachments && attachments.length > 0) {
+    const attachmentsEl = document.createElement('div');
+    attachmentsEl.className = 'message-attachments';
+    attachmentsEl.style.cssText = 'display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;';
+
+    for (const att of attachments) {
+      if (att.type === 'image') {
+        const thumb = document.createElement('img');
+        thumb.src = att.data;
+        thumb.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-subtle);';
+        thumb.title = att.name;
+        attachmentsEl.appendChild(thumb);
+      }
+    }
+
+    if (attachmentsEl.children.length > 0) {
+      bubble.appendChild(attachmentsEl);
+    }
+  }
 
   // Add copy button for assistant messages
   if (role === 'assistant' && !isStreaming) {
@@ -1385,7 +1705,16 @@ function renderAllMessages() {
   }
   refs.welcome.classList.add('hidden');
   for (const msg of state.messages) {
-    const bubble = addMessage(msg.role, msg.displayContent || msg.content);
+    // Build display content with attachment indicators
+    let displayContent = msg.displayContent || msg.content;
+    if (msg.attachments && msg.attachments.length > 0) {
+      const attachmentIndicator = `[📎 ${msg.attachments.length} attachment${msg.attachments.length > 1 ? 's' : ''}]`;
+      displayContent = displayContent
+        ? `${displayContent}\n${attachmentIndicator}`
+        : attachmentIndicator;
+    }
+
+    const bubble = addMessage(msg.role, displayContent, false, msg.attachments);
 
     // Re-render grounding citations if available
     if (msg.role === 'assistant' && msg.groundingMetadata && msg.groundingMetadata.groundingChunks) {

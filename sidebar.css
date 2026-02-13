@@ -535,6 +535,30 @@ body {
     accent-color: var(--accent-primary);
 }
 
+/* Message attachments */
+.message-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.message-attachments img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.message-attachments img:hover {
+    transform: scale(1.05);
+}
+
 /* Message actions (copy response) */
 .message-actions {
     display: flex;
@@ -720,6 +744,97 @@ body {
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
     flex-shrink: 0;
+}
+
+/* File preview */
+#file-preview {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: rgba(129, 140, 248, 0.08);
+    border: 1px solid rgba(129, 140, 248, 0.15);
+    border-radius: var(--radius-sm);
+    animation: slideDown 0.2s ease;
+    gap: 8px;
+}
+
+#file-preview.hidden {
+    display: none;
+}
+
+.file-preview-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+}
+
+.file-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    max-width: 200px;
+}
+
+.file-preview-item.image {
+    padding: 4px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.file-preview-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+}
+
+.file-preview-item .file-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+}
+
+.file-preview-item .file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.file-preview-item .file-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.file-preview-item .file-remove:hover {
+    background: rgba(248, 113, 113, 0.2);
+    color: var(--danger);
+}
+
+.file-preview-item .file-error {
+    color: var(--danger);
+    font-size: 0.75rem;
 }
 
 /* Selection preview */
