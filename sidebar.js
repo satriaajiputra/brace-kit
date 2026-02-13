@@ -1372,7 +1372,15 @@ function renderAllMessages() {
   }
   refs.welcome.classList.add('hidden');
   for (const msg of state.messages) {
-    addMessage(msg.role, msg.displayContent || msg.content);
+    const bubble = addMessage(msg.role, msg.displayContent || msg.content);
+
+    // Re-render grounding citations if available
+    if (msg.role === 'assistant' && msg.groundingMetadata && msg.groundingMetadata.groundingChunks) {
+      const citationsEl = createGroundingCitations(msg.groundingMetadata);
+      if (citationsEl && bubble) {
+        bubble.appendChild(citationsEl);
+      }
+    }
   }
 }
 

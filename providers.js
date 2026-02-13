@@ -322,20 +322,23 @@ function formatGemini(provider, messages, model, tools, options = {}) {
   }
 
   // Build tools array - can include both function declarations and google_search
+  // Note: Gemini REST API does NOT support combining google_search with function_declarations
+  // Multi-tool use is only available via Live API
+  // See: https://ai.google.dev/gemini-api/docs/function-calling#multi-tool-use
   const geminiTools = [];
 
   // Add Google Search grounding tool if enabled
+  // Use google_search (snake_case) for REST API
   if (options.enableGoogleSearch) {
-    geminiTools.push({ googleSearch: {} });
-  }
-
-  // Add function declarations from MCP/tools
-  if (tools.length > 0) {
+    geminiTools.push({ google_search: {} });
+  } else if (tools.length > 0) {
+    // Only add function declarations if Google Search is NOT enabled
+    // (they cannot be combined in REST API)
     geminiTools.push({
-      functionDeclarations: tools.map((t) => ({
+      function_declarations: tools.map((t) => ({
         name: t.name,
         description: t.description,
-        parameters: t.inputSchema,
+        parameters: convertToGeminiSchema(t.inputSchema),
       })),
     });
   }
@@ -519,4 +522,92 @@ async function* parseGeminiStream(response) {
       }
     }
   }
+}
+
+// Convert JSON Schema to Gemini-compatible OpenAPI 3.0 schema format
+function convertToGeminiSchema(schema) {
+  if (!schema || typeof schema !== 'object') {
+    return { type: 'object', properties: {} };
+  }
+
+  // Create a deep copy to avoid mutating the original
+  const converted = JSON.parse(JSON.stringify(schema));
+
+  // Remove JSON Schema specific fields that Gemini doesn't support
+  delete converted.$schema;
+  delete converted.$ref;
+  delete converted.$id;
+  delete converted.$comment;
+  delete converted.additionalItems;
+  delete converted.default;
+  delete converted.examples;
+  delete converted.format;
+
+  // ALWAYS remove additionalProperties - Gemini doesn't support this field at all
+  delete converted.additionalProperties;
+
+  // Remove if it's an empty object {}
+  if (converted.properties && Object.keys(converted.properties).length === 0) {
+    delete converted.properties;
+  }
+
+  // Ensure type is present at root level
+  if (!converted.type) {
+    if (converted.properties) {
+      converted.type = 'object';
+    } else if (converted.items) {
+      converted.type = 'array';
+    } else {
+      converted.type = 'string'; // Default fallback
+    }
+  }
+
+  // Recursively convert nested schemas in properties
+  if (converted.properties && typeof converted.properties === 'object') {
+    for (const key of Object.keys(converted.properties)) {
+      converted.properties[key] = convertToGeminiSchema(converted.properties[key]);
+    }
+  }
+
+  // Recursively convert items for arrays
+  if (converted.items) {
+    converted.items = convertToGeminiSchema(converted.items);
+  }
+
+  // Handle anyOf/oneOf/allOf - Gemini only supports anyOf
+  if (converted.oneOf) {
+    converted.anyOf = converted.oneOf;
+    delete converted.oneOf;
+  }
+  if (converted.allOf) {
+    // Flatten allOf into a single object (simplified approach)
+    const merged = { type: 'object', properties: {}, required: [] };
+    for (const sub of converted.allOf) {
+      const subSchema = convertToGeminiSchema(sub);
+      if (subSchema.properties) {
+        Object.assign(merged.properties, subSchema.properties);
+      }
+      if (subSchema.required) {
+        merged.required.push(...subSchema.required);
+      }
+    }
+    // Clean up empty required array
+    if (merged.required.length === 0) {
+      delete merged.required;
+    }
+    return merged;
+  }
+  if (converted.anyOf && Array.isArray(converted.anyOf)) {
+    converted.anyOf = converted.anyOf.map(s => convertToGeminiSchema(s));
+  }
+
+  // Clean up empty arrays/objects that might cause issues
+  if (converted.required && converted.required.length === 0) {
+    delete converted.required;
+  }
+  if (converted.enum && converted.enum.length === 0) {
+    delete converted.enum;
+  }
+
+  return converted;
 }
