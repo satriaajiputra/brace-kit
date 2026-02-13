@@ -883,11 +883,17 @@ async function sendMessage() {
   // Build messages for API
   const apiMessages = buildAPIMessages();
 
-  // Get MCP tools
+  // Get MCP tools from enabled servers only
   let tools = [];
   try {
     const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
-    if (mcpRes?.tools) tools = mcpRes.tools;
+    if (mcpRes?.tools) {
+      // Filter tools based on enabled servers
+      const enabledServerIds = new Set(
+        state.mcpServers.filter(s => s.enabled).map(s => s.id)
+      );
+      tools = mcpRes.tools.filter(tool => enabledServerIds.has(tool._serverId));
+    }
   } catch (e) {
     // no MCP tools
   }
@@ -1166,10 +1172,17 @@ async function handleToolCalls(toolCalls) {
   // --- Agentic loop: send tool results back to LLM for follow-up ---
   const apiMessages = buildAPIMessages();
 
+  // Get MCP tools from enabled servers only
   let tools = [];
   try {
     const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
-    if (mcpRes?.tools) tools = mcpRes.tools;
+    if (mcpRes?.tools) {
+      // Filter tools based on enabled servers
+      const enabledServerIds = new Set(
+        state.mcpServers.filter(s => s.enabled).map(s => s.id)
+      );
+      tools = mcpRes.tools.filter(tool => enabledServerIds.has(tool._serverId));
+    }
   } catch (_) {}
 
   state.currentRequestId = `req_${Date.now()}`;
@@ -1423,6 +1436,7 @@ async function addMCPServer() {
     name,
     url,
     headers,
+    enabled: true, // enabled by default
   };
 
   refs.btnAddMcp.disabled = true;
@@ -1473,6 +1487,10 @@ function renderMCPServers() {
         ${server.toolCount ? `<span class="mcp-server-tools">${server.toolCount} tools available</span>` : ''}
       </div>
       <div class="mcp-server-status">
+        <label class="toggle-switch small">
+          <input type="checkbox" class="mcp-server-toggle" data-id="${server.id}" ${server.enabled !== false ? 'checked' : ''}>
+          <span class="toggle-slider"></span>
+        </label>
         <span class="status-dot ${server.connected ? 'connected' : 'disconnected'}"></span>
         <button class="btn-disconnect" data-id="${server.id}" title="Disconnect">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1482,7 +1500,18 @@ function renderMCPServers() {
     item.querySelector('.btn-disconnect').addEventListener('click', () => {
       removeMCPServer(server.id);
     });
+    item.querySelector('.mcp-server-toggle').addEventListener('change', (e) => {
+      toggleMCPServer(server.id, e.target.checked);
+    });
     refs.mcpServersList.appendChild(item);
+  }
+}
+
+function toggleMCPServer(id, enabled) {
+  const server = state.mcpServers.find(s => s.id === id);
+  if (server) {
+    server.enabled = enabled;
+    saveSettings();
   }
 }
 
