@@ -103,7 +103,7 @@ async function forwardToContentScript(message, sendResponse) {
 }
 
 async function handleChatRequest(message, sendResponse) {
-  const { messages, providerConfig, tools } = message;
+  const { messages, providerConfig, tools, options } = message;
 
   try {
     // Merge provider preset with user config
@@ -121,8 +121,8 @@ async function handleChatRequest(message, sendResponse) {
     }
 
     // Format and send request
-    const { url, options } = formatRequest(provider, messages, tools || []);
-    const response = await fetch(url, options);
+    const { url, options: fetchOptions } = formatRequest(provider, messages, tools || [], options || {});
+    const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -145,6 +145,7 @@ async function handleChatRequest(message, sendResponse) {
     const chunks = [];
     const toolCalls = [];
     let currentToolCall = null;
+    let groundingMetadata = null;
 
     for await (const chunk of parseStream(provider, response)) {
       if (chunk.type === 'text') {
@@ -169,6 +170,8 @@ async function handleChatRequest(message, sendResponse) {
         }
       } else if (chunk.type === 'tool_call_delta' && currentToolCall) {
         currentToolCall.arguments += chunk.content;
+      } else if (chunk.type === 'grounding_metadata') {
+        groundingMetadata = chunk.groundingMetadata;
       }
     }
 
@@ -181,6 +184,7 @@ async function handleChatRequest(message, sendResponse) {
       type: 'CHAT_STREAM_DONE',
       fullContent: chunks.join(''),
       toolCalls: mergedToolCalls.length > 0 ? mergedToolCalls : undefined,
+      groundingMetadata: groundingMetadata,
       requestId: message.requestId,
     });
 

@@ -4,7 +4,7 @@ import { PROVIDER_PRESETS } from './providers.js';
 
 // ==================== STATE ====================
 const state = {
-  messages: [], // { role, content, toolCalls?, toolResults? }
+  messages: [], // { role, content, toolCalls?, toolResults?, groundingMetadata? }
   isStreaming: false,
   currentRequestId: null,
   pageContext: null, // { pageTitle, pageUrl, content, metaDescription }
@@ -30,6 +30,8 @@ const state = {
   memories: [], // [{ id, category, content, confidence, source, createdAt, updatedAt }]
   memoryEnabled: true,
   memoryExtractionTimer: null,
+  // Gemini-specific options
+  enableGoogleSearch: false,
 };
 
 const MEMORY_CATEGORIES = ['style', 'interests', 'expertise', 'preferences', 'personal'];
@@ -93,6 +95,8 @@ function initRefs() {
   refs.memoryToggle = $('#memory-toggle');
   refs.memoryList = $('#memory-list');
   refs.btnClearMemories = $('#btn-clear-memories');
+  refs.geminiOptions = $('#gemini-options');
+  refs.googleSearchToggle = $('#google-search-toggle');
 }
 
 // ==================== INIT ====================
@@ -141,6 +145,7 @@ async function loadSettings() {
       'activeConversationId',
       'memories',
       'memoryEnabled',
+      'enableGoogleSearch',
     ]);
     if (data.providerConfig) {
       state.providerConfig = { ...state.providerConfig, ...data.providerConfig };
@@ -159,6 +164,9 @@ async function loadSettings() {
     }
     if (data.memoryEnabled !== undefined) {
       state.memoryEnabled = data.memoryEnabled;
+    }
+    if (data.enableGoogleSearch !== undefined) {
+      state.enableGoogleSearch = data.enableGoogleSearch;
     }
 
     // Load conversations index
@@ -214,6 +222,7 @@ async function saveSettings() {
       providerKeys: state.providerKeys,
       customProviders: state.customProviders,
       mcpServers: state.mcpServers,
+      enableGoogleSearch: state.enableGoogleSearch,
     });
   } catch (e) {
     console.warn('Failed to save settings:', e);
@@ -369,6 +378,12 @@ function bindEvents() {
     }
   });
 
+  // Gemini Google Search toggle
+  refs.googleSearchToggle.addEventListener('change', () => {
+    state.enableGoogleSearch = refs.googleSearchToggle.checked;
+    saveSettings();
+  });
+
   // History drawer
   refs.btnHistory.addEventListener('click', toggleHistoryDrawer);
   refs.btnCloseHistory.addEventListener('click', closeHistoryDrawer);
@@ -390,7 +405,7 @@ function bindEvents() {
         appendStreamChunk(message.content);
         break;
       case 'CHAT_STREAM_DONE':
-        finishStream(message.fullContent, message.toolCalls);
+        finishStream(message.fullContent, message.toolCalls, message.groundingMetadata);
         break;
       case 'CHAT_STREAM_ERROR':
         handleStreamError(message.error);
@@ -537,6 +552,12 @@ function updateProviderUI() {
   // Show URL row for custom providers; hide for built-in (they have preset URLs)
   const isBuiltIn = !!PROVIDER_PRESETS[providerId];
   refs.urlRow.style.display = isBuiltIn ? 'none' : 'block';
+
+  // Show Gemini options only for Gemini provider or Gemini-format custom providers
+  const actualFormat = format || provider.format;
+  const isGemini = providerId === 'gemini' || actualFormat === 'gemini';
+  refs.geminiOptions.classList.toggle('hidden', !isGemini);
+  refs.googleSearchToggle.checked = state.enableGoogleSearch;
 
   // Populate model select
   refs.modelSelect.innerHTML = '';
@@ -799,7 +820,13 @@ async function sendMessage() {
   setStreamingUI(true);
 
   // Create assistant message placeholder
-  const streamEl = addMessage('assistant', '', true);        
+  const streamEl = addMessage('assistant', '', true);
+
+  // Build options for provider-specific features
+  const chatOptions = {
+    enableGoogleSearch: state.enableGoogleSearch &&
+      (state.providerConfig.providerId === 'gemini' || state.providerConfig.format === 'gemini'),
+  };
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -807,6 +834,7 @@ async function sendMessage() {
       messages: apiMessages,
       providerConfig: state.providerConfig,
       tools: tools,
+      options: chatOptions,
       requestId: state.currentRequestId,
     });
 
@@ -873,6 +901,7 @@ function buildAPIMessages() {
       msgs.push({
         role: 'tool',
         tool_call_id: msg.toolCallId,
+        name: msg.name, // Required for Gemini functionResponse mapping
         content: msg.content,
       });
     } else {
@@ -892,11 +921,14 @@ function appendStreamChunk(content) {
   scrollToBottom();
 }
 
-function finishStream(fullContent, toolCalls) {
+function finishStream(fullContent, toolCalls, groundingMetadata) {
   // Store assistant message with tool_calls metadata if present
   const assistantMsg = { role: 'assistant', content: fullContent || '' };
   if (toolCalls && toolCalls.length > 0) {
     assistantMsg.toolCalls = toolCalls;
+  }
+  if (groundingMetadata) {
+    assistantMsg.groundingMetadata = groundingMetadata;
   }
   state.messages.push(assistantMsg);
 
@@ -904,6 +936,14 @@ function finishStream(fullContent, toolCalls) {
     // Final render
     const bubble = currentStreamRenderer.element;
     bubble.innerHTML = renderMarkdown(fullContent || '');
+
+    // Add grounding citations if available
+    if (groundingMetadata && groundingMetadata.groundingChunks) {
+      const citationsEl = createGroundingCitations(groundingMetadata);
+      if (citationsEl) {
+        bubble.appendChild(citationsEl);
+      }
+    }
   }
 
   currentStreamRenderer = null;
@@ -925,6 +965,55 @@ function finishStream(fullContent, toolCalls) {
   }
 
   scrollToBottom();
+}
+
+function createGroundingCitations(metadata) {
+  const chunks = metadata.groundingChunks;
+  if (!chunks || chunks.length === 0) return null;
+
+  const container = document.createElement('div');
+  container.className = 'grounding-citations';
+
+  const header = document.createElement('div');
+  header.className = 'grounding-citations-header';
+  header.innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    Sources
+  `;
+  container.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'grounding-citations-list';
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const web = chunk.web;
+    if (!web || !web.uri) continue;
+
+    const link = document.createElement('a');
+    link.className = 'grounding-source';
+    link.href = web.uri;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+
+    const title = web.title || new URL(web.uri).hostname;
+    link.innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+      ${escapeHtml(title)}
+    `;
+    list.appendChild(link);
+  }
+
+  if (list.children.length === 0) return null;
+
+  container.appendChild(list);
+  return container;
 }
 
 function handleStreamError(error) {
@@ -982,6 +1071,7 @@ async function handleToolCalls(toolCalls) {
       state.messages.push({
         role: 'tool',
         toolCallId: tc.id,
+        name: tc.name, // Required for Gemini functionResponse mapping
         content: resultText,
       });
     } catch (e) {
@@ -989,6 +1079,7 @@ async function handleToolCalls(toolCalls) {
       state.messages.push({
         role: 'tool',
         toolCallId: tc.id,
+        name: tc.name, // Required for Gemini functionResponse mapping
         content: `Error: ${e.message}`,
       });
     }
@@ -1008,12 +1099,19 @@ async function handleToolCalls(toolCalls) {
   // Create a new streaming placeholder for the follow-up response
   const streamEl = addMessage('assistant', '', true);
 
+  // Build options for provider-specific features
+  const chatOptions = {
+    enableGoogleSearch: state.enableGoogleSearch &&
+      (state.providerConfig.providerId === 'gemini' || state.providerConfig.format === 'gemini'),
+  };
+
   try {
     const response = await chrome.runtime.sendMessage({
       type: 'CHAT_REQUEST',
       messages: apiMessages,
       providerConfig: state.providerConfig,
       tools: tools,
+      options: chatOptions,
       requestId: state.currentRequestId,
     });
 

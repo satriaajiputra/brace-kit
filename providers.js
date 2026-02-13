@@ -53,23 +53,24 @@ export const PROVIDER_PRESETS = {
 };
 
 // Format messages for the specific provider
-export function formatRequest(provider, messages, tools = []) {
+// options: { enableGoogleSearch: boolean }
+export function formatRequest(provider, messages, tools = [], options = {}) {
   const { format, apiUrl, defaultModel } = provider;
   const model = provider.model || defaultModel;
 
   switch (format) {
     case 'openai':
-      return formatOpenAI(provider, messages, model, tools);
+      return formatOpenAI(provider, messages, model, tools, options);
     case 'anthropic':
-      return formatAnthropic(provider, messages, model, tools);
+      return formatAnthropic(provider, messages, model, tools, options);
     case 'gemini':
-      return formatGemini(provider, messages, model, tools);
+      return formatGemini(provider, messages, model, tools, options);
     default:
-      return formatOpenAI(provider, messages, model, tools);
+      return formatOpenAI(provider, messages, model, tools, options);
   }
 }
 
-function formatOpenAI(provider, messages, model, tools) {
+function formatOpenAI(provider, messages, model, tools, options = {}) {
   const body = {
     model,
     messages,
@@ -99,7 +100,7 @@ function formatOpenAI(provider, messages, model, tools) {
   };
 }
 
-function formatAnthropic(provider, messages, model, tools) {
+function formatAnthropic(provider, messages, model, tools, options = {}) {
   // Separate system message
   let system = '';
   const filtered = [];
@@ -146,7 +147,7 @@ function formatAnthropic(provider, messages, model, tools) {
   };
 }
 
-function formatGemini(provider, messages, model, tools) {
+function formatGemini(provider, messages, model, tools, options = {}) {
   // Convert OpenAI-style messages to Gemini format
   let systemInstruction = '';
   const contents = [];
@@ -154,9 +155,52 @@ function formatGemini(provider, messages, model, tools) {
   for (const msg of messages) {
     if (msg.role === 'system') {
       systemInstruction += (systemInstruction ? '\n' : '') + msg.content;
-    } else {
+    } else if (msg.role === 'assistant') {
+      // Assistant message - may have tool_calls
+      const parts = [];
+      if (msg.content) {
+        parts.push({ text: msg.content });
+      }
+      // Handle tool_calls from OpenAI format -> Gemini functionCall
+      if (msg.tool_calls) {
+        for (const tc of msg.tool_calls) {
+          let args = {};
+          try {
+            args = JSON.parse(tc.function?.arguments || '{}');
+          } catch (e) {
+            args = {};
+          }
+          parts.push({
+            functionCall: {
+              name: tc.function?.name || tc.name,
+              args: args,
+            },
+          });
+        }
+      }
+      if (parts.length > 0) {
+        contents.push({ role: 'model', parts });
+      }
+    } else if (msg.role === 'tool') {
+      // Tool result - convert to Gemini functionResponse format
+      // In Gemini, function responses go in a 'user' role message
       contents.push({
-        role: msg.role === 'assistant' ? 'model' : 'user',
+        role: 'user',
+        parts: [
+          {
+            functionResponse: {
+              name: msg.name || msg.toolCallId || 'unknown',
+              response: typeof msg.content === 'string'
+                ? { result: msg.content }
+                : msg.content,
+            },
+          },
+        ],
+      });
+    } else {
+      // Regular user message
+      contents.push({
+        role: 'user',
         parts: [{ text: msg.content }],
       });
     }
@@ -166,16 +210,28 @@ function formatGemini(provider, messages, model, tools) {
   if (systemInstruction) {
     body.systemInstruction = { parts: [{ text: systemInstruction }] };
   }
+
+  // Build tools array - can include both function declarations and google_search
+  const geminiTools = [];
+
+  // Add Google Search grounding tool if enabled
+  if (options.enableGoogleSearch) {
+    geminiTools.push({ googleSearch: {} });
+  }
+
+  // Add function declarations from MCP/tools
   if (tools.length > 0) {
-    body.tools = [
-      {
-        functionDeclarations: tools.map((t) => ({
-          name: t.name,
-          description: t.description,
-          parameters: t.inputSchema,
-        })),
-      },
-    ];
+    geminiTools.push({
+      functionDeclarations: tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.inputSchema,
+      })),
+    });
+  }
+
+  if (geminiTools.length > 0) {
+    body.tools = geminiTools;
   }
 
   // Auto-append /models/{model}:streamGenerateContent for Gemini-compatible endpoints
@@ -341,6 +397,12 @@ async function* parseGeminiStream(response) {
               };
             }
           }
+        }
+
+        // Yield grounding metadata from the last candidate (usually there's only one)
+        const groundingMetadata = candidates[0]?.groundingMetadata;
+        if (groundingMetadata) {
+          yield { type: 'grounding_metadata', groundingMetadata };
         }
       } catch (e) {
         // skip

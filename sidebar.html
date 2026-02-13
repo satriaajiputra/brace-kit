@@ -185,6 +185,18 @@
             <label for="system-prompt">System Prompt</label>
             <textarea id="system-prompt" rows="3" placeholder="You are a helpful assistant..."></textarea>
           </div>
+          <div id="gemini-options" class="gemini-options hidden">
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <span class="toggle-title">Google Search Grounding</span>
+                <span class="toggle-hint">Enable real-time web search (reduces hallucinations)</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="google-search-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
         </section>
 
         <!-- Section 3: Memory -->
