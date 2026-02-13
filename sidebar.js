@@ -17,6 +17,7 @@ const state = {
     format: '',
     systemPrompt: 'You are a helpful AI assistant. When the user shares page content or selected text, help them understand and work with it. Be concise and helpful.',
   },
+  providerKeys: {}, // { [providerId]: { apiKey, model } }
   customProviders: [], // { id, name, apiUrl, apiKey, model, format }
   mcpServers: [], // { id, name, url }
   showCustomModel: false,
@@ -64,10 +65,16 @@ function initRefs() {
   refs.cpUrl = $('#cp-url');
   refs.cpFormat = $('#cp-format');
   refs.btnAddCustomProvider = $('#btn-add-custom-provider');
+  refs.btnToggleCpForm = $('#btn-toggle-cp-form');
+  refs.cpAddForm = $('#cp-add-form');
+  refs.urlRow = $('#url-row');
   refs.mcpServersList = $('#mcp-servers-list');
   refs.mcpName = $('#mcp-name');
   refs.mcpUrl = $('#mcp-url');
+  refs.mcpHeaders = $('#mcp-headers');
   refs.btnAddMcp = $('#btn-add-mcp');
+  refs.btnToggleMcpForm = $('#btn-toggle-mcp-form');
+  refs.mcpAddForm = $('#mcp-add-form');
 }
 
 // ==================== INIT ====================
@@ -80,19 +87,44 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateStatusBadges();
   renderCustomProviders();
   renderMCPServers();
+  reconnectMCPServers();
 });
+
+async function reconnectMCPServers() {
+  if (state.mcpServers.length === 0) return;
+
+  for (const server of state.mcpServers) {
+    try {
+      const result = await chrome.runtime.sendMessage({
+        type: 'MCP_CONNECT',
+        config: server,
+      });
+      server.connected = result.success;
+      server.toolCount = result.tools?.length || 0;
+    } catch (e) {
+      server.connected = false;
+      server.toolCount = 0;
+    }
+  }
+
+  renderMCPServers();
+}
 
 // ==================== SETTINGS PERSISTENCE ====================
 async function loadSettings() {
   try {
     const data = await chrome.storage.local.get([
       'providerConfig',
+      'providerKeys',
       'customProviders',
       'mcpServers',
       'chatHistory',
     ]);
     if (data.providerConfig) {
       state.providerConfig = { ...state.providerConfig, ...data.providerConfig };
+    }
+    if (data.providerKeys) {
+      state.providerKeys = data.providerKeys;
     }
     if (data.customProviders) {
       state.customProviders = data.customProviders;
@@ -113,6 +145,7 @@ async function saveSettings() {
   try {
     await chrome.storage.local.set({
       providerConfig: state.providerConfig,
+      providerKeys: state.providerKeys,
       customProviders: state.customProviders,
       mcpServers: state.mcpServers,
     });
@@ -180,9 +213,17 @@ function bindEvents() {
 
   // Custom providers
   refs.btnAddCustomProvider.addEventListener('click', addCustomProvider);
+  refs.btnToggleCpForm.addEventListener('click', () => {
+    refs.cpAddForm.classList.toggle('hidden');
+    refs.btnToggleCpForm.classList.toggle('active');
+  });
 
   // MCP
   refs.btnAddMcp.addEventListener('click', addMCPServer);
+  refs.btnToggleMcpForm.addEventListener('click', () => {
+    refs.mcpAddForm.classList.toggle('hidden');
+    refs.btnToggleMcpForm.classList.toggle('active');
+  });
 
   // Listen for streaming chunks from background
   chrome.runtime.onMessage.addListener((message) => {
@@ -262,18 +303,24 @@ function populateProviderDropdown() {
 }
 
 function onProviderChange() {
-  const providerId = refs.providerSelect.value;
-  const provider = getProvider(providerId);
+  const newId = refs.providerSelect.value;
+  const oldId = state.providerConfig.providerId;
+  const provider = getProvider(newId);
 
-  state.providerConfig.providerId = providerId;
+  // Save current provider's API key and model before switching
+  state.providerKeys[oldId] = {
+    apiKey: state.providerConfig.apiKey,
+    model: state.providerConfig.model,
+  };
+
+  // Load the new provider's stored key and model
+  const saved = state.providerKeys[newId] || {};
+
+  state.providerConfig.providerId = newId;
   state.providerConfig.apiUrl = provider.apiUrl;
   state.providerConfig.format = provider.format;
-
-  // For custom providers, also load the stored API key and model
-  if (isCustomProvider(providerId)) {
-    state.providerConfig.apiKey = provider.apiKey || '';
-    state.providerConfig.model = provider.model || provider.defaultModel || '';
-  }
+  state.providerConfig.apiKey = saved.apiKey || (isCustomProvider(newId) ? provider.apiKey : '') || '';
+  state.providerConfig.model = saved.model || provider.defaultModel || '';
 
   updateProviderUI();
   saveSettings();
@@ -292,8 +339,14 @@ function onSettingsChange() {
     state.providerConfig.model = refs.modelSelect.value;
   }
 
-  // If the active provider is custom, sync back to the custom provider entry
+  // Keep providerKeys in sync
   const providerId = state.providerConfig.providerId;
+  state.providerKeys[providerId] = {
+    apiKey: state.providerConfig.apiKey,
+    model: state.providerConfig.model,
+  };
+
+  // If the active provider is custom, sync back to the custom provider entry
   if (isCustomProvider(providerId)) {
     const cp = state.customProviders.find((c) => c.id === providerId);
     if (cp) {
@@ -320,8 +373,12 @@ function updateProviderUI() {
   refs.systemPrompt.value = systemPrompt || '';
 
   // Show format selector for custom providers
-  const showFormat = isCustomProvider(providerId);
-  refs.formatGroup.style.display = showFormat ? 'block' : 'none';
+  const isCp = isCustomProvider(providerId);
+  refs.formatGroup.style.display = isCp ? 'block' : 'none';
+
+  // Show URL row for custom providers; hide for built-in (they have preset URLs)
+  const isBuiltIn = !!PROVIDER_PRESETS[providerId];
+  refs.urlRow.style.display = isBuiltIn ? 'none' : 'block';
 
   // Populate model select
   refs.modelSelect.innerHTML = '';
@@ -385,13 +442,24 @@ function addCustomProvider() {
     models: [],
   });
 
-  // Clear form
+  // Clear form and collapse
   refs.cpName.value = '';
   refs.cpUrl.value = '';
   refs.cpFormat.value = 'openai';
+  refs.cpAddForm.classList.add('hidden');
+  refs.btnToggleCpForm.classList.remove('active');
 
   populateProviderDropdown();
   renderCustomProviders();
+
+  // Auto-select the new provider
+  state.providerConfig.providerId = id;
+  state.providerConfig.apiUrl = apiUrl;
+  state.providerConfig.apiKey = '';
+  state.providerConfig.model = '';
+  state.providerConfig.format = format;
+  updateProviderUI();
+  updateStatusBadges();
   saveSettings();
 }
 
@@ -592,9 +660,27 @@ function buildAPIMessages() {
     msgs.push({ role: 'system', content: state.providerConfig.systemPrompt });
   }
 
-  // Conversation history
+  // Conversation history — properly format tool calls and results
   for (const msg of state.messages) {
-    msgs.push({ role: msg.role, content: msg.content });
+    if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+      // Assistant message with tool calls
+      const assistantMsg = { role: 'assistant', content: msg.content || null };
+      assistantMsg.tool_calls = msg.toolCalls.map((tc) => ({
+        id: tc.id,
+        type: 'function',
+        function: { name: tc.name, arguments: tc.arguments || '{}' },
+      }));
+      msgs.push(assistantMsg);
+    } else if (msg.role === 'tool') {
+      // Tool result message
+      msgs.push({
+        role: 'tool',
+        tool_call_id: msg.toolCallId,
+        content: msg.content,
+      });
+    } else {
+      msgs.push({ role: msg.role, content: msg.content });
+    }
   }
 
   return msgs;
@@ -610,8 +696,12 @@ function appendStreamChunk(content) {
 }
 
 function finishStream(fullContent, toolCalls) {
-  // Update last message in state
-  state.messages.push({ role: 'assistant', content: fullContent || '' });
+  // Store assistant message with tool_calls metadata if present
+  const assistantMsg = { role: 'assistant', content: fullContent || '' };
+  if (toolCalls && toolCalls.length > 0) {
+    assistantMsg.toolCalls = toolCalls;
+  }
+  state.messages.push(assistantMsg);
 
   if (currentStreamRenderer) {
     // Final render
@@ -620,16 +710,20 @@ function finishStream(fullContent, toolCalls) {
   }
 
   currentStreamRenderer = null;
-  setStreamingUI(false);
-  state.isStreaming = false;
-  saveChatHistory();
 
   // Add copy button and wire code block copy buttons
-  addMessageActionsToLast(fullContent || '');
+  if (fullContent) {
+    addMessageActionsToLast(fullContent);
+  }
 
-  // Handle tool calls
+  // Handle tool calls — the agentic loop
   if (toolCalls && toolCalls.length > 0) {
-    handleToolCalls(toolCalls, fullContent);
+    handleToolCalls(toolCalls);
+  } else {
+    // No tool calls — we're done
+    setStreamingUI(false);
+    state.isStreaming = false;
+    saveChatHistory();
   }
 
   scrollToBottom();
@@ -658,7 +752,7 @@ function stopStreaming() {
 }
 
 // ==================== TOOL CALLS ====================
-async function handleToolCalls(toolCalls, assistantContent) {
+async function handleToolCalls(toolCalls) {
   for (const tc of toolCalls) {
     if (!tc.name) continue;
 
@@ -686,14 +780,56 @@ async function handleToolCalls(toolCalls, assistantContent) {
 
       addToolMessage(tc.name, args, 'result', resultText);
 
-      // Add tool result to messages and continue
+      // Add tool result to state with proper role for API
       state.messages.push({
-        role: 'user',
-        content: `[Tool Result: ${tc.name}]\n${resultText}`,
+        role: 'tool',
+        toolCallId: tc.id,
+        content: resultText,
       });
     } catch (e) {
       addToolMessage(tc.name, args, 'error', e.message);
+      state.messages.push({
+        role: 'tool',
+        toolCallId: tc.id,
+        content: `Error: ${e.message}`,
+      });
     }
+  }
+
+  // --- Agentic loop: send tool results back to LLM for follow-up ---
+  const apiMessages = buildAPIMessages();
+
+  let tools = [];
+  try {
+    const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
+    if (mcpRes?.tools) tools = mcpRes.tools;
+  } catch (_) {}
+
+  state.currentRequestId = `req_${Date.now()}`;
+
+  // Create a new streaming placeholder for the follow-up response
+  const streamEl = addMessage('assistant', '', true);
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: 'CHAT_REQUEST',
+      messages: apiMessages,
+      providerConfig: state.providerConfig,
+      tools: tools,
+      requestId: state.currentRequestId,
+    });
+
+    if (response?.error) {
+      removeStreamingMessage();
+      addMessage('error', response.error);
+      setStreamingUI(false);
+      state.isStreaming = false;
+    }
+  } catch (e) {
+    removeStreamingMessage();
+    addMessage('error', `Request failed: ${e.message}`);
+    setStreamingUI(false);
+    state.isStreaming = false;
   }
 }
 
@@ -822,12 +958,20 @@ function addToolMessage(toolName, args, status, result) {
   }
 
   if (result) {
-    const resultEl = document.createElement('div');
-    resultEl.className = 'tool-args';
-    resultEl.style.marginTop = '6px';
-    resultEl.style.borderLeft = `2px solid ${status === 'error' ? 'var(--danger)' : 'var(--success)'}`;
-    resultEl.textContent = result;
-    bubble.appendChild(resultEl);
+    const details = document.createElement('details');
+    details.className = `tool-result ${status === 'error' ? 'error' : 'success'}`;
+
+    const summary = document.createElement('summary');
+    const preview = result.length > 80 ? result.slice(0, 80) + '…' : result;
+    summary.textContent = preview;
+    details.appendChild(summary);
+
+    const fullContent = document.createElement('div');
+    fullContent.className = 'tool-result-content';
+    fullContent.textContent = result;
+    details.appendChild(fullContent);
+
+    bubble.appendChild(details);
   }
 
   msgEl.appendChild(bubble);
@@ -880,14 +1024,26 @@ async function addMCPServer() {
   const url = refs.mcpUrl.value.trim();
   if (!name || !url) return;
 
+  // Parse headers from textarea (one per line, Key: Value)
+  const headers = {};
+  const headerLines = refs.mcpHeaders.value.trim().split('\n');
+  for (const line of headerLines) {
+    const idx = line.indexOf(':');
+    if (idx > 0) {
+      const key = line.slice(0, idx).trim();
+      const val = line.slice(idx + 1).trim();
+      if (key) headers[key] = val;
+    }
+  }
+
   const config = {
     id: `mcp_${Date.now()}`,
     name,
     url,
+    headers,
   };
 
   refs.btnAddMcp.disabled = true;
-  refs.btnAddMcp.textContent = 'Connecting...';
 
   try {
     const result = await chrome.runtime.sendMessage({
@@ -901,6 +1057,9 @@ async function addMCPServer() {
       state.mcpServers.push(config);
       refs.mcpName.value = '';
       refs.mcpUrl.value = '';
+      refs.mcpHeaders.value = '';
+      refs.mcpAddForm.classList.add('hidden');
+      refs.btnToggleMcpForm.classList.remove('active');
       saveSettings();
       renderMCPServers();
     } else {
@@ -911,7 +1070,6 @@ async function addMCPServer() {
   }
 
   refs.btnAddMcp.disabled = false;
-  refs.btnAddMcp.textContent = 'Connect Server';
 }
 
 function removeMCPServer(id) {

@@ -1,83 +1,206 @@
 // MCP (Model Context Protocol) client for Chrome extension
-// Supports SSE transport for connecting to MCP servers
+// Supports Streamable HTTP and SSE transports
 
 export class MCPClient {
-  constructor(serverUrl) {
-    this.serverUrl = serverUrl;
+  constructor(serverUrl, headers = {}) {
+    this.serverUrl = serverUrl.replace(/\/+$/, ''); // trim trailing slashes
+    this.customHeaders = headers;
     this.tools = [];
     this.connected = false;
-    this.sessionId = null;
+    this.sessionId = null; // Mcp-Session-Id
+    this.transport = null; // 'streamable' | 'sse'
+    this.postEndpoint = null;
   }
 
   async connect() {
+    // Strategy 1: Streamable HTTP — POST initialize to the base URL
     try {
-      // Initialize session via POST
-      const initRes = await fetch(`${this.serverUrl}/initialize`, {
+      const result = await this.connectStreamable();
+      if (result.success) return result;
+    } catch (e) {
+      console.log('Streamable HTTP failed:', e.message);
+    }
+
+    // Strategy 2: SSE transport
+    try {
+      const result = await this.connectSSE();
+      if (result.success) return result;
+    } catch (e) {
+      console.log('SSE transport failed:', e.message);
+    }
+
+    return { success: false, error: 'Could not connect to MCP server' };
+  }
+
+  async connectStreamable() {
+    const res = await fetch(this.serverUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
+        ...this.customHeaders,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'ai-sidebar', version: '1.0.0' },
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Streamable HTTP failed: ${res.status}`);
+    }
+
+    // Extract session ID from response header
+    const mcpSessionId = res.headers.get('Mcp-Session-Id') || res.headers.get('mcp-session-id');
+    if (mcpSessionId) {
+      this.sessionId = mcpSessionId;
+    }
+
+    // Parse response — could be JSON or SSE
+    const data = await this.parseResponse(res);
+    if (!data || !data.result) {
+      throw new Error('Invalid initialize response');
+    }
+
+    this.transport = 'streamable';
+    this.postEndpoint = this.serverUrl;
+    this.connected = true;
+
+    // Send initialized notification
+    try {
+      await fetch(this.serverUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.buildHeaders(),
         body: JSON.stringify({
           jsonrpc: '2.0',
-          id: 1,
-          method: 'initialize',
-          params: {
-            protocolVersion: '2024-11-05',
-            capabilities: {},
-            clientInfo: { name: 'ai-sidebar', version: '1.0.0' },
-          },
+          method: 'notifications/initialized',
         }),
       });
+    } catch (_) { /* optional notification */ }
 
-      if (initRes.ok) {
-        const data = await initRes.json();
-        this.sessionId = data.result?.sessionId || null;
-        this.connected = true;
-        await this.listTools();
-        return { success: true, tools: this.tools };
-      }
-
-      // Fallback: try SSE-based connection
-      return await this.connectSSE();
-    } catch (e) {
-      // Try SSE transport as fallback
-      try {
-        return await this.connectSSE();
-      } catch (e2) {
-        return { success: false, error: e2.message };
-      }
-    }
+    await this.listTools();
+    return { success: true, tools: this.tools };
   }
 
   async connectSSE() {
-    return new Promise((resolve, reject) => {
-      const url = `${this.serverUrl}/sse`;
-      const eventSource = new EventSource(url);
+    const url = `${this.serverUrl}/sse`;
 
-      eventSource.addEventListener('endpoint', (event) => {
-        this.postEndpoint = event.data;
-        if (this.postEndpoint.startsWith('/')) {
-          const base = new URL(this.serverUrl);
-          this.postEndpoint = `${base.origin}${this.postEndpoint}`;
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'text/event-stream',
+        ...this.customHeaders,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`SSE connection failed: ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    // Read until we get the endpoint event
+    const endpoint = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('SSE connection timeout'));
+      }, 10000);
+
+      const processBuffer = () => {
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventType = line.slice(6).trim();
+          } else if (line.startsWith('data:') && eventType === 'endpoint') {
+            clearTimeout(timeout);
+            resolve(line.slice(5).trim());
+          } else if (line === '') {
+            eventType = '';
+          }
         }
-        this.eventSource = eventSource;
-        this.connected = true;
-        this.listTools().then(() => {
-          resolve({ success: true, tools: this.tools });
-        });
-      });
-
-      eventSource.onerror = () => {
-        eventSource.close();
-        reject(new Error('Failed to connect via SSE'));
       };
 
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        if (!this.connected) {
-          eventSource.close();
-          reject(new Error('Connection timeout'));
-        }
-      }, 10000);
+      const read = () => {
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            reject(new Error('SSE stream ended'));
+            return;
+          }
+          buffer += decoder.decode(value, { stream: true });
+          processBuffer();
+          read();
+        }).catch(reject);
+      };
+
+      read();
     });
+
+    this.postEndpoint = endpoint;
+    if (this.postEndpoint.startsWith('/')) {
+      const base = new URL(this.serverUrl);
+      this.postEndpoint = `${base.origin}${this.postEndpoint}`;
+    }
+
+    this.transport = 'sse';
+    this.sseReader = reader;
+    this.connected = true;
+    await this.listTools();
+    return { success: true, tools: this.tools };
+  }
+
+  // Parse response that may be JSON or SSE stream
+  async parseResponse(res) {
+    const contentType = res.headers.get('content-type') || '';
+
+    if (contentType.includes('text/event-stream')) {
+      // Parse SSE stream to extract JSON-RPC response
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let result = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            try {
+              result = JSON.parse(line.slice(5).trim());
+            } catch (_) { /* not JSON yet */ }
+          }
+        }
+
+        if (result) break;
+      }
+
+      return result;
+    }
+
+    // Default: parse as JSON
+    return await res.json();
+  }
+
+  buildHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+      ...(this.sessionId ? { 'Mcp-Session-Id': this.sessionId } : {}),
+      ...this.customHeaders,
+    };
   }
 
   async sendRequest(method, params = {}) {
@@ -88,15 +211,11 @@ export class MCPClient {
       params,
     };
 
-    // Use SSE post endpoint if available
-    const url = this.postEndpoint || `${this.serverUrl}/${method.replace('/', '.')}`;
+    const url = this.postEndpoint || this.serverUrl;
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.sessionId ? { 'X-Session-Id': this.sessionId } : {}),
-      },
+      headers: this.buildHeaders(),
       body: JSON.stringify(body),
     });
 
@@ -104,17 +223,23 @@ export class MCPClient {
       throw new Error(`MCP request failed: ${res.status} ${res.statusText}`);
     }
 
-    const data = await res.json();
-    if (data.error) {
+    // Extract session ID if present (may be set on any response)
+    const mcpSessionId = res.headers.get('Mcp-Session-Id') || res.headers.get('mcp-session-id');
+    if (mcpSessionId) {
+      this.sessionId = mcpSessionId;
+    }
+
+    const data = await this.parseResponse(res);
+    if (data?.error) {
       throw new Error(`MCP error: ${data.error.message}`);
     }
-    return data.result;
+    return data?.result;
   }
 
   async listTools() {
     try {
       const result = await this.sendRequest('tools/list');
-      this.tools = result.tools || [];
+      this.tools = result?.tools || [];
       return this.tools;
     } catch (e) {
       console.warn('Failed to list MCP tools:', e);
@@ -133,12 +258,13 @@ export class MCPClient {
   }
 
   disconnect() {
-    if (this.eventSource) {
-      this.eventSource.close();
+    if (this.sseReader) {
+      this.sseReader.cancel().catch(() => {});
     }
     this.connected = false;
     this.tools = [];
     this.sessionId = null;
+    this.transport = null;
   }
 }
 
@@ -149,7 +275,7 @@ export class MCPManager {
   }
 
   async addServer(config) {
-    const client = new MCPClient(config.url);
+    const client = new MCPClient(config.url, config.headers || {});
     const result = await client.connect();
     if (result.success) {
       this.clients.set(config.id, { client, config, tools: result.tools });

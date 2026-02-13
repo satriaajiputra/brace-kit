@@ -1,4 +1,4 @@
-// Markdown rendering using the 'marked' library
+// Markdown rendering using the 'marked' library + highlight.js
 // Re-exports configured marked instance for use in sidebar
 
 import { marked } from './lib/marked.esm.js';
@@ -19,14 +19,27 @@ renderer.link = ({ href, title, text }) => {
   return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
 };
 
-// Code blocks with copy button + language label
+// Highlight code using highlight.js
+function highlightCode(code, lang) {
+  if (typeof hljs === 'undefined') return escapeHtml(code);
+  try {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  } catch (_) {
+    return escapeHtml(code);
+  }
+}
+
+// Code blocks with copy button + language label + syntax highlighting
 renderer.code = ({ text, lang }) => {
   const langClass = lang ? ` class="language-${lang}"` : '';
   const langLabel = lang ? `<span class="code-lang">${lang}</span>` : '';
-  const escapedCode = escapeHtml(text);
+  const highlighted = highlightCode(text, lang);
   // Store raw code in data attribute for copy button
   const dataCode = text.replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
-  return `<div class="md-codeblock-wrapper">${langLabel}<button class="copy-code-btn" data-code="${dataCode}" title="Copy code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><pre class="md-codeblock"><code${langClass}>${escapedCode}</code></pre></div>`;
+  return `<div class="md-codeblock-wrapper">${langLabel}<button class="copy-code-btn" data-code="${dataCode}" title="Copy code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><pre class="md-codeblock"><code${langClass}>${highlighted}</code></pre></div>`;
 };
 
 // Style inline code
