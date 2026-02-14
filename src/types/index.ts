@@ -227,6 +227,9 @@ export interface AppState {
   // File attachments
   attachments: FileAttachment[];
 
+  // Quote
+  quotedText: string | null;
+
   // UI State
   view: 'chat' | 'settings';
   historyDrawerOpen: boolean;
@@ -275,6 +278,8 @@ export interface AppState {
   addAttachment: (attachment: FileAttachment) => void;
   removeAttachment: (id: string) => void;
   clearAttachments: () => void;
+
+  setQuotedText: (text: string | null) => void;
 
   setView: (view: 'chat' | 'settings') => void;
   setHistoryDrawerOpen: (open: boolean) => void;

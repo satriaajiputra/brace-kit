@@ -118,6 +118,7 @@ body {
     font-size: 0.95rem;
     background: var(--accent-gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -676,6 +677,7 @@ body {
     margin-bottom: 4px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -725,6 +727,41 @@ body {
 .msg-action-btn.copied {
     color: var(--success);
     background: rgba(52, 211, 153, 0.1);
+}
+
+/* Quote Popup */
+.quote-popup {
+    position: absolute;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 2px;
+    animation: fadeIn 0.1s ease;
+    transform: translate(-50%, -100%);
+    pointer-events: auto;
+}
+
+.quote-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.quote-btn:hover {
+    background: var(--accent-primary);
+    color: white;
 }
 
 /* Code block copy button */
@@ -821,6 +858,7 @@ body {
     font-weight: 700;
     background: var(--accent-gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 8px;
 }
@@ -2089,10 +2127,7 @@ body {
     color: var(--danger);
 }
 
-/* Show pinned icon outside actions group so it's always visible */
-.history-item .history-item-pin.pinned {
-    /* stays visible via actions group opacity override below */
-}
+
 
 .history-item:not(:hover) .history-item-actions:has(.history-item-pin.pinned) {
     opacity: 1;

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useStore } from '../store/index.ts';
 import { useChat } from '../hooks/useChat.ts';
 import { useFileAttachments } from '../hooks/useFileAttachments.ts';
@@ -24,6 +24,31 @@ export function InputArea() {
       : selectedText
         ? 'Ask about the selected text...'
         : 'What\'s on your mind?';
+
+  const { quotedText, setQuotedText } = store;
+
+  useEffect(() => {
+    if (quotedText) {
+      const formattedQuote = quotedText
+        .split('\n')
+        .map((line) => `> ${line}`)
+        .join('\n') + '\n\n';
+      setText((prev) => formattedQuote + prev);
+      setQuotedText(null);
+
+      // Auto-focus and resize
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        // Give React a moment to update the value before measuring scrollHeight
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+          }
+        }, 0);
+      }
+    }
+  }, [quotedText, setQuotedText]);
 
   const handleSend = useCallback(() => {
     if (!text.trim() && store.attachments.length === 0) return;
@@ -52,7 +77,7 @@ export function InputArea() {
     if (store.pageContext) {
       store.setPageContext(null);
     } else {
-      chrome.runtime.sendMessage({ type: 'GET_PAGE_CONTENT' }).then((response) => {
+      chrome.runtime.sendMessage({ type: 'GET_PAGE_CONTENT' }).then((response: any) => {
         if (response?.error) {
           store.addMessage({ role: 'error', content: `Failed to read page: ${response.error}` });
         } else {

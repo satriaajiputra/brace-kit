@@ -53,6 +53,9 @@ export const useStore = create<AppState>((set, get) => ({
   // File attachments
   attachments: [],
 
+  // Quote
+  quotedText: null,
+
   // UI State
   view: 'chat',
   historyDrawerOpen: false,
@@ -248,6 +251,8 @@ export const useStore = create<AppState>((set, get) => ({
     })),
 
   clearAttachments: () => set({ attachments: [] }),
+
+  setQuotedText: (quotedText) => set({ quotedText }),
 
   setView: (view) => set({ view }),
 
