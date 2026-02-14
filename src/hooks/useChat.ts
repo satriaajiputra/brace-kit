@@ -168,6 +168,7 @@ export function useChat() {
 
     // Clear selection and attachments
     store.setSelectedText(null);
+    store.setPageContext(null);
     store.clearAttachments();
 
     // Build messages for API - include all messages from store + format them

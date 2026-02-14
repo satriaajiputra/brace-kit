@@ -1,12 +1,138 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../store/index.ts';
 import { formatTimeAgo } from '../utils/formatters.ts';
+import fuzzysort from 'fuzzysort';
+import type { Message } from '../types/index.ts';
+
+interface ConversationWithMessages {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: Message[];
+}
 
 export function HistoryDrawer() {
   const store = useStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [conversationsWithData, setConversationsWithData] = useState<ConversationWithMessages[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load conversation messages when drawer opens
+  useEffect(() => {
+    if (!store.historyDrawerOpen) return;
+
+    const loadConversations = async () => {
+      setIsLoading(true);
+      const loaded: ConversationWithMessages[] = [];
+
+      for (const conv of store.conversations) {
+        try {
+          const data = await chrome.storage.local.get(`conv_${conv.id}`);
+          const messages = data[`conv_${conv.id}`] || [];
+          loaded.push({
+            ...conv,
+            messages,
+          });
+        } catch (e) {
+          console.warn('Failed to load conversation:', conv.id, e);
+          loaded.push({
+            ...conv,
+            messages: [],
+          });
+        }
+      }
+
+      setConversationsWithData(loaded);
+      setIsLoading(false);
+    };
+
+    loadConversations();
+  }, [store.historyDrawerOpen, store.conversations]);
+
+  const sorted = useMemo(() => {
+    return [...conversationsWithData].sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [conversationsWithData]);
+
+  // Fuzzy search using fuzzysort
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return sorted;
+
+    const query = searchQuery.trim();
+
+    // Prepare searchable items with combined text from title and all messages
+    const searchableItems = sorted.map((conv) => {
+      // Combine title and all message content for searching
+      const messageContent = conv.messages
+        .map((m) => {
+          // Include content from different message fields
+          const parts: string[] = [];
+          if (m.content) parts.push(m.content);
+          if (m.displayContent) parts.push(m.displayContent);
+          if (m.pageContext?.content) parts.push(m.pageContext.content);
+          if (m.pageContext?.pageTitle) parts.push(m.pageContext.pageTitle);
+          if (m.selectedText?.selectedText) parts.push(m.selectedText.selectedText);
+          return parts.join(' ');
+        })
+        .join(' ');
+
+      return {
+        conv,
+        title: conv.title,
+        content: messageContent,
+        combined: `${conv.title} ${messageContent}`,
+      };
+    });
+
+    // Search in title (higher priority) and content
+    const titleResults = fuzzysort.go(query, searchableItems, {
+      key: 'title',
+      threshold: -10000,
+      limit: 100,
+    });
+
+    const contentResults = fuzzysort.go(query, searchableItems, {
+      key: 'content',
+      threshold: -10000,
+      limit: 100,
+    });
+
+    // Merge results, prioritizing title matches
+    const resultMap = new Map<string, { item: typeof searchableItems[0]; score: number }>();
+
+    // Title matches get higher priority (lower score = better match)
+    titleResults.forEach((result) => {
+      resultMap.set(result.obj.conv.id, { item: result.obj, score: result.score * 1.5 }); // Boost title matches
+    });
+
+    // Add content matches
+    contentResults.forEach((result) => {
+      const existing = resultMap.get(result.obj.conv.id);
+      if (existing) {
+        // If already in map from title, combine scores
+        existing.score = Math.max(existing.score, result.score);
+      } else {
+        resultMap.set(result.obj.conv.id, { item: result.obj, score: result.score });
+      }
+    });
+
+    // Convert to array and sort by score (higher is better for fuzzysort)
+    const mergedResults = Array.from(resultMap.values())
+      .sort((a, b) => b.score - a.score)
+      .map((r) => r.item.conv);
+
+    return mergedResults;
+  }, [searchQuery, sorted]);
+
+  // Highlight matched text
+  const highlightMatch = (text: string, query: string): string => {
+    if (!query.trim()) return text;
+    const result = fuzzysort.single(query, text);
+    if (!result) return text;
+    return result.highlight('<mark>', '</mark>');
+  };
 
   if (!store.historyDrawerOpen) return null;
-
-  const sorted = [...store.conversations].sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
     <div id="history-drawer">
@@ -21,11 +147,40 @@ export function HistoryDrawer() {
             </svg>
           </button>
         </div>
+        <div className="history-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={isLoading}
+          />
+          {searchQuery && (
+            <button
+              className="history-search-clear"
+              onClick={() => setSearchQuery('')}
+              title="Clear search"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
         <div id="history-list" className="history-list">
-          {sorted.length === 0 ? (
-            <div className="history-empty">No conversations yet.</div>
+          {isLoading ? (
+            <div className="history-empty">Loading conversations...</div>
+          ) : filtered.length === 0 ? (
+            <div className="history-empty">
+              {searchQuery ? 'No conversations found.' : 'No conversations yet.'}
+            </div>
           ) : (
-            sorted.map((conv) => (
+            filtered.map((conv) => (
               <div
                 key={conv.id}
                 className={`history-item${conv.id === store.activeConversationId ? ' active' : ''}`}
@@ -34,7 +189,14 @@ export function HistoryDrawer() {
                   className="history-item-info"
                   onClick={() => store.switchConversation(conv.id)}
                 >
-                  <div className="history-item-title">{conv.title}</div>
+                  <div
+                    className="history-item-title"
+                    dangerouslySetInnerHTML={{
+                      __html: searchQuery
+                        ? highlightMatch(conv.title, searchQuery)
+                        : conv.title,
+                    }}
+                  />
                   <div className="history-item-time">{formatTimeAgo(conv.updatedAt)}</div>
                 </div>
                 <button
