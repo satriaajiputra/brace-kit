@@ -461,6 +461,24 @@ body {
     color: var(--text-secondary);
 }
 
+.message-bubble sup {
+    font-size: 0.7em;
+    color: var(--accent-primary);
+    font-weight: 600;
+    margin-left: 1px;
+}
+
+.message-bubble sup a.citation-link {
+    color: var(--accent-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.message-bubble sup a.citation-link:hover {
+    color: var(--accent-secondary);
+    text-decoration: underline;
+}
+
 .md-codeblock-wrapper {
     position: relative;
     margin: 8px 0;

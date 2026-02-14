@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useStore } from '../store/index.ts';
-import type { Message, ToolCall, Attachment } from '../types/index.ts';
+import type { Message, Attachment, APIMessage } from '../types/index.ts';
 import { PROVIDER_PRESETS } from '../providers.ts';
 import type { MCPTool } from '../types/index.ts';
 import { MEMORY_CATEGORIES, MEMORY_CATEGORY_LABELS } from '../types/index.ts';
@@ -36,15 +36,19 @@ export function useChat() {
     return block;
   }, [store.memoryEnabled, store.memories]);
 
-  const formatMessageForAPI = useCallback((msg: Message): Message | null => {
+  const formatMessageForAPI = useCallback((msg: Message): APIMessage | null => {
+    if (msg.role === 'error') return null;
+    
     if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
-      const assistantMsg: Message = { role: 'assistant', content: msg.content || '' };
-      assistantMsg.toolCalls = msg.toolCalls.map((tc) => ({
-        id: tc.id,
-        name: tc.name,
-        arguments: tc.arguments || '{}',
-      }));
-      return assistantMsg;
+      return {
+        role: 'assistant',
+        content: msg.content || '',
+        toolCalls: msg.toolCalls.map((tc) => ({
+          id: tc.id,
+          name: tc.name,
+          arguments: tc.arguments || '{}',
+        })),
+      };
     } else if (msg.role === 'tool') {
       return {
         role: 'tool',
@@ -69,14 +73,13 @@ export function useChat() {
       }
 
       return { role: msg.role, content };
-    } else if (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system') {
+    } else {
       return { role: msg.role, content: msg.content };
     }
-    return null;
   }, []);
 
-  const buildAPIMessages = useCallback((): Message[] => {
-    const msgs: Message[] = [];
+  const buildAPIMessages = useCallback((): APIMessage[] => {
+    const msgs: APIMessage[] = [];
 
     const memoryBlock = buildMemoryBlock();
     const systemContent = (store.providerConfig.systemPrompt || '') + memoryBlock;
@@ -155,7 +158,7 @@ export function useChat() {
     store.clearAttachments();
 
     // Build messages for API - include all messages from store + format them
-    const apiMessages: Message[] = [];
+    const apiMessages: APIMessage[] = [];
 
     const memoryBlock = buildMemoryBlock();
     const systemContent = (store.providerConfig.systemPrompt || '') + memoryBlock;

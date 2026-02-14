@@ -32,6 +32,16 @@ export interface Message {
   name?: string;
 }
 
+export type MessageContent = string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+
+export interface APIMessage {
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: MessageContent;
+  toolCalls?: ToolCall[];
+  toolCallId?: string;
+  name?: string;
+}
+
 export interface GroundingChunk {
   web?: {
     uri: string;
@@ -39,8 +49,18 @@ export interface GroundingChunk {
   };
 }
 
+export interface GroundingSupport {
+  segment?: {
+    startIndex?: number;
+    endIndex?: number;
+    text?: string;
+  };
+  groundingChunkIndices?: number[];
+}
+
 export interface GroundingMetadata {
   groundingChunks?: GroundingChunk[];
+  groundingSupports?: GroundingSupport[];
   webSearchQueries?: string[];
 }
 

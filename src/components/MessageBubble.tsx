@@ -74,6 +74,8 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     return <>{message.displayContent || message.content}</>;
   };
 
+  const groundingChunks = message.groundingMetadata?.groundingChunks;
+
   return (
     <div className={`message ${message.role}`}>
       <div className="message-role">{roleLabel}</div>
@@ -92,6 +94,38 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
                 />
               )
             ))}
+          </div>
+        )}
+        {groundingChunks && groundingChunks.length > 0 && (
+          <div className="grounding-citations">
+            <div className="grounding-citations-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4M12 8h.01"/>
+              </svg>
+              Sources
+            </div>
+            <div className="grounding-citations-list">
+              {groundingChunks.map((chunk, idx) => (
+                chunk.web && (
+                  <a
+                    key={idx}
+                    id={`cite-${idx + 1}`}
+                    href={chunk.web.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="grounding-source"
+                    title={chunk.web.uri}
+                  >
+                    <span>[{idx + 1}]</span>
+                    <span>{chunk.web.title || new URL(chunk.web.uri).hostname}</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+                    </svg>
+                  </a>
+                )
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -6,12 +6,11 @@ interface ToolMessageProps {
   toolCallId?: string;
 }
 
-export function ToolMessage({ name, content, toolCallId }: ToolMessageProps) {
+export function ToolMessage({ name, content }: ToolMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isCalling = content === '⏳ Calling...';
   const isError = content.startsWith('Error:');
-  const status = isCalling ? 'calling' : isError ? 'error' : 'result';
   const statusIcon = isCalling ? '⏳' : isError ? '❌' : '✅';
 
   return (

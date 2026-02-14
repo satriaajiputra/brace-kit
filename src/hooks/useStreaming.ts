@@ -3,6 +3,35 @@ import { useStore } from '../store/index.ts';
 import type { ToolCall, GroundingMetadata, MCPTool } from '../types/index.ts';
 import { useMemory } from './useMemory.ts';
 
+function addInlineCitations(text: string, groundingMetadata?: GroundingMetadata): string {
+  if (!groundingMetadata?.groundingSupports || !groundingMetadata?.groundingChunks) {
+    return text;
+  }
+
+  const supports = groundingMetadata.groundingSupports;
+  const chunks = groundingMetadata.groundingChunks;
+
+  // Sort by endIndex descending to avoid index shifting
+  const sorted = [...supports].sort((a, b) => (b.segment?.endIndex ?? 0) - (a.segment?.endIndex ?? 0));
+
+  let result = text;
+  for (const support of sorted) {
+    const endIndex = support.segment?.endIndex;
+    if (endIndex === undefined || !support.groundingChunkIndices?.length) continue;
+
+    const citations = support.groundingChunkIndices
+      .filter(i => i < chunks.length)
+      .map(i => `[${i + 1}]`)
+      .join('');
+
+    if (citations) {
+      result = result.slice(0, endIndex) + citations + result.slice(endIndex);
+    }
+  }
+
+  return result;
+}
+
 export function useStreaming() {
   const store = useStore();
   const { extractMemories } = useMemory();
@@ -147,9 +176,12 @@ export function useStreaming() {
   }, [store]);
 
   const finishStream = useCallback((fullContent: string, toolCalls?: ToolCall[], groundingMetadata?: GroundingMetadata) => {
+    // Add inline citations if grounding metadata exists
+    const contentWithCitations = addInlineCitations(fullContent, groundingMetadata);
+
     // Only add assistant message if there's content OR no tool calls
-    if (fullContent || !toolCalls || toolCalls.length === 0) {
-      const assistantMsg: { role: 'assistant'; content: string; toolCalls?: ToolCall[]; groundingMetadata?: GroundingMetadata } = { role: 'assistant', content: fullContent || '' };
+    if (contentWithCitations || !toolCalls || toolCalls.length === 0) {
+      const assistantMsg: { role: 'assistant'; content: string; toolCalls?: ToolCall[]; groundingMetadata?: GroundingMetadata } = { role: 'assistant', content: contentWithCitations || '' };
       if (toolCalls && toolCalls.length > 0) {
         assistantMsg.toolCalls = toolCalls;
       }

@@ -17,8 +17,11 @@ marked.setOptions({
 export function renderMarkdown(text: string): string {
   if (!text) return '';
 
+  // Convert citation markers [1][2] to clickable superscript links
+  let processedText = text.replace(/\[(\d+)\]/g, '<sup><a href="#cite-$1" class="citation-link">[$1]</a></sup>');
+
   // Escape HTML entities first for safety
-  let html = marked.parse(text, { async: false }) as string;
+  let html = marked.parse(processedText, { async: false }) as string;
 
   // Add code block copy buttons and language labels
   html = html.replace(

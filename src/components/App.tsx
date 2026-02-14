@@ -9,7 +9,6 @@ import { useStreaming } from '../hooks/useStreaming.ts';
 export function App() {
   const store = useStore();
   const view = useStore((state) => state.view);
-  const customProviders = useStore((state) => state.customProviders);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load settings on mount
