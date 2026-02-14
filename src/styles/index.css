@@ -714,6 +714,7 @@ body {
 
 .msg-action-btn.copied {
     color: var(--success);
+    background: rgba(52, 211, 153, 0.1);
 }
 
 /* Code block copy button */

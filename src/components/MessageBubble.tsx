@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { renderMarkdown } from '../utils/markdown.ts';
 import { copyToClipboard } from '../utils/formatters.ts';
 import type { Message } from '../types/index.ts';
@@ -167,18 +167,34 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
 }
 
 function MessageActions({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+
   const handleCopy = useCallback(() => {
-    copyToClipboard(content);
+    copyToClipboard(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
   }, [content]);
 
   return (
     <div className="message-actions">
-      <button className="msg-action-btn" onClick={handleCopy} title="Copy response">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span>Copy</span>
+      <button className={`msg-action-btn ${copied ? 'copied' : ''}`} onClick={handleCopy} title="Copy response">
+        {copied ? (
+          <>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>Copied!</span>
+          </>
+        ) : (
+          <>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span>Copy</span>
+          </>
+        )}
       </button>
     </div>
   );
