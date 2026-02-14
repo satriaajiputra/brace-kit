@@ -180,8 +180,8 @@ export function useChat() {
       pageContext: pageContextAttachment || undefined,
       selectedText: selectedTextAttachment || undefined
     };
-    if (messageAttachments && messageAttachments.some((a) => a.type === 'image')) {
-      messageData.attachments = messageAttachments.filter((a) => a.type === 'image');
+    if (messageAttachments && messageAttachments.some((a) => a.type === 'image' || a.type === 'text')) {
+      messageData.attachments = messageAttachments.filter((a) => a.type === 'image' || a.type === 'text');
     }
     store.addMessage(messageData);
     store.updateConversationTimestamp();
