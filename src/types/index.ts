@@ -248,7 +248,7 @@ export interface AppState {
   quotedText: string | null;
 
   // UI State
-  view: 'chat' | 'settings';
+  view: 'chat' | 'settings' | 'gallery';
   historyDrawerOpen: boolean;
   settingsSection: string | null;
 
@@ -298,7 +298,7 @@ export interface AppState {
 
   setQuotedText: (text: string | null) => void;
 
-  setView: (view: 'chat' | 'settings') => void;
+  setView: (view: 'chat' | 'settings' | 'gallery') => void;
   setHistoryDrawerOpen: (open: boolean) => void;
   toggleHistoryDrawer: () => void;
 

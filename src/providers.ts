@@ -636,8 +636,11 @@ async function* parseGeminiStream(response: Response): AsyncGenerator<StreamChun
 
         for (const candidate of candidates) {
           // Check for finishReason indicating image generation failure
-          if (candidate.finishReason === 'IMAGE_SAFETY') {
-            const errorMessage = candidate.finishMessage || 'Unable to show the generated image. The image was filtered due to safety policies.';
+          if (candidate.finishReason === 'IMAGE_SAFETY' || candidate.finishReason === 'IMAGE_OTHER') {
+            const defaultMessage = candidate.finishReason === 'IMAGE_SAFETY'
+              ? 'Unable to show the generated image. The image was filtered due to safety policies.'
+              : 'Unable to show the generated image. The model could not generate the image based on the prompt provided.';
+            const errorMessage = candidate.finishMessage || defaultMessage;
             yield { type: 'error', content: errorMessage };
             continue;
           }

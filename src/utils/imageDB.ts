@@ -159,6 +159,30 @@ export async function saveImagesForConversation(
   return keys;
 }
 
+export async function getAllImages(): Promise<StoredImageRecord[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const index = store.index('by_created');
+      const request = index.getAll();
+
+      request.onsuccess = () => {
+        const results: StoredImageRecord[] = request.result ?? [];
+        resolve(results.reverse());
+      };
+      request.onerror = (e) => {
+        console.warn('[ImageDB] Failed to get all images:', (e.target as IDBRequest).error);
+        resolve([]);
+      };
+    });
+  } catch (e) {
+    console.warn('[ImageDB] getAllImages error:', e);
+    return [];
+  }
+}
+
 export async function hydrateMessages(messages: Message[]): Promise<Message[]> {
   return Promise.all(
     messages.map(async (msg) => {

@@ -4,6 +4,7 @@ import { Header } from './Header.tsx';
 import { ChatView } from './ChatView.tsx';
 import { SettingsPanel } from './SettingsPanel.tsx';
 import { HistoryDrawer } from './HistoryDrawer.tsx';
+import { GalleryView } from './GalleryView.tsx';
 import { useStreaming } from '../hooks/useStreaming.ts';
 
 export function App() {
@@ -36,7 +37,9 @@ export function App() {
   return (
     <div id="app">
       <Header />
-      {view === 'chat' ? <ChatView /> : <SettingsPanel />}
+      {view === 'chat' && <ChatView />}
+      {view === 'settings' && <SettingsPanel />}
+      {view === 'gallery' && <GalleryView />}
       <HistoryDrawer />
     </div>
   );
