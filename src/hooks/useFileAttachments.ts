@@ -18,11 +18,11 @@ const ALLOWED_FILE_TYPES: Record<string, 'image' | 'text' | 'pdf'> = {
 export function useFileAttachments() {
   const store = useStore();
 
-  const processFile = useCallback(async (file: File): Promise<void> => {
+  const processFile = useCallback(async (file: File, custom_id?: string): Promise<void> => {
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
       store.addAttachment({
-        id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        id: `${custom_id ? custom_id : 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)}`,
         file,
         type: 'error',
         name: file.name,
@@ -34,7 +34,7 @@ export function useFileAttachments() {
     const fileType = ALLOWED_FILE_TYPES[file.type];
     if (!fileType) {
       store.addAttachment({
-        id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        id: `${custom_id ? custom_id : 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)}`,
         file,
         type: 'error',
         name: file.name,
@@ -53,7 +53,7 @@ export function useFileAttachments() {
       }
     } catch (err) {
       store.addAttachment({
-        id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        id: `${custom_id ? custom_id : 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)}`,
         file,
         type: 'error',
         name: file.name,

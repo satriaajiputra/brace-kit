@@ -11,7 +11,7 @@ if (!existsSync(outDir)) {
 
 // Build the React app
 const result = await build({
-  entrypoints: ['./src/index.tsx'],
+  entrypoints: ['./src/index.tsx', './src/content.ts'],
   outdir: outDir,
   format: 'esm',
   target: 'browser',
