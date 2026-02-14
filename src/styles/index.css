@@ -2649,6 +2649,32 @@ body {
     max-height: calc(80vh - 60px);
 }
 
+/* Custom scrollbar for text file viewer */
+.text-file-viewer-content::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.text-file-viewer-content::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0 4px;
+}
+
+.text-file-viewer-content::-webkit-scrollbar-thumb {
+    background: var(--bg-active);
+    border-radius: var(--radius-xs);
+}
+
+.text-file-viewer-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* Firefox scrollbar */
+.text-file-viewer-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-active) transparent;
+}
+
 .text-file-viewer-content pre {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-optical-sizing: auto;
