@@ -105,16 +105,6 @@ export function useChat() {
       store.createConversation();
     }
 
-    // Auto-title from first user message
-    if (store.messages.length === 0) {
-      const titleText = text || `Attached: ${validAttachments.map((a) => a.name).join(', ')}`;
-      const conv = store.conversations.find((c) => c.id === store.activeConversationId);
-      if (conv && conv.title === 'New Chat') {
-        conv.title = titleText.slice(0, 50) + (titleText.length > 50 ? '…' : '');
-        store.saveToStorage();
-      }
-    }
-
     // Build user message content
     let userContent = text;
 
@@ -190,7 +180,7 @@ export function useChat() {
     // Get MCP tools from enabled servers only
     let tools: MCPTool[] = [];
     try {
-      console.log('[useChat] Fetching MCP tools, mcpServers:', store.mcpServers);
+      console.log('[useChat] Fetching MCP tools, mcpServers:', store.mcpServers.map((s) => ({ id: s.id, enabled: s.enabled, name: s.name })));
       const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
       console.log('[useChat] MCP response:', mcpRes);
       if (mcpRes?.tools) {

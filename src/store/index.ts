@@ -191,12 +191,15 @@ export const useStore = create<AppState>((set, get) => ({
     await chrome.storage.local.set({ conversations: newConversations });
   },
 
-  updateConversationTitle: (id, title) =>
-    set((state) => ({
-      conversations: state.conversations.map((c) =>
-        c.id === id ? { ...c, title } : c
-      ),
-    })),
+  updateConversationTitle: (id, title) => {
+    set((state) => {
+      const updated = state.conversations.map((c) =>
+        c.id === id ? { ...c, title, updatedAt: Date.now() } : c
+      );
+      return { conversations: updated };
+    });
+    get().saveToStorage();
+  },
 
   setActiveConversationId: (activeConversationId) => set({ activeConversationId }),
 

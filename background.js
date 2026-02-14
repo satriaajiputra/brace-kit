@@ -99,6 +99,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleMemoryExtract(message, sendResponse);
       return true;
 
+    case 'TITLE_GENERATE':
+      handleTitleGenerate(message, sendResponse);
+      return true;
+
     case 'FETCH_MODELS':
       handleFetchModels(message, sendResponse);
       return true;
@@ -347,6 +351,61 @@ async function handleFetchModels(message, sendResponse) {
 
     const result = await fetchModels(provider);
     sendResponse(result);
+  } catch (e) {
+    sendResponse({ error: e.message });
+  }
+}
+
+async function handleTitleGenerate(message, sendResponse) {
+  const { messages, providerConfig } = message;
+
+  try {
+    const preset = PROVIDER_PRESETS[providerConfig.providerId] || PROVIDER_PRESETS.custom;
+    const provider = {
+      ...preset,
+      ...providerConfig,
+      format: providerConfig.format || preset.format,
+      apiUrl: providerConfig.apiUrl || preset.apiUrl,
+    };
+
+    if (!provider.apiKey) {
+      sendResponse({ error: 'No API key' });
+      return;
+    }
+
+    const { url: streamUrl, options } = formatRequest(provider, messages, []);
+    const body = JSON.parse(options.body);
+
+    // Non-streaming request
+    let url = streamUrl;
+    if (provider.format === 'openai') {
+      body.stream = false;
+    } else if (provider.format === 'anthropic') {
+      body.stream = false;
+    } else if (provider.format === 'gemini') {
+      url = url.replace(':streamGenerateContent', ':generateContent').replace('alt=sse&', '');
+    }
+
+    options.body = JSON.stringify(body);
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      sendResponse({ error: `API Error ${response.status}` });
+      return;
+    }
+
+    const data = await response.json();
+
+    let title = '';
+    if (provider.format === 'openai') {
+      title = data.choices?.[0]?.message?.content || '';
+    } else if (provider.format === 'anthropic') {
+      title = data.content?.map(c => c.text).filter(Boolean).join('') || '';
+    } else if (provider.format === 'gemini') {
+      title = data.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('') || '';
+    }
+
+    sendResponse({ title: title.trim() });
   } catch (e) {
     sendResponse({ error: e.message });
   }

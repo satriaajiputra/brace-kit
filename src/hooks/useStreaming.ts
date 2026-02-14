@@ -174,6 +174,37 @@ export function useStreaming() {
       setTimeout(() => extractMemories(), 1000);
     }
 
+    // Auto-generate title after first exchange
+    if (!toolCalls?.length && store.activeConversationId) {
+      const conv = store.conversations.find((c) => c.id === store.activeConversationId);
+      if (conv?.title === 'New Chat' && store.messages.length >= 1) {
+        setTimeout(async () => {
+          const msgs = store.messages.slice(0, 4).map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.displayContent || m.content,
+          }));
+          
+          try {
+            const response = await chrome.runtime.sendMessage({
+              type: 'TITLE_GENERATE',
+              messages: [
+                { role: 'system', content: 'Generate a concise 3-5 word title for this conversation. Return ONLY the title, no quotes, no explanation.' },
+                ...msgs
+              ],
+              providerConfig: store.providerConfig,
+            });
+            
+            if (response?.title && store.activeConversationId) {
+              const title = response.title.trim().replace(/^["']|["']$/g, '').slice(0, 50);
+              store.updateConversationTitle(store.activeConversationId, title);
+            }
+          } catch (e) {
+            console.warn('[TitleGen] Failed:', e);
+          }
+        }, 1500);
+      }
+    }
+
     // Handle tool calls - the agentic loop
     if (toolCalls && toolCalls.length > 0) {
       handleToolCalls(toolCalls);
