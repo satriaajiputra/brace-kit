@@ -10,6 +10,7 @@ import {
   hydrateMessages,
   deleteImagesByConversation,
 } from '../utils/imageDB.ts';
+import { sha256 } from '../utils/crypto.ts';
 
 const DEFAULT_SYSTEM_PROMPT = 'You are a helpful AI assistant. When the user shares page content or selected text, help them understand and work with it. Be concise and helpful.';
 
@@ -65,6 +66,13 @@ export const useStore = create<AppState>((set, get) => ({
   view: 'chat',
   historyDrawerOpen: false,
   settingsSection: null,
+
+  // Security
+  security: {
+    isLockEnabled: false,
+    passwordHash: null,
+  },
+  isAuthenticated: false,
 
   // Actions
   setMessages: (messages) => set({ messages }),
@@ -287,6 +295,27 @@ export const useStore = create<AppState>((set, get) => ({
   toggleHistoryDrawer: () =>
     set((state) => ({ historyDrawerOpen: !state.historyDrawerOpen })),
 
+  // Security Actions
+  setSecurity: (security) =>
+    set((state) => ({
+      security: { ...state.security, ...security },
+    })),
+
+  setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+
+  authenticate: async (password) => {
+    const state = get();
+    if (!state.security.passwordHash) return false;
+    const hash = await sha256(password);
+    const isValid = hash === state.security.passwordHash;
+    if (isValid) {
+      set({ isAuthenticated: true });
+    }
+    return isValid;
+  },
+
+  lock: () => set({ isAuthenticated: false }),
+
   // Persistence
   loadFromStorage: async () => {
     try {
@@ -300,6 +329,7 @@ export const useStore = create<AppState>((set, get) => ({
         'memories',
         'memoryEnabled',
         'enableGoogleSearch',
+        'security',
       ]);
 
       const updates: Partial<AppState> = {};
@@ -324,6 +354,9 @@ export const useStore = create<AppState>((set, get) => ({
       }
       if (data.enableGoogleSearch !== undefined) {
         updates.enableGoogleSearch = data.enableGoogleSearch;
+      }
+      if (data.security) {
+        updates.security = data.security;
       }
 
       // Load conversations index
@@ -399,6 +432,7 @@ export const useStore = create<AppState>((set, get) => ({
         activeConversationId: activeIsEmpty ? null : state.activeConversationId,
         memories: state.memories,
         memoryEnabled: state.memoryEnabled,
+        security: state.security,
       });
     } catch (e) {
       console.warn('Failed to save settings:', e);

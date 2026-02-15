@@ -5,6 +5,7 @@ import { ChatView } from './ChatView.tsx';
 import { SettingsPanel } from './SettingsPanel.tsx';
 import { HistoryDrawer } from './HistoryDrawer.tsx';
 import { GalleryView } from './GalleryView.tsx';
+import { LockScreen } from './LockScreen.tsx';
 import { useStreaming } from '../hooks/useStreaming.ts';
 
 export function App() {
@@ -34,13 +35,23 @@ export function App() {
     );
   }
 
+  // Check if lock screen should be shown
+  // Only show if lock is enabled, not authenticated, AND password has been set
+  const shouldShowLockScreen =
+    store.security.isLockEnabled &&
+    !store.isAuthenticated &&
+    store.security.passwordHash !== null;
+
   return (
     <div id="app">
-      <Header />
-      {view === 'chat' && <ChatView />}
-      {view === 'settings' && <SettingsPanel />}
-      {view === 'gallery' && <GalleryView />}
-      <HistoryDrawer />
+      {shouldShowLockScreen && <LockScreen />}
+      <div className={shouldShowLockScreen ? 'app-content locked' : 'app-content'}>
+        <Header />
+        {view === 'chat' && <ChatView />}
+        {view === 'settings' && <SettingsPanel />}
+        {view === 'gallery' && <GalleryView />}
+        <HistoryDrawer />
+      </div>
     </div>
   );
 }

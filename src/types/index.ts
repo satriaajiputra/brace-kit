@@ -207,6 +207,13 @@ export interface FetchedModelsCache {
   fetchedAt: number;
 }
 
+// ==================== Security Settings ====================
+
+export interface SecuritySettings {
+  isLockEnabled: boolean;
+  passwordHash: string | null;
+}
+
 // ==================== App State ====================
 
 export interface AppState {
@@ -252,6 +259,10 @@ export interface AppState {
   view: 'chat' | 'settings' | 'gallery';
   historyDrawerOpen: boolean;
   settingsSection: string | null;
+
+  // Security
+  security: SecuritySettings;
+  isAuthenticated: boolean;
 
   // Actions
   setMessages: (messages: Message[]) => void;
@@ -302,6 +313,12 @@ export interface AppState {
   setView: (view: 'chat' | 'settings' | 'gallery') => void;
   setHistoryDrawerOpen: (open: boolean) => void;
   toggleHistoryDrawer: () => void;
+
+  // Security Actions
+  setSecurity: (security: Partial<SecuritySettings>) => void;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
+  authenticate: (password: string) => Promise<boolean>;
+  lock: () => void;
 
   // Persistence
   loadFromStorage: () => Promise<void>;

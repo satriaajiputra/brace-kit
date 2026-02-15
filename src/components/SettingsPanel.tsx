@@ -4,6 +4,7 @@ import { ChatSettings } from './settings/ChatSettings.tsx';
 import { MemorySettings } from './settings/MemorySettings.tsx';
 import { CustomProvidersSettings } from './settings/CustomProvidersSettings.tsx';
 import { MCPServersSettings } from './settings/MCPServersSettings.tsx';
+import { SecuritySettings } from './settings/SecuritySettings.tsx';
 import { IconButton } from './ui/IconButton.tsx';
 
 export function SettingsPanel() {
@@ -26,6 +27,7 @@ export function SettingsPanel() {
         <MemorySettings />
         <CustomProvidersSettings />
         <MCPServersSettings />
+        <SecuritySettings />
 
         <section className="settings-section">
           <p className="about-text">AI Sidebar v1.0.0</p>
