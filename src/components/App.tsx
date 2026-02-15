@@ -45,13 +45,12 @@ export function App() {
   return (
     <div id="app">
       {shouldShowLockScreen && <LockScreen />}
-      <div className={shouldShowLockScreen ? 'app-content locked' : 'app-content'}>
-        <Header />
-        {view === 'chat' && <ChatView />}
-        {view === 'settings' && <SettingsPanel />}
-        {view === 'gallery' && <GalleryView />}
-        <HistoryDrawer />
-      </div>
+      {shouldShowLockScreen && <div className="lock-backdrop" />}
+      <Header />
+      {view === 'chat' && <ChatView />}
+      {view === 'settings' && <SettingsPanel />}
+      {view === 'gallery' && <GalleryView />}
+      <HistoryDrawer />
     </div>
   );
 }

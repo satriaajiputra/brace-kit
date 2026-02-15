@@ -3236,10 +3236,15 @@ body {
     opacity: 0.9;
 }
 
-.app-content.locked {
-    filter: blur(4px);
-    pointer-events: none;
-    user-select: none;
+.lock-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 15, 20, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 999;
 }
 
 /* ==================== Security Settings ==================== */

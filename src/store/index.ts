@@ -310,11 +310,25 @@ export const useStore = create<AppState>((set, get) => ({
     const isValid = hash === state.security.passwordHash;
     if (isValid) {
       set({ isAuthenticated: true });
+      // Save to session storage to persist during browser session
+      try {
+        await chrome.storage.session.set({ isAuthenticated: true });
+      } catch (e) {
+        // storage.session might not be available in all contexts
+      }
     }
     return isValid;
   },
 
-  lock: () => set({ isAuthenticated: false }),
+  lock: async () => {
+    set({ isAuthenticated: false });
+    // Clear session storage when manually locking
+    try {
+      await chrome.storage.session.remove('isAuthenticated');
+    } catch (e) {
+      // storage.session might not be available in all contexts
+    }
+  },
 
   // Persistence
   loadFromStorage: async () => {
@@ -357,6 +371,16 @@ export const useStore = create<AppState>((set, get) => ({
       }
       if (data.security) {
         updates.security = data.security;
+      }
+
+      // Load session auth state (persists during browser session)
+      try {
+        const sessionData = await chrome.storage.session.get('isAuthenticated');
+        if (sessionData.isAuthenticated !== undefined) {
+          updates.isAuthenticated = sessionData.isAuthenticated;
+        }
+      } catch (e) {
+        // storage.session might not be available in all contexts
       }
 
       // Load conversations index
