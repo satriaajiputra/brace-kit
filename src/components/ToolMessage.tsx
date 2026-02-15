@@ -4,14 +4,22 @@ interface ToolMessageProps {
   name: string;
   content: string;
   toolCallId?: string;
+  toolArguments?: Record<string, unknown>;
 }
 
-export function ToolMessage({ name, content }: ToolMessageProps) {
+export function ToolMessage({ name, content, toolArguments }: ToolMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isCalling = content === '⏳ Calling...';
   const isError = content.startsWith('Error:');
   const statusIcon = isCalling ? '⏳' : isError ? '❌' : '✅';
+
+  // Format arguments for display
+  const argsDisplay = toolArguments
+    ? Object.entries(toolArguments)
+        .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+        .join(', ')
+    : '';
 
   return (
     <div className="message tool">
@@ -22,6 +30,9 @@ export function ToolMessage({ name, content }: ToolMessageProps) {
           </svg>
           {statusIcon} {name}
         </div>
+        {argsDisplay && (
+          <div className="tool-args">{argsDisplay}</div>
+        )}
         {!isCalling && (
           <details className={`tool-result ${isError ? 'error' : 'success'}`} open={isExpanded} onToggle={(e) => setIsExpanded((e.target as HTMLDetailsElement).open)}>
             <summary>{content.length > 80 ? content.slice(0, 80) + '…' : content}</summary>

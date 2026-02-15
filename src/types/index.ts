@@ -48,6 +48,7 @@ export interface Message {
   // For tool role messages
   toolCallId?: string;
   name?: string;
+  toolArguments?: Record<string, unknown>;
   generatedImages?: GeneratedImage[];
 }
 

@@ -333,6 +333,19 @@ body {
     white-space: pre-wrap;
 }
 
+.tool-args {
+    margin-top: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--text-tertiary);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .tool-result {
     margin-top: 6px;
     border-radius: var(--radius-sm);

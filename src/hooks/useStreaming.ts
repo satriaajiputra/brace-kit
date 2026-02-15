@@ -54,12 +54,13 @@ export function useStreaming() {
         args = {}
       }
 
-      // Add "calling" status message
+      // Add "calling" status message with arguments
       store.addMessage({
         role: 'tool',
         toolCallId: tc.id,
         name: tc.name,
         content: '⏳ Calling...',
+        toolArguments: args as Record<string, unknown>,
       });
 
       try {
@@ -73,11 +74,11 @@ export function useStreaming() {
           result?.content?.map((c: { text?: string }) => c.text || JSON.stringify(c)).join('\n') ||
           JSON.stringify(result);
 
-        // Update last message with result
+        // Find and update the calling message by toolCallId
         const messages = store.messages;
-        const lastMsg = messages[messages.length - 1];
-        if (lastMsg && lastMsg.role === 'tool' && lastMsg.toolCallId === tc.id) {
-          lastMsg.content = resultText;
+        const callingIdx = messages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
+        if (callingIdx !== -1) {
+          messages[callingIdx].content = resultText;
           store.setMessages([...messages]);
         } else {
           store.addMessage({
@@ -85,14 +86,15 @@ export function useStreaming() {
             toolCallId: tc.id,
             name: tc.name,
             content: resultText,
+            toolArguments: args as Record<string, unknown>,
           });
         }
       } catch (e) {
-        // Update last message with error
+        // Find and update the calling message with error
         const messages = store.messages;
-        const lastMsg = messages[messages.length - 1];
-        if (lastMsg && lastMsg.role === 'tool' && lastMsg.toolCallId === tc.id) {
-          lastMsg.content = `Error: ${(e as Error).message}`;
+        const callingIdx = messages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
+        if (callingIdx !== -1) {
+          messages[callingIdx].content = `Error: ${(e as Error).message}`;
           store.setMessages([...messages]);
         } else {
           store.addMessage({
@@ -100,6 +102,7 @@ export function useStreaming() {
             toolCallId: tc.id,
             name: tc.name,
             content: `Error: ${(e as Error).message}`,
+            toolArguments: args as Record<string, unknown>,
           });
         }
       }
@@ -186,8 +189,8 @@ export function useStreaming() {
     // Add inline citations if grounding metadata exists
     const contentWithCitations = addInlineCitations(fullContent, groundingMetadata);
 
-    // Only add assistant message if there's content OR no tool calls
-    if (contentWithCitations || !toolCalls || toolCalls.length === 0 || (generatedImages && generatedImages.length > 0)) {
+    // Always add assistant message - needed for tool call context in follow-up requests
+    {
       const assistantMsg: { role: 'assistant'; content: string; toolCalls?: ToolCall[]; groundingMetadata?: GroundingMetadata; generatedImages?: GeneratedImage[] } = { role: 'assistant', content: contentWithCitations || '' };
       if (toolCalls && toolCalls.length > 0) {
         assistantMsg.toolCalls = toolCalls;

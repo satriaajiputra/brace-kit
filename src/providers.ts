@@ -214,7 +214,22 @@ function formatXAIImageRequest(
   options: ChatOptions
 ): RequestConfig {
   const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
-  const prompt = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
+  const rawContent = lastUserMessage?.content as unknown;
+  let prompt = '';
+  let imageUrl: string | undefined;
+  if (typeof rawContent === 'string') {
+    prompt = rawContent;
+  } else if (Array.isArray(rawContent)) {
+    const items = rawContent as Array<{ type: string; text?: string; image_url?: { url: string } }>;
+    prompt = items
+      .filter((item) => item.type === 'text' && item.text)
+      .map((item) => item.text)
+      .join(' ');
+    const imageItem = items.find((item) => item.type === 'image_url' && item.image_url?.url);
+    if (imageItem) {
+      imageUrl = imageItem.image_url!.url;
+    }
+  }
 
   const body: Record<string, unknown> = {
     model: provider.model || 'grok-imagine-image',
@@ -222,6 +237,10 @@ function formatXAIImageRequest(
     n: 1,
     response_format: 'b64_json',
   };
+
+  if (imageUrl) {
+    body.image = { url: imageUrl, type: 'image_url' };
+  }
 
   if (options.aspectRatio) {
     body.aspect_ratio = options.aspectRatio;
@@ -251,8 +270,28 @@ function formatOpenAI(
   const model = provider.model || provider.defaultModel;
 
   const processedMessages = messages.map(msg => {
-    if (Array.isArray(msg.content)) {
-      return msg;
+    // Transform assistant messages with tool calls to OpenAI format
+    if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+      return {
+        role: 'assistant',
+        content: msg.content || null,
+        tool_calls: msg.toolCalls.map((tc) => ({
+          id: tc.id,
+          type: 'function',
+          function: {
+            name: tc.name,
+            arguments: tc.arguments || '{}',
+          },
+        })),
+      };
+    }
+    // Transform tool result messages to OpenAI format
+    if (msg.role === 'tool') {
+      return {
+        role: 'tool',
+        tool_call_id: msg.toolCallId,
+        content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+      };
     }
     return msg;
   });
@@ -296,13 +335,46 @@ function formatAnthropic(
 ): RequestConfig {
   const model = provider.model || provider.defaultModel;
   let system = '';
-  const filtered = [];
+  const filtered: Record<string, unknown>[] = [];
 
   for (const msg of messages) {
     if (msg.role === 'system') {
       system += (system ? '\n' : '') + msg.content;
+    } else if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+      // Transform assistant messages with tool calls to Anthropic format
+      const content: Record<string, unknown>[] = [];
+      if (msg.content) {
+        content.push({ type: 'text', text: msg.content });
+      }
+      for (const tc of msg.toolCalls) {
+        let input = {};
+        try {
+          input = JSON.parse(tc.arguments || '{}');
+        } catch {
+          input = {};
+        }
+        content.push({
+          type: 'tool_use',
+          id: tc.id,
+          name: tc.name,
+          input,
+        });
+      }
+      filtered.push({ role: 'assistant', content });
+    } else if (msg.role === 'tool') {
+      // Transform tool result messages to Anthropic format
+      filtered.push({
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: msg.toolCallId,
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+          },
+        ],
+      });
     } else {
-      filtered.push(msg);
+      filtered.push({ role: msg.role, content: msg.content });
     }
   }
 
@@ -396,7 +468,7 @@ function formatGemini(
         parts: [
           {
             functionResponse: {
-              name: msg.toolCallId || 'unknown',
+              name: msg.name || 'unknown',
               response: typeof msg.content === 'string'
                 ? { result: msg.content }
                 : msg.content,

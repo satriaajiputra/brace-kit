@@ -66,8 +66,13 @@ export function MessageList() {
               name={msg.name || 'unknown'}
               content={msg.content}
               toolCallId={msg.toolCallId}
+              toolArguments={msg.toolArguments}
             />
           );
+        }
+        // Hide empty assistant messages that only carry tool calls (used for API context only)
+        if (msg.role === 'assistant' && !msg.content && msg.toolCalls && msg.toolCalls.length > 0 && !msg.generatedImages?.length) {
+          return null;
         }
         return (
           <MessageBubble
