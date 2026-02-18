@@ -2619,6 +2619,93 @@ body {
     }
 }
 
+/* History item inline rename input */
+.history-item-rename-input {
+    flex: 1;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background: var(--bg-input, var(--bg-secondary));
+    color: var(--text-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: 4px;
+    padding: 1px 5px;
+    outline: none;
+    min-width: 0;
+}
+
+.history-item.renaming {
+    background: rgba(129, 140, 248, 0.06);
+}
+
+/* ==================== CONVERSATION TITLE ==================== */
+.conversation-title-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+    min-height: 34px;
+    flex-shrink: 0;
+}
+
+.conversation-title-text {
+    flex: 1;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.conversation-title-text:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.conversation-title-input {
+    flex: 1;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: inherit;
+    background: var(--bg-input, var(--bg-secondary));
+    color: var(--text-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: 4px;
+    padding: 2px 6px;
+    outline: none;
+    min-width: 0;
+}
+
+.conversation-title-edit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    opacity: 0;
+    transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.conversation-title-bar:hover .conversation-title-edit-btn {
+    opacity: 1;
+}
+
+.conversation-title-edit-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
 /* Utility */
 .hidden {
     display: none !important;

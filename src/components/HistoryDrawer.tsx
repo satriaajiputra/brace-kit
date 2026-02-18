@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useStore } from '../store/index.ts';
 import fuzzysort from 'fuzzysort';
 import type { Message, Conversation } from '../types/index.ts';
@@ -48,6 +48,9 @@ export function HistoryDrawer() {
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [pinnedCollapsed, setPinnedCollapsed] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const branchRelations = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -60,6 +63,25 @@ export function HistoryDrawer() {
     }
     return map;
   }, [store.conversations]);
+
+  const startRename = useCallback((conv: ConversationWithMessages) => {
+    setRenamingId(conv.id);
+    setRenameValue(conv.title);
+    setTimeout(() => renameInputRef.current?.select(), 0);
+  }, []);
+
+  const commitRename = useCallback(() => {
+    if (renamingId && renameValue.trim()) {
+      store.updateConversationTitle(renamingId, renameValue.trim());
+    }
+    setRenamingId(null);
+    setRenameValue('');
+  }, [renamingId, renameValue, store]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingId(null);
+    setRenameValue('');
+  }, []);
 
   const handleBranchIconClick = useCallback((conv: Conversation) => {
     const related = new Set<string>();
@@ -169,6 +191,7 @@ export function HistoryDrawer() {
     const isBranched = !!conv.branchedFromId;
     const isHighlighted = highlightedIds.has(conv.id);
     const isActive = conv.id === store.activeConversationId;
+    const isRenaming = renamingId === conv.id;
 
     return (
       <div
@@ -177,9 +200,11 @@ export function HistoryDrawer() {
           'history-item',
           isActive ? 'active' : '',
           isHighlighted ? 'branch-highlight' : '',
+          isRenaming ? 'renaming' : '',
         ].filter(Boolean).join(' ')}
-        title={conv.title}
-        onClick={() => store.switchConversation(conv.id)}
+        title={isRenaming ? undefined : conv.title}
+        onClick={() => !isRenaming && store.switchConversation(conv.id)}
+        onDoubleClick={() => !isRenaming && startRename(conv)}
       >
         {isBranched && (
           <span className="history-item-branch-icon" title="Branch">
@@ -191,12 +216,27 @@ export function HistoryDrawer() {
             </svg>
           </span>
         )}
-        <span
-          className="history-item-title"
-          dangerouslySetInnerHTML={{
-            __html: searchQuery ? highlightMatch(conv.title, searchQuery) : conv.title,
-          }}
-        />
+        {isRenaming ? (
+          <input
+            ref={renameInputRef}
+            className="history-item-rename-input"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitRename();
+              else if (e.key === 'Escape') cancelRename();
+            }}
+            onBlur={commitRename}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span
+            className="history-item-title"
+            dangerouslySetInnerHTML={{
+              __html: searchQuery ? highlightMatch(conv.title, searchQuery) : conv.title,
+            }}
+          />
+        )}
         <span className={`history-item-actions${conv.pinned ? ' has-pinned' : ''}`}>
           <button
             className={`history-item-pin${conv.pinned ? ' pinned' : ''}`}

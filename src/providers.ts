@@ -377,6 +377,40 @@ function formatAnthropic(
           },
         ],
       });
+    } else if (Array.isArray(msg.content)) {
+      // Convert OpenAI-style image_url format to Anthropic format
+      const anthropicContent: Record<string, unknown>[] = [];
+      for (const part of msg.content as Array<{ type: string; text?: string; image_url?: { url: string } }>) {
+        if (part.type === 'text' && part.text) {
+          anthropicContent.push({ type: 'text', text: part.text });
+        } else if (part.type === 'image_url' && part.image_url?.url) {
+          const url = part.image_url.url;
+          if (url.startsWith('data:')) {
+            // Base64 data URL: data:image/jpeg;base64,....
+            const match = url.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              anthropicContent.push({
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: match[1],
+                  data: match[2],
+                },
+              });
+            }
+          } else {
+            // Regular URL
+            anthropicContent.push({
+              type: 'image',
+              source: {
+                type: 'url',
+                url,
+              },
+            });
+          }
+        }
+      }
+      filtered.push({ role: msg.role, content: anthropicContent });
     } else {
       filtered.push({ role: msg.role, content: msg.content });
     }
