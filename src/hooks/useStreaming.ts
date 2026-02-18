@@ -3,6 +3,7 @@ import { useStore } from '../store/index.ts';
 import type { ToolCall, GroundingMetadata, MCPTool, GeneratedImage } from '../types/index.ts';
 import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from '../providers.ts';
 import { useMemory } from './useMemory.ts';
+import { useChat } from './useChat.ts';
 
 function addInlineCitations(text: string, groundingMetadata?: GroundingMetadata): string {
   if (!groundingMetadata?.groundingSupports || !groundingMetadata?.groundingChunks) {
@@ -36,6 +37,7 @@ function addInlineCitations(text: string, groundingMetadata?: GroundingMetadata)
 export function useStreaming() {
   const store = useStore();
   const { extractMemories } = useMemory();
+  const { buildAPIMessagesFromList } = useChat();
   const toolCallsRef = useRef<ToolCall[]>([]);
   const currentToolCallRef = useRef<Partial<ToolCall> | null>(null);
   const groundingMetadataRef = useRef<GroundingMetadata | null>(null);
@@ -128,40 +130,9 @@ export function useStreaming() {
       }
     }
 
-    // Build API messages
-    const msgs: any[] = [];
-    const systemContent = store.providerConfig.systemPrompt || '';
-    if (systemContent) {
-      msgs.push({ role: 'system', content: systemContent });
-    }
-
-    // Build message history from store
-    // Use getState() to ensure we have the latest messages including tool results
-    const currentMessages = useStore.getState().messages;
-
-    for (const msg of currentMessages) {
-      if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
-        const assistantMsg: any = { role: 'assistant', content: msg.content || '' };
-        assistantMsg.tool_calls = msg.toolCalls.map((tc) => ({
-          id: tc.id,
-          type: 'function',
-          function: {
-            name: tc.name,
-            arguments: tc.arguments || '{}',
-          },
-        }));
-        msgs.push(assistantMsg);
-      } else if (msg.role === 'tool') {
-        msgs.push({
-          role: 'tool',
-          tool_call_id: msg.toolCallId,
-          name: msg.name,
-          content: msg.content,
-        });
-      } else if (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system') {
-        msgs.push({ role: msg.role, content: msg.content });
-      }
-    }
+    // Build API messages using fresh state to avoid stale closure race condition
+    // (OpenAI, Anthropic-compatible, Gemini, etc.)
+    const msgs = buildAPIMessagesFromList(useStore.getState().messages);
 
     // Get MCP tools
     let tools: MCPTool[] = [];
@@ -210,7 +181,7 @@ export function useStreaming() {
       store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
       store.setIsStreaming(false);
     }
-  }, [store]);
+  }, [store, buildAPIMessagesFromList]);
 
   const finishStream = useCallback((fullContent: string, toolCalls?: ToolCall[], groundingMetadata?: GroundingMetadata, generatedImages?: GeneratedImage[]) => {
     // Add inline citations if grounding metadata exists

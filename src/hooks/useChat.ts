@@ -612,6 +612,7 @@ Output ONLY the title string.`;
     getProvider,
     isCustomProvider,
     buildAPIMessages,
+    buildAPIMessagesFromList,
     compactConversation,
     renameConversation,
     estimateTokenCount,
