@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useProvider } from '../hooks/useProvider.ts';
 import { PROVIDER_PRESETS } from '../providers.ts';
 import type { ProviderFormat, ProviderPreset } from '../types/index.ts';
+import { CloseIcon } from './icons/CloseIcon.tsx';
 
 interface ProviderPopoverProps {
   isOpen: boolean;
@@ -92,10 +93,7 @@ export function ProviderPopover({ isOpen, onClose }: ProviderPopoverProps) {
       <div className="provider-popover-header">
         <span className="provider-popover-title">AI Provider &amp; Model</span>
         <button className="provider-popover-close" onClick={onClose} title="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <CloseIcon size={14} />
         </button>
       </div>
 
@@ -200,10 +198,7 @@ export function ProviderPopover({ isOpen, onClose }: ProviderPopoverProps) {
                           }}
                           title="Remove model"
                         >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
+                          <CloseIcon size={10} />
                         </button>
                       )}
                     </div>

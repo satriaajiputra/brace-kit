@@ -5,9 +5,10 @@ interface ToolMessageProps {
   content: string;
   toolCallId?: string;
   toolArguments?: Record<string, unknown>;
+  isCachedResult?: boolean;
 }
 
-export function ToolMessage({ name, content, toolArguments }: ToolMessageProps) {
+export function ToolMessage({ name, content, toolArguments, isCachedResult }: ToolMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isCalling = content === '⏳ Calling...';
@@ -29,11 +30,14 @@ export function ToolMessage({ name, content, toolArguments }: ToolMessageProps) 
             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
           </svg>
           {statusIcon} {name}
+          {isCachedResult && (
+            <span className="tool-cached-badge" title="Result reused from an identical previous call">cached</span>
+          )}
         </div>
         {argsDisplay && (
           <div className="tool-args">{argsDisplay}</div>
         )}
-        {!isCalling && (
+        {!isCalling && !isCachedResult && (
           <details className={`tool-result ${isError ? 'error' : 'success'}`} open={isExpanded} onToggle={(e) => setIsExpanded((e.target as HTMLDetailsElement).open)}>
             <summary>{content.length > 80 ? content.slice(0, 80) + '…' : content}</summary>
             <div className="tool-result-content">{content}</div>

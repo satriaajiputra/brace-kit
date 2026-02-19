@@ -52,6 +52,7 @@ export interface Message {
   generatedImages?: GeneratedImage[];
   isCompacted?: boolean;
   summary?: string;
+  isCachedResult?: boolean;
 }
 
 export type MessageContent = string | Array<{ type: string; text?: string; image_url?: { url: string } }>;

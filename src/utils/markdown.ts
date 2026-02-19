@@ -16,6 +16,36 @@ marked.setOptions({
   gfm: true,
 });
 
+// Custom renderer: buka semua link external di tab baru
+const renderer = new marked.Renderer();
+renderer.link = ({ href, title, text }: { href: string; title?: string | null; text: string }) => {
+  const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'));
+  const titleAttr = title ? ` title="${title}"` : '';
+  if (isExternal) {
+    return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+  }
+  return `<a href="${href}"${titleAttr}>${text}</a>`;
+};
+marked.use({ renderer });
+
+function decodeHtmlEntities(code: string): string {
+  return code
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function encodeForAttribute(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export function renderMarkdown(text: string): string {
   if (!text) return '';
 
@@ -30,19 +60,8 @@ export function renderMarkdown(text: string): string {
     /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
     (_match, lang, code) => {
       // Decode HTML entities back to raw text for copy button and hljs
-      const rawCode = code
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-
-      const escapedCode = rawCode
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      const rawCode = decodeHtmlEntities(code);
+      const escapedCode = encodeForAttribute(rawCode);
 
       // Highlight with hljs if available
       let highlightedCode = code;
@@ -77,19 +96,8 @@ export function renderMarkdown(text: string): string {
   html = html.replace(
     /<pre><code>([\s\S]*?)<\/code><\/pre>/g,
     (_match, code) => {
-      const rawCode = code
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-
-      const escapedCode = rawCode
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      const rawCode = decodeHtmlEntities(code);
+      const escapedCode = encodeForAttribute(rawCode);
 
       // Auto-detect language with hljs
       let highlightedCode = code;

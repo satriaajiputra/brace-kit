@@ -1,4 +1,5 @@
 import { usePageContext } from '../hooks/usePageContext.ts';
+import { CloseIcon } from './icons/CloseIcon.tsx';
 
 export function ContextBanner() {
   const { pageContext, clearPageContext } = usePageContext();
@@ -15,10 +16,7 @@ export function ContextBanner() {
         <span id="context-label">📄 {pageContext.pageTitle || 'Page attached'}</span>
       </div>
       <button className="context-clear" onClick={clearPageContext} title="Remove context">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
+        <CloseIcon size={12} />
       </button>
     </div>
   );

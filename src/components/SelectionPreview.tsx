@@ -1,4 +1,5 @@
 import { usePageContext } from '../hooks/usePageContext.ts';
+import { CloseIcon } from './icons/CloseIcon.tsx';
 
 export function SelectionPreview() {
   const { selectedText, clearSelection } = usePageContext();
@@ -18,10 +19,7 @@ export function SelectionPreview() {
         <span id="selection-text">{displayText}</span>
       </div>
       <button className="context-clear" onClick={clearSelection} title="Remove selection">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
+        <CloseIcon size={10} />
       </button>
     </div>
   );

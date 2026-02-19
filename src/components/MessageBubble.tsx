@@ -3,6 +3,7 @@ import TurndownService from 'turndown';
 import { renderMarkdown } from '../utils/markdown.ts';
 import { copyToClipboard } from '../utils/formatters.ts';
 import { useStore } from '../store/index.ts';
+import { CloseIcon } from './icons/CloseIcon.tsx';
 import type { Message } from '../types/index.ts';
 import { TextFileViewer } from './TextFileViewer.tsx';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
@@ -432,10 +433,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
               onClick={handleCancel}
               title="Cancel (Escape)"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <CloseIcon size={12} />
               Cancel
             </button>
             <button
@@ -874,10 +872,7 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
           )}
         </button>
         <button className="lightbox-btn lightbox-close-btn" onClick={onClose} title="Close (Esc)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <CloseIcon size={15} />
         </button>
       </div>
       <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store/index.ts';
 import { getAllImages } from '../utils/imageDB.ts';
 import type { StoredImageRecord } from '../types/index.ts';
+import { CloseIcon } from './icons/CloseIcon.tsx';
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('id-ID', {
@@ -265,10 +266,7 @@ export function GalleryView() {
         <div className="gallery-lightbox" onClick={() => setLightbox(null)}>
           <div className="gallery-lightbox-inner" onClick={(e) => e.stopPropagation()}>
             <button className="gallery-lightbox-close" onClick={() => setLightbox(null)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
+              <CloseIcon size={18} />
             </button>
             <img
               src={isMarkdownImage(lightbox) ? lightbox.url : `data:${lightbox.mimeType};base64,${lightbox.data}`}

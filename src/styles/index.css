@@ -330,6 +330,18 @@ body {
     font-size: 0.8rem;
 }
 
+.tool-cached-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-muted);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    letter-spacing: 0.02em;
+}
+
 .tool-args {
     background: rgba(0, 0, 0, 0.3);
     padding: 8px;

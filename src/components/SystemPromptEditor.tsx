@@ -1,5 +1,6 @@
 import { useStore } from '../store/index.ts';
 import { IconButton } from './ui/IconButton.tsx';
+import { CloseIcon } from './icons/CloseIcon.tsx';
 
 interface SystemPromptEditorProps {
     onClose: () => void;
@@ -38,10 +39,7 @@ export function SystemPromptEditor({ onClose }: SystemPromptEditorProps) {
                     System Instructions
                 </div>
                 <IconButton title="Close" onClick={onClose} size="sm" className="close-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <CloseIcon size={14} />
                 </IconButton>
             </div>
             <div className="editor-body">

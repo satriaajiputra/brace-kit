@@ -1,5 +1,6 @@
 import { useFileAttachments } from '../hooks/useFileAttachments.ts';
 import { escapeHtml } from '../utils/markdown.ts';
+import { CloseIcon } from './icons/CloseIcon.tsx';
 
 export function FilePreview() {
   const { attachments, removeAttachment, clearAllAttachments } = useFileAttachments();
@@ -21,10 +22,7 @@ export function FilePreview() {
                   onClick={() => removeAttachment(att.id)}
                   title="Remove"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <CloseIcon size={12} />
                 </button>
               </>
             ) : att.type === 'image' ? (
@@ -38,10 +36,7 @@ export function FilePreview() {
                   onClick={() => removeAttachment(att.id)}
                   title="Remove"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <CloseIcon size={12} />
                 </button>
               </>
             ) : (
@@ -55,10 +50,7 @@ export function FilePreview() {
                   onClick={() => removeAttachment(att.id)}
                   title="Remove"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <CloseIcon size={12} />
                 </button>
               </>
             )}
@@ -66,10 +58,7 @@ export function FilePreview() {
         ))}
       </div>
       <button className="context-clear" onClick={clearAllAttachments} title="Remove all files">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <CloseIcon size={12} />
       </button>
     </div>
   );

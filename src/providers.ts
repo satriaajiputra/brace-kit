@@ -1,7 +1,7 @@
 // LLM Provider abstraction layer
 // Each provider knows how to format requests and parse streaming responses
 
-import type { ProviderFormat, Message, MCPTool } from './types/index.ts';
+import type { ProviderPreset, Message, MCPTool } from './types/index.ts';
 
 // Gemini models that do not support function calling or google search
 export const GEMINI_NO_TOOLS_MODELS = ['gemini-2.5-flash-image'];
@@ -11,18 +11,6 @@ export const GEMINI_SEARCH_ONLY_MODELS = ['gemini-3-pro-image-preview'];
 export const GEMINI_IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-3-pro-image-preview'];
 // xAI image generation models
 export const XAI_IMAGE_MODELS = ['grok-2-image-1212', 'grok-imagine-image', 'grok-imagine-image-pro'];
-
-export interface ProviderPreset {
-  id: string;
-  name: string;
-  apiUrl: string;
-  defaultModel: string;
-  format: ProviderFormat;
-  models?: string[];
-  staticModels?: string[];
-  supportsModelFetch?: boolean;
-  contextWindow?: number;
-}
 
 export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
   openai: {

@@ -1,9 +1,7 @@
 import { useCallback } from 'react';
 import { useStore } from '../store/index.ts';
 import type { FileAttachment } from '../types/index.ts';
-
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const MAX_IMAGE_DIMENSION = 1024;
+import { MAX_FILE_SIZE, MAX_IMAGE_DIMENSION } from '../types/index.ts';
 
 const ALLOWED_FILE_TYPES: Record<string, 'image' | 'text' | 'pdf'> = {
   'image/jpeg': 'image',
@@ -18,28 +16,17 @@ const ALLOWED_FILE_TYPES: Record<string, 'image' | 'text' | 'pdf'> = {
 export function useFileAttachments() {
   const store = useStore();
 
-  const processFile = useCallback(async (file: File, custom_id?: string): Promise<void> => {
-    // Check file size
+  const processFile = useCallback(async (file: File): Promise<void> => {
+    const newId = () => `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
     if (file.size > MAX_FILE_SIZE) {
-      store.addAttachment({
-        id: `${custom_id ? custom_id : 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)}`,
-        file,
-        type: 'error',
-        name: file.name,
-        error: 'File too large (max 2MB)',
-      });
+      store.addAttachment({ id: newId(), file, type: 'error', name: file.name, error: 'File too large (max 2MB)' });
       return;
     }
 
     const fileType = ALLOWED_FILE_TYPES[file.type];
     if (!fileType) {
-      store.addAttachment({
-        id: `${custom_id ? custom_id : 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)}`,
-        file,
-        type: 'error',
-        name: file.name,
-        error: 'Unsupported file type',
-      });
+      store.addAttachment({ id: newId(), file, type: 'error', name: file.name, error: 'Unsupported file type' });
       return;
     }
 
@@ -52,13 +39,7 @@ export function useFileAttachments() {
         await processPdfFile(file, store.addAttachment);
       }
     } catch (err) {
-      store.addAttachment({
-        id: `${custom_id ? custom_id : 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)}`,
-        file,
-        type: 'error',
-        name: file.name,
-        error: (err as Error).message,
-      });
+      store.addAttachment({ id: newId(), file, type: 'error', name: file.name, error: (err as Error).message });
     }
   }, [store]);
 

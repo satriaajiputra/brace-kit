@@ -67,6 +67,7 @@ export function MessageList() {
               content={msg.content}
               toolCallId={msg.toolCallId}
               toolArguments={msg.toolArguments}
+              isCachedResult={msg.isCachedResult}
             />
           );
         }

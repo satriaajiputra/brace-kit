@@ -1,24 +1,24 @@
 import { useCallback, useRef } from 'react';
 import { useStore } from '../store/index.ts';
 import type { Message, Attachment, APIMessage, PageContext, SelectedText } from '../types/index.ts';
-import { PROVIDER_PRESETS, GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS, GEMINI_IMAGE_MODELS } from '../providers.ts';
+import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS, GEMINI_IMAGE_MODELS } from '../providers.ts';
 import type { MCPTool } from '../types/index.ts';
 import { MEMORY_CATEGORIES, MEMORY_CATEGORY_LABELS } from '../types/index.ts';
+import { getProvider as getProviderUtil, isCustomProvider as isCustomProviderUtil } from '../utils/providerUtils.ts';
 
 export function useChat() {
   const store = useStore();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const getProvider = useCallback((providerId: string) => {
-    if (PROVIDER_PRESETS[providerId]) return PROVIDER_PRESETS[providerId];
-    const custom = store.customProviders.find((cp) => cp.id === providerId);
-    if (custom) return custom;
-    return PROVIDER_PRESETS.openai;
-  }, [store.customProviders]);
+  const getProvider = useCallback(
+    (providerId: string) => getProviderUtil(providerId, store.customProviders),
+    [store.customProviders]
+  );
 
-  const isCustomProvider = useCallback((providerId: string) => {
-    return store.customProviders.some((cp) => cp.id === providerId);
-  }, [store.customProviders]);
+  const isCustomProvider = useCallback(
+    (providerId: string) => isCustomProviderUtil(providerId, store.customProviders),
+    [store.customProviders]
+  );
 
   const estimateTokenCount = useCallback((messages: Message[]) => {
     let totalChars = 0;
@@ -302,6 +302,74 @@ Output ONLY the title string.`;
   }, [store, buildAPIMessages]);
 
 
+  const dispatchChatRequest = useCallback(async (
+    apiMessages: APIMessage[],
+    opts?: { aspectRatio?: string }
+  ) => {
+    // Get MCP tools from enabled servers only
+    let tools: MCPTool[] = [];
+    try {
+      const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
+      if (mcpRes?.tools) {
+        const enabledServerIds = new Set(
+          store.mcpServers.filter((s) => s.enabled !== false).map((s) => s.id)
+        );
+        tools = mcpRes.tools.filter((tool: MCPTool & { _serverId?: string }) =>
+          enabledServerIds.has(tool._serverId || '')
+        );
+      }
+    } catch {}
+
+    store.setIsStreaming(true);
+    store.setStreamingContent('');
+    const requestId = `req_${Date.now()}`;
+    store.setCurrentRequestId(requestId);
+
+    const currentModel = store.providerConfig.model || '';
+    const isGemini = store.providerConfig.providerId === 'gemini' || store.providerConfig.format === 'gemini';
+
+    // Inject google_search tool for non-Gemini providers when enabled
+    if (!isGemini && store.enableGoogleSearchTool && store.googleSearchApiKey) {
+      tools = [
+        {
+          name: 'google_search',
+          description: 'Search the web using Google. Use this to find current information, news, facts, or any topic that requires up-to-date web search results.',
+          inputSchema: {
+            type: 'object',
+            properties: { query: { type: 'string', description: 'The search query to look up on the web' } },
+            required: ['query'],
+          },
+        },
+        ...tools,
+      ];
+    }
+
+    const isXAIImageModel = store.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
+    const isGeminiImageModel = store.providerConfig.providerId === 'gemini' && GEMINI_IMAGE_MODELS.includes(currentModel);
+    const supportsFunctionCalling = !isGemini || (!GEMINI_NO_TOOLS_MODELS.includes(currentModel) && !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel));
+
+    const chatOptions: { enableGoogleSearch: boolean; aspectRatio?: string } = {
+      enableGoogleSearch: store.enableGoogleSearch && isGemini && !GEMINI_NO_TOOLS_MODELS.includes(currentModel),
+    };
+    if ((isXAIImageModel || isGeminiImageModel) && opts?.aspectRatio) {
+      chatOptions.aspectRatio = opts.aspectRatio;
+    }
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'CHAT_REQUEST',
+        messages: apiMessages,
+        providerConfig: store.providerConfig,
+        tools: (supportsFunctionCalling && !(isXAIImageModel && !opts?.aspectRatio)) ? tools : [],
+        options: chatOptions,
+        requestId,
+      });
+    } catch (e) {
+      store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
+      store.setIsStreaming(false);
+    }
+  }, [store]);
+
   const sendMessage = useCallback(async (text: string, sendOptions?: { aspectRatio?: string }) => {
     if (store.isStreaming || store.isCompacting) return;
 
@@ -401,72 +469,8 @@ Output ONLY the title string.`;
     // Let's re-verify buildAPIMessages. It maps over store.messages.
     // So apiMessages already has it.
 
-    // Get MCP tools from enabled servers only
-    let tools: MCPTool[] = [];
-    try {
-      const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
-      if (mcpRes?.tools) {
-        const enabledServerIds = new Set(
-          store.mcpServers.filter((s) => s.enabled !== false).map((s) => s.id)
-        );
-        tools = mcpRes.tools.filter((tool: MCPTool & { _serverId?: string }) =>
-          enabledServerIds.has(tool._serverId || '')
-        );
-      }
-    } catch {}
-
-    // Start streaming
-    store.setIsStreaming(true);
-    store.setStreamingContent('');
-    const requestId = `req_${Date.now()}`;
-    store.setCurrentRequestId(requestId);
-
-    const currentModel = store.providerConfig.model || '';
-    const isGemini = store.providerConfig.providerId === 'gemini' || store.providerConfig.format === 'gemini';
-
-    // Inject google_search tool for non-Gemini providers when enabled
-    if (!isGemini && store.enableGoogleSearchTool && store.googleSearchApiKey) {
-      tools = [
-        {
-          name: 'google_search',
-          description: 'Search the web using Google. Use this to find current information, news, facts, or any topic that requires up-to-date web search results.',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              query: { type: 'string', description: 'The search query to look up on the web' },
-            },
-            required: ['query'],
-          },
-        },
-        ...tools,
-      ];
-    }
-    const isXAIImageModel = store.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
-    const isGeminiImageModel = store.providerConfig.providerId === 'gemini' && GEMINI_IMAGE_MODELS.includes(currentModel);
-    const supportsFunctionCalling = !isGemini || (!GEMINI_NO_TOOLS_MODELS.includes(currentModel) && !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel));
-
-    const chatOptions: { enableGoogleSearch: boolean; aspectRatio?: string } = {
-      enableGoogleSearch: store.enableGoogleSearch && isGemini && !GEMINI_NO_TOOLS_MODELS.includes(currentModel),
-    };
-
-    if ((isXAIImageModel || isGeminiImageModel) && sendOptions?.aspectRatio) {
-      chatOptions.aspectRatio = sendOptions.aspectRatio;
-    }
-
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'CHAT_REQUEST',
-        messages: apiMessages,
-        providerConfig: store.providerConfig,
-        tools: (supportsFunctionCalling && !isXAIImageModel) ? tools : [],
-        options: chatOptions,
-        requestId,
-      });
-    } catch (e) {
-      store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
-      store.setIsStreaming(false);
-    }
-  }, [store, buildAPIMessages, compactConversation, estimateTokenCount, getProvider, formatMessageForAPI]);
+    await dispatchChatRequest(apiMessages, sendOptions);
+  }, [store, buildAPIMessages, buildAPIMessagesFromList, compactConversation, estimateTokenCount, getProvider, formatMessageForAPI, dispatchChatRequest]);
 
   const stopStreaming = useCallback(() => {
     if (abortControllerRef.current) {
@@ -524,44 +528,8 @@ Output ONLY the title string.`;
     const messagesUpToIndex = store.messages.slice(0, messageIndex + 1);
     store.setMessages(messagesUpToIndex);
     const apiMessages = buildAPIMessagesFromList(messagesUpToIndex);
-    let tools: MCPTool[] = [];
-    try {
-      const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
-      if (mcpRes?.tools) {
-        const enabledServerIds = new Set(
-          store.mcpServers.filter((s) => s.enabled !== false).map((s) => s.id)
-        );
-        tools = mcpRes.tools.filter((tool: MCPTool & { _serverId?: string }) =>
-          enabledServerIds.has(tool._serverId || '')
-        );
-      }
-    } catch {}
-    store.setIsStreaming(true);
-    store.setStreamingContent('');
-    const requestId = `req_${Date.now()}`;
-    store.setCurrentRequestId(requestId);
-    const currentModel = store.providerConfig.model || '';
-    const isGemini = store.providerConfig.providerId === 'gemini' || store.providerConfig.format === 'gemini';
-    const isXAIImageModel = store.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
-    const isGeminiImageModel = store.providerConfig.providerId === 'gemini' && GEMINI_IMAGE_MODELS.includes(currentModel);
-    const supportsFunctionCalling = !isGemini || (!GEMINI_NO_TOOLS_MODELS.includes(currentModel) && !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel));
-    const chatOptions = {
-      enableGoogleSearch: store.enableGoogleSearch && isGemini && !GEMINI_NO_TOOLS_MODELS.includes(currentModel),
-    };
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'CHAT_REQUEST',
-        messages: apiMessages,
-        providerConfig: store.providerConfig,
-        tools: (supportsFunctionCalling && !(isXAIImageModel || isGeminiImageModel)) ? tools : [],
-        options: chatOptions,
-        requestId,
-      });
-    } catch (e) {
-      store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
-      store.setIsStreaming(false);
-    }
-  }, [store, buildAPIMessagesFromList]);
+    await dispatchChatRequest(apiMessages);
+  }, [store, buildAPIMessagesFromList, dispatchChatRequest]);
 
   const editMessage = useCallback(async (messageIndex: number, newText: string) => {
     if (store.isStreaming) return;
@@ -581,44 +549,8 @@ Output ONLY the title string.`;
     messagesUpToIndex[messageIndex] = updatedMessage;
     store.setMessages(messagesUpToIndex);
     const apiMessages = buildAPIMessagesFromList(messagesUpToIndex);
-    let tools: MCPTool[] = [];
-    try {
-      const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
-      if (mcpRes?.tools) {
-        const enabledServerIds = new Set(
-          store.mcpServers.filter((s) => s.enabled !== false).map((s) => s.id)
-        );
-        tools = mcpRes.tools.filter((tool: MCPTool & { _serverId?: string }) =>
-          enabledServerIds.has(tool._serverId || '')
-        );
-      }
-    } catch {}
-    store.setIsStreaming(true);
-    store.setStreamingContent('');
-    const requestId = `req_${Date.now()}`;
-    store.setCurrentRequestId(requestId);
-    const currentModel = store.providerConfig.model || '';
-    const isGemini = store.providerConfig.providerId === 'gemini' || store.providerConfig.format === 'gemini';
-    const isXAIImageModel = store.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
-    const isGeminiImageModel = store.providerConfig.providerId === 'gemini' && GEMINI_IMAGE_MODELS.includes(currentModel);
-    const supportsFunctionCalling = !isGemini || (!GEMINI_NO_TOOLS_MODELS.includes(currentModel) && !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel));
-    const chatOptions = {
-      enableGoogleSearch: store.enableGoogleSearch && isGemini && !GEMINI_NO_TOOLS_MODELS.includes(currentModel),
-    };
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'CHAT_REQUEST',
-        messages: apiMessages,
-        providerConfig: store.providerConfig,
-        tools: (supportsFunctionCalling && !(isXAIImageModel || isGeminiImageModel)) ? tools : [],
-        options: chatOptions,
-        requestId,
-      });
-    } catch (e) {
-      store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
-      store.setIsStreaming(false);
-    }
-  }, [store, buildAPIMessagesFromList]);
+    await dispatchChatRequest(apiMessages);
+  }, [store, buildAPIMessagesFromList, dispatchChatRequest]);
 
   return {
     sendMessage,

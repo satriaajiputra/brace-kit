@@ -76,6 +76,33 @@ export function useStreaming() {
         args = {}
       }
 
+      // Guard: check if an identical tool call (same name + same arguments) was already
+      // successfully executed in this conversation. If so, return its cached result
+      // directly to the agent instead of calling the tool again.
+      const argsKey = JSON.stringify(args);
+      const freshMsgs = useStore.getState().messages;
+      const previousSuccessful = freshMsgs.find(
+        (m) =>
+          m.role === 'tool' &&
+          m.name === tc.name &&
+          JSON.stringify(m.toolArguments ?? {}) === argsKey &&
+          m.content !== '⏳ Calling...' &&
+          !m.content.startsWith('Error:')
+      );
+
+      if (previousSuccessful) {
+        console.log('[useStreaming] Duplicate tool call detected, reusing cached result:', tc.name, argsKey);
+        store.addMessage({
+          role: 'tool',
+          toolCallId: tc.id,
+          name: tc.name,
+          content: '[DUPLICATE_CALL_SKIPPED] This exact tool call was already executed with identical arguments. Refer to the previous result already in context.',
+          toolArguments: args as Record<string, unknown>,
+          isCachedResult: true,
+        });
+        continue;
+      }
+
       // Add "calling" status message with arguments
       store.addMessage({
         role: 'tool',
@@ -96,12 +123,13 @@ export function useStreaming() {
           result?.content?.map((c: { text?: string }) => c.text || JSON.stringify(c)).join('\n') ||
           JSON.stringify(result);
 
-        // Find and update the calling message by toolCallId
-        const messages = store.messages;
-        const callingIdx = messages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
+        // Use fresh state to avoid stale closure race condition with multiple tool calls
+        const freshMessages = useStore.getState().messages;
+        const callingIdx = freshMessages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
         if (callingIdx !== -1) {
-          messages[callingIdx].content = resultText;
-          store.setMessages([...messages]);
+          const updated = [...freshMessages];
+          updated[callingIdx] = { ...updated[callingIdx], content: resultText };
+          store.setMessages(updated);
         } else {
           store.addMessage({
             role: 'tool',
@@ -112,12 +140,13 @@ export function useStreaming() {
           });
         }
       } catch (e) {
-        // Find and update the calling message with error
-        const messages = store.messages;
-        const callingIdx = messages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
+        // Use fresh state to avoid stale closure race condition with multiple tool calls
+        const freshMessages = useStore.getState().messages;
+        const callingIdx = freshMessages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
         if (callingIdx !== -1) {
-          messages[callingIdx].content = `Error: ${(e as Error).message}`;
-          store.setMessages([...messages]);
+          const updated = [...freshMessages];
+          updated[callingIdx] = { ...updated[callingIdx], content: `Error: ${(e as Error).message}` };
+          store.setMessages(updated);
         } else {
           store.addMessage({
             role: 'tool',

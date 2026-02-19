@@ -2,20 +2,20 @@ import { useCallback, useMemo } from 'react';
 import { useStore } from '../store/index.ts';
 import { PROVIDER_PRESETS, fetchModels } from '../providers.ts';
 import type { ProviderPreset, CustomProvider, ProviderFormat } from '../types/index.ts';
+import { getProvider as getProviderUtil, isCustomProvider as isCustomProviderUtil } from '../utils/providerUtils.ts';
 
 export function useProvider() {
   const store = useStore();
 
-  const getProvider = useCallback((providerId: string): ProviderPreset | CustomProvider => {
-    if (PROVIDER_PRESETS[providerId]) return PROVIDER_PRESETS[providerId];
-    const custom = store.customProviders.find((cp) => cp.id === providerId);
-    if (custom) return custom;
-    return PROVIDER_PRESETS.openai;
-  }, [store.customProviders]);
+  const getProvider = useCallback(
+    (providerId: string): ProviderPreset | CustomProvider => getProviderUtil(providerId, store.customProviders),
+    [store.customProviders]
+  );
 
-  const isCustomProvider = useCallback((providerId: string): boolean => {
-    return store.customProviders.some((cp) => cp.id === providerId);
-  }, [store.customProviders]);
+  const isCustomProvider = useCallback(
+    (providerId: string): boolean => isCustomProviderUtil(providerId, store.customProviders),
+    [store.customProviders]
+  );
 
   const availableProviders = useMemo(() => {
     const builtIn = Object.entries(PROVIDER_PRESETS)

@@ -187,18 +187,6 @@ Return ONLY the JSON array:`;
     [store]
   );
 
-  const scheduleMemoryExtraction = useCallback(() => {
-    if (!store.memoryEnabled) return;
-    if (store.messages.length < 2) return;
-
-    // Debounce extraction
-    const timer = setTimeout(() => {
-      extractMemories();
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [store.memoryEnabled, store.messages.length, extractMemories]);
-
   return {
     memories: store.memories,
     memoryEnabled: store.memoryEnabled,
@@ -208,7 +196,6 @@ Return ONLY the JSON array:`;
     updateMemory,
     clearAllMemories,
     setMemoryEnabled,
-    scheduleMemoryExtraction,
   };
 }
 
