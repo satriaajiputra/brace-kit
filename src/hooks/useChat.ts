@@ -423,6 +423,24 @@ Output ONLY the title string.`;
 
     const currentModel = store.providerConfig.model || '';
     const isGemini = store.providerConfig.providerId === 'gemini' || store.providerConfig.format === 'gemini';
+
+    // Inject google_search tool for non-Gemini providers when enabled
+    if (!isGemini && store.enableGoogleSearchTool && store.googleSearchApiKey) {
+      tools = [
+        {
+          name: 'google_search',
+          description: 'Search the web using Google. Use this to find current information, news, facts, or any topic that requires up-to-date web search results.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              query: { type: 'string', description: 'The search query to look up on the web' },
+            },
+            required: ['query'],
+          },
+        },
+        ...tools,
+      ];
+    }
     const isXAIImageModel = store.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
     const isGeminiImageModel = store.providerConfig.providerId === 'gemini' && GEMINI_IMAGE_MODELS.includes(currentModel);
     const supportsFunctionCalling = !isGemini || (!GEMINI_NO_TOOLS_MODELS.includes(currentModel) && !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel));

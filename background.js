@@ -95,6 +95,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleMCPToolCall(message, sendResponse);
       return true;
 
+    case 'GOOGLE_SEARCH_TOOL':
+      handleGoogleSearchTool(message, sendResponse);
+      return true;
+
     case 'MEMORY_EXTRACT':
       handleMemoryExtract(message, sendResponse);
       return true;
@@ -361,6 +365,13 @@ async function handleMemoryExtract(message, sendResponse) {
 async function handleMCPToolCall(message, sendResponse) {
   try {
     const { name, arguments: args } = message;
+
+    // Intercept google_search tool - route to Gemini grounding
+    if (name === 'google_search') {
+      await handleGoogleSearchTool(message, sendResponse);
+      return;
+    }
+
     const found = await mcpManager.callTool(name);
     if (!found) {
       sendResponse({ error: `Tool "${name}" not found` });
@@ -370,6 +381,79 @@ async function handleMCPToolCall(message, sendResponse) {
     sendResponse(result);
   } catch (e) {
     sendResponse({ error: e.message });
+  }
+}
+
+async function handleGoogleSearchTool(message, sendResponse) {
+  try {
+    const { arguments: args } = message;
+    const query = args?.query || args?.q || '';
+
+    if (!query) {
+      sendResponse({ content: [{ text: 'Error: query parameter is required' }] });
+      return;
+    }
+
+    // Load Gemini API key from storage
+    const { googleSearchApiKey } = await chrome.storage.local.get('googleSearchApiKey');
+    if (!googleSearchApiKey) {
+      sendResponse({ content: [{ text: 'Error: Google Search API key not configured. Set it in Settings > Chat.' }] });
+      return;
+    }
+
+    const geminiApiUrl = 'https://generativelanguage.googleapis.com/v1beta';
+    const model = 'gemini-2.5-flash-lite';
+    const url = `${geminiApiUrl}/models/${model}:generateContent?key=${googleSearchApiKey}`;
+
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: query }] }],
+      tools: [{ google_search: {} }],
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMsg;
+      try {
+        const errJson = JSON.parse(errorText);
+        errorMsg = errJson.error?.message || errorText;
+      } catch {
+        errorMsg = errorText;
+      }
+      sendResponse({ content: [{ text: `Google Search Error (${response.status}): ${errorMsg}` }] });
+      return;
+    }
+
+    const data = await response.json();
+    const candidate = data.candidates?.[0];
+    const text = candidate?.content?.parts?.map(p => p.text).filter(Boolean).join('') || '';
+    const groundingMetadata = candidate?.groundingMetadata;
+
+    let result = text;
+
+    // Append source links if available
+    if (groundingMetadata?.groundingChunks?.length > 0) {
+      const sources = groundingMetadata.groundingChunks
+        .filter(c => c.web?.uri)
+        .map((c, i) => `[${i + 1}] ${c.web.title ? c.web.title + ' - ' : ''}${c.web.uri}`)
+        .join('\n');
+      if (sources) {
+        result += `\n\nSources:\n${sources}`;
+      }
+    }
+
+    if (groundingMetadata?.webSearchQueries?.length > 0) {
+      result = `Search queries: ${groundingMetadata.webSearchQueries.join(', ')}\n\n${result}`;
+    }
+
+    sendResponse({ content: [{ text: result || 'No results found.' }] });
+  } catch (e) {
+    sendResponse({ content: [{ text: `Google Search Error: ${e.message}` }] });
   }
 }
 

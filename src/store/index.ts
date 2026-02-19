@@ -56,6 +56,10 @@ export const useStore = create<AppState>((set, get) => ({
   // Gemini options
   enableGoogleSearch: false,
 
+  // Google Search Tool (for non-Gemini providers)
+  enableGoogleSearchTool: false,
+  googleSearchApiKey: '',
+
   // File attachments
   attachments: [],
 
@@ -291,6 +295,8 @@ export const useStore = create<AppState>((set, get) => ({
   clearMemories: () => set({ memories: [] }),
 
   setEnableGoogleSearch: (enableGoogleSearch) => set({ enableGoogleSearch }),
+  setEnableGoogleSearchTool: (enableGoogleSearchTool) => set({ enableGoogleSearchTool }),
+  setGoogleSearchApiKey: (googleSearchApiKey) => set({ googleSearchApiKey }),
 
   addAttachment: (attachment) =>
     set((state) => ({
@@ -376,6 +382,8 @@ export const useStore = create<AppState>((set, get) => ({
         'memories',
         'memoryEnabled',
         'enableGoogleSearch',
+        'enableGoogleSearchTool',
+        'googleSearchApiKey',
         'security',
         'compactConfig',
       ]);
@@ -402,6 +410,12 @@ export const useStore = create<AppState>((set, get) => ({
       }
       if (data.enableGoogleSearch !== undefined) {
         updates.enableGoogleSearch = data.enableGoogleSearch;
+      }
+      if (data.enableGoogleSearchTool !== undefined) {
+        updates.enableGoogleSearchTool = data.enableGoogleSearchTool;
+      }
+      if (data.googleSearchApiKey !== undefined) {
+        updates.googleSearchApiKey = data.googleSearchApiKey;
       }
       if (data.security) {
         updates.security = data.security;
@@ -488,6 +502,8 @@ export const useStore = create<AppState>((set, get) => ({
         customProviders: state.customProviders,
         mcpServers: state.mcpServers,
         enableGoogleSearch: state.enableGoogleSearch,
+        enableGoogleSearchTool: state.enableGoogleSearchTool,
+        googleSearchApiKey: state.googleSearchApiKey,
         conversations: conversationsToSave,
         // Jika aktif kosong, simpan null agar saat reload tidak coba load conversation ini
         activeConversationId: activeIsEmpty ? null : state.activeConversationId,

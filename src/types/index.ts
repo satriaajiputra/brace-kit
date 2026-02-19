@@ -260,6 +260,10 @@ export interface AppState {
   // Gemini options
   enableGoogleSearch: boolean;
 
+  // Google Search Tool (for non-Gemini providers)
+  enableGoogleSearchTool: boolean;
+  googleSearchApiKey: string;
+
   // File attachments
   attachments: FileAttachment[];
 
@@ -320,6 +324,8 @@ export interface AppState {
   clearMemories: () => void;
 
   setEnableGoogleSearch: (enabled: boolean) => void;
+  setEnableGoogleSearchTool: (enabled: boolean) => void;
+  setGoogleSearchApiKey: (key: string) => void;
 
   addAttachment: (attachment: FileAttachment) => void;
   removeAttachment: (id: string) => void;

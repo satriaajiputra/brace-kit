@@ -41,6 +41,42 @@ export function ChatSettings() {
           </div>
         </div>
       )}
+      {!isGemini && (
+        <div className="gemini-options">
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <span className="toggle-title">Google Search Tool</span>
+              <span className="toggle-hint">Lets the AI search Google via Gemini backend (requires Gemini API key below)</span>
+            </div>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={store.enableGoogleSearchTool}
+                onChange={(e) => {
+                  store.setEnableGoogleSearchTool(e.target.checked);
+                  store.saveToStorage();
+                }}
+              />
+              <span className="toggle-slider"></span>
+            </label>
+          </div>
+          {store.enableGoogleSearchTool && (
+            <div className="form-group" style={{ marginTop: '8px' }}>
+              <label htmlFor="google-search-api-key">Gemini API Key (for search)</label>
+              <input
+                id="google-search-api-key"
+                type="password"
+                placeholder="AIza..."
+                value={store.googleSearchApiKey}
+                onChange={(e) => {
+                  store.setGoogleSearchApiKey(e.target.value);
+                  store.saveToStorage();
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
