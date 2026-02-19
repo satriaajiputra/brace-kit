@@ -14,8 +14,8 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   const sizeClasses = {
-    sm: 'icon-btn-sm',
-    md: 'icon-btn',
+    sm: 'flex items-center justify-center w-7 h-7 border-none bg-transparent text-text-muted rounded-sm cursor-pointer transition-all duration-150 hover:bg-bg-hover hover:text-text-default',
+    md: 'flex items-center justify-center w-8 h-8 border-none bg-transparent text-text-muted rounded-sm cursor-pointer transition-all duration-150 hover:bg-bg-hover hover:text-text-default',
   };
 
   const classes = [sizeClasses[size], className].filter(Boolean).join(' ');

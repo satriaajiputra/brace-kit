@@ -1,0 +1,348 @@
+/* ============================================
+   AI SIDEBAR - SEMANTIC DESIGN TOKENS
+   Phase 1: Core Tokens + Backward Compatibility
+   ============================================ */
+
+/* ============================================
+   1. COLOR PRIMITIVES
+   ============================================ */
+:root {
+   /* Brand - Indigo/Purple Scale */
+   --color-brand-50: #eef2ff;
+   --color-brand-100: #e0e7ff;
+   --color-brand-200: #c7d2fe;
+   --color-brand-300: #a5b4fc;
+   --color-brand-400: #818cf8;
+   --color-brand-500: #6366f1;
+   --color-brand-600: #4f46e5;
+   --color-brand-700: #4338ca;
+   --color-brand-800: #3730a3;
+   --color-brand-900: #312e81;
+
+   /* Purple Accent Scale */
+   --color-purple-50: #faf5ff;
+   --color-purple-100: #f3e8ff;
+   --color-purple-200: #e9d5ff;
+   --color-purple-300: #d8b4fe;
+   --color-purple-400: #a78bfa;
+   --color-purple-500: #8b5cf6;
+   --color-purple-600: #7c3aed;
+   --color-purple-700: #6d28d9;
+   --color-purple-800: #5b21b6;
+   --color-purple-900: #3b1f6e;
+
+   /* Neutral Scale */
+   --color-neutral-0: #ffffff;
+   --color-neutral-50: #fafafa;
+   --color-neutral-100: #f4f4f5;
+   --color-neutral-200: #e4e4e7;
+   --color-neutral-300: #d4d4d8;
+   --color-neutral-400: #a1a1aa;
+   --color-neutral-500: #71717a;
+   --color-neutral-600: #52525b;
+   --color-neutral-700: #3f3f46;
+   --color-neutral-800: #27272a;
+   --color-neutral-850: #1e1e2a;
+   --color-neutral-900: #0f0f14;
+   --color-neutral-950: #09090b;
+
+   /* Semantic Colors */
+   --color-success-50: #ecfdf5;
+   --color-success-100: #d1fae5;
+   --color-success-200: #a7f3d0;
+   --color-success-300: #6ee7b7;
+   --color-success-400: #34d399;
+   --color-success-500: #10b981;
+
+   --color-warning-50: #fffbeb;
+   --color-warning-100: #fef3c7;
+   --color-warning-200: #fde68a;
+   --color-warning-300: #fcd34d;
+   --color-warning-400: #fbbf24;
+   --color-warning-500: #f59e0b;
+
+   --color-danger-50: #fef2f2;
+   --color-danger-100: #fee2e2;
+   --color-danger-200: #fecaca;
+   --color-danger-300: #fca5a5;
+   --color-danger-400: #f87171;
+   --color-danger-500: #ef4444;
+}
+
+/* ============================================
+   2. SPACING SCALE (4px base unit)
+   ============================================ */
+:root {
+   --space-0: 0;
+   /* --space-px: 1px; */
+   /* --space-0-5: 0.125rem; */
+   /* 2px */
+   /* --space-1: 0.25rem; */
+   /* 4px */
+   /* --space-1-5: 0.375rem; */
+   /* 6px */
+   /* --space-2: 0.5rem; */
+   /* 8px */
+   /* --space-2-5: 0.625rem; */
+   /* 10px */
+   /* --space-3: 0.75rem; */
+   /* 12px */
+   /* --space-3-5: 0.875rem; */
+   /* 14px */
+   /* --space-4: 1rem; */
+   /* 16px */
+   /* --space-5: 1.25rem; */
+   /* 20px */
+   /* --space-6: 1.5rem; */
+   /* 24px */
+   /* --space-7: 1.75rem; */
+   /* 28px */
+   /* --space-8: 2rem; */
+   /* 32px */
+   /* --space-9: 2.25rem; */
+   /* 36px */
+   /* --space-10: 2.5rem; */
+   /* 40px */
+   /* --space-12: 3rem; */
+   /* 48px */
+   /* --space-14: 3.5rem; */
+   /* 56px */
+   /* --space-16: 4rem; */
+   /* 64px */
+   /* --space-20: 5rem; */
+   /* 80px */
+   /* --space-24: 6rem; */
+   /* 96px */
+}
+
+/* ============================================
+   3. TYPOGRAPHY SCALE
+   ============================================ */
+:root {
+   /* Font Family */
+   --font-sans: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, sans-serif;
+   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+   /* Font Size */
+   --text-xs: 0.625rem;
+   /* 10px */
+   --text-sm: 0.6875rem;
+   /* 11px */
+   --text-base: 0.75rem;
+   /* 12px */
+   --text-md: 0.8125rem;
+   /* 13px */
+   --text-lg: 0.875rem;
+   /* 14px */
+   --text-xl: 0.9375rem;
+   /* 15px */
+   --text-2xl: 1rem;
+   /* 16px */
+   --text-3xl: 1.1rem;
+   /* 17.6px */
+   --text-4xl: 1.25rem;
+   /* 20px */
+   --text-5xl: 1.5rem;
+   /* 24px */
+
+   /* Font Weight */
+   --font-normal: 400;
+   --font-medium: 500;
+   --font-semibold: 600;
+   --font-bold: 700;
+
+   /* Line Height */
+   --leading-none: 1;
+   --leading-tight: 1.25;
+   --leading-snug: 1.375;
+   --leading-normal: 1.5;
+   --leading-relaxed: 1.625;
+   --leading-loose: 2;
+
+   /* Letter Spacing */
+   --tracking-tighter: -0.05em;
+   --tracking-tight: -0.025em;
+   --tracking-normal: 0;
+   --tracking-wide: 0.025em;
+   --tracking-wider: 0.05em;
+   --tracking-widest: 0.1em;
+}
+
+/* ============================================
+   4. BORDER RADIUS
+   ============================================ */
+:root {
+   --radius-none: 0;
+   --radius-xs: 0.25rem;
+   /* 4px */
+   --radius-sm: 0.375rem;
+   /* 6px */
+   --radius-md: 0.5rem;
+   /* 8px */
+   --radius-lg: 0.625rem;
+   /* 10px */
+   --radius-xl: 0.75rem;
+   /* 12px */
+   --radius-2xl: 1rem;
+   /* 16px */
+   --radius-full: 9999px;
+}
+
+/* ============================================
+   5. SHADOWS
+   ============================================ */
+:root {
+   --shadow-none: none;
+   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+   --shadow-glow: 0 0 20px rgba(129, 140, 248, 0.3);
+   --shadow-glow-lg: 0 0 24px rgba(129, 140, 248, 0.5);
+}
+
+/* ============================================
+   6. TRANSITIONS & ANIMATION
+   ============================================ */
+:root {
+   --duration-instant: 0ms;
+   --duration-fast: 150ms;
+   --duration-normal: 250ms;
+   --duration-slow: 350ms;
+   --duration-slower: 500ms;
+
+   --ease-linear: linear;
+   --ease-in: cubic-bezier(0.4, 0, 1, 1);
+   --ease-out: cubic-bezier(0, 0, 0.2, 1);
+   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+   --transition-fast: var(--duration-fast) var(--ease-in-out);
+   --transition-normal: var(--duration-normal) var(--ease-in-out);
+   --transition-slow: var(--duration-slow) var(--ease-in-out);
+   --transition-spring: var(--duration-normal) var(--ease-spring);
+}
+
+/* ============================================
+   7. Z-INDEX SCALE
+   ============================================ */
+:root {
+   --z-base: 0;
+   --z-dropdown: 100;
+   --z-sticky: 200;
+   --z-fixed: 300;
+   --z-modal-backdrop: 400;
+   --z-modal: 500;
+   --z-popover: 600;
+   --z-tooltip: 700;
+   --z-toast: 800;
+}
+
+/* ============================================
+   8. SEMANTIC TOKENS - DARK THEME
+   ============================================ */
+:root {
+   /* Background */
+   --bg-page: var(--color-neutral-900);
+   --bg-surface: var(--color-neutral-850);
+   --bg-surface-raised: var(--color-neutral-800);
+   --bg-surface-overlay: var(--color-neutral-800);
+   --bg-surface-glass: rgba(255, 255, 255, 0.03);
+   --bg-surface-glass-hover: rgba(255, 255, 255, 0.06);
+
+   --bg-hover: #252535;
+   --bg-active: #2a2a3d;
+   --bg-selected: rgba(129, 140, 248, 0.1);
+   --bg-disabled: rgba(255, 255, 255, 0.03);
+   --bg-inverse: var(--color-neutral-0);
+
+   /* Text */
+   --text-default: #e4e4ed;
+   --text-muted: #9898a8;
+   --text-subtle: #6b6b7b;
+   --text-placeholder: var(--text-subtle);
+   --text-disabled: rgba(255, 255, 255, 0.3);
+   --text-inverse: var(--color-neutral-900);
+   --text-link: var(--color-brand-400);
+
+   /* Border */
+   --border-default: rgba(255, 255, 255, 0.06);
+   --border-hover: rgba(255, 255, 255, 0.12);
+   --border-active: rgba(129, 140, 248, 0.4);
+   --border-focus: var(--color-brand-400);
+
+   /* Accent/Brand */
+   --accent-default: var(--color-brand-400);
+   --accent-hover: var(--color-brand-300);
+   --accent-subtle: var(--color-purple-400);
+   --accent-gradient: linear-gradient(135deg, var(--color-brand-400) 0%, var(--color-purple-400) 100%);
+   --accent-glow: 0 0 20px rgba(129, 140, 248, 0.3);
+
+   /* Status */
+   --status-success: var(--color-success-400);
+   --status-success-subtle: rgba(52, 211, 153, 0.1);
+   --status-warning: var(--color-warning-400);
+   --status-warning-subtle: rgba(251, 191, 36, 0.1);
+   --status-danger: var(--color-danger-400);
+   --status-danger-subtle: rgba(248, 113, 113, 0.1);
+   --status-info: var(--color-brand-400);
+}
+
+/* ============================================
+   9. BACKWARD COMPATIBILITY MAPPING
+   (Legacy variable names mapped to semantic tokens)
+   ============================================ */
+:root {
+   /* Legacy Background */
+   --bg-primary: var(--bg-page);
+   --bg-secondary: var(--bg-surface);
+   --bg-tertiary: var(--bg-surface-raised);
+
+   /* Legacy Surface */
+   --surface: var(--bg-surface);
+   --surface-hover: var(--bg-hover);
+   --surface-glass: var(--bg-surface-glass);
+   --surface-glass-hover: var(--bg-surface-glass-hover);
+
+   /* Legacy Text */
+   --text-primary: var(--text-default);
+   --text-secondary: var(--text-muted);
+   --text-tertiary: var(--text-subtle);
+   --text-link: var(--text-link);
+
+   /* Legacy Accent */
+   --accent: var(--accent-default);
+   --accent-primary: var(--accent-default);
+   --accent-secondary: var(--accent-subtle);
+   --accent-gradient: var(--accent-gradient);
+   --accent-glow: var(--accent-glow);
+
+   /* Legacy Border */
+   --border-subtle: var(--border-default);
+   --border-active: var(--border-active);
+
+   /* Legacy Status */
+   --danger: var(--status-danger);
+   --success: var(--status-success);
+   --warning: var(--status-warning);
+
+   /* Legacy Messages */
+   --user-bubble: linear-gradient(135deg, var(--color-brand-900) 0%, var(--color-purple-900) 100%);
+   --assistant-bubble: rgba(255, 255, 255, 0.04);
+
+   /* Legacy Radius (currently 0) */
+   --radius-xs: var(--radius-none);
+   --radius-sm: var(--radius-none);
+   --radius-md: var(--radius-none);
+   --radius-lg: var(--radius-none);
+   --radius-xl: var(--radius-none);
+
+   /* Legacy Shadows */
+   --shadow-sm: var(--shadow-sm);
+   --shadow-md: var(--shadow-md);
+   --shadow-lg: var(--shadow-lg);
+
+   /* Legacy Transitions */
+   --transition-fast: var(--transition-fast);
+   --transition-normal: var(--transition-normal);
+}

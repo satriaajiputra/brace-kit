@@ -1,6 +1,7 @@
 import { build } from 'bun';
 import { existsSync, mkdirSync, copyFileSync, renameSync } from 'fs';
 import { join } from 'path';
+import tailwindPlugin from 'bun-plugin-tailwind';
 
 const outDir = './dist';
 
@@ -19,6 +20,7 @@ const result = await build({
   sourcemap: 'external',
   splitting: false,
   external: ['chrome', './mcp.js'],
+  plugins: [tailwindPlugin],
 });
 
 if (result.success) {

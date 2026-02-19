@@ -57,7 +57,7 @@ export function MessageList() {
   }, []);
 
   return (
-    <div id="messages" ref={containerRef} onScroll={handleScroll}>
+    <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-3 scrollbar-thin" ref={containerRef} onScroll={handleScroll}>
       {messages.map((msg, idx) => {
         if (msg.role === 'tool') {
           return (

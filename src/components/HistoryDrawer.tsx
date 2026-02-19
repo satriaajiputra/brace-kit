@@ -289,7 +289,7 @@ export function HistoryDrawer() {
       <div className="history-drawer-panel">
         <div className="history-drawer-header">
           <h3>Chat History</h3>
-          <button className="icon-btn" title="Close" onClick={() => store.setHistoryDrawerOpen(false)}>
+          <button className="flex items-center justify-center w-8 h-8 border-none bg-transparent text-text-muted rounded-sm cursor-pointer transition-all duration-150 hover:bg-bg-hover hover:text-text-default" title="Close" onClick={() => store.setHistoryDrawerOpen(false)}>
             <CloseIcon size={18} />
           </button>
         </div>

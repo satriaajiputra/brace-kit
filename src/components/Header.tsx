@@ -5,10 +5,10 @@ export function Header() {
   const store = useStore();
 
   return (
-    <header id="header">
-      <div className="header-left">
-        <div className="logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <header className="flex items-center justify-between px-3.5 py-2.5 bg-bg-surface border-b border-border shrink-0 backdrop-blur-md z-10">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center w-7 h-7 rounded-sm bg-gradient-to-br from-brand-400 to-purple-400 p-1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="brightness-200">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <defs>
               <linearGradient id="grad" x1="2" y1="2" x2="22" y2="22">
@@ -18,9 +18,9 @@ export function Header() {
             </defs>
           </svg>
         </div>
-        <span className="header-title">AI Sidebar</span>
+        <span className="font-semibold text-[0.95rem] bg-gradient-to-br from-brand-400 to-purple-400 bg-clip-text text-transparent">AI Sidebar</span>
       </div>
-      <div className="header-right">
+      <div className="flex gap-1">
         <IconButton
           title="Gallery"
           onClick={() => store.setView('gallery')}

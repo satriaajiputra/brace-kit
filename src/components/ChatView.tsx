@@ -4,6 +4,9 @@ import { MessageList } from './MessageList.tsx';
 import { WelcomeScreen } from './WelcomeScreen.tsx';
 import { InputArea } from './InputArea.tsx';
 import { SystemPromptEditor } from './SystemPromptEditor.tsx';
+import { TextInput } from './ui/TextInput.tsx';
+import { Btn } from './ui/Btn.tsx';
+import { SquarePenIcon } from 'lucide-react';
 
 function ConversationTitleBar() {
   const activeConversationId = useStore((state) => state.activeConversationId);
@@ -37,11 +40,11 @@ function ConversationTitleBar() {
   if (!activeConv) return null;
 
   return (
-    <div className="conversation-title-bar">
+    <div className="border-b border-text-subtle/20 flex justify-between items-center gap-4 px-1 py-2">
       {isEditing ? (
-        <input
+        <TextInput
           ref={inputRef}
-          className="conversation-title-input"
+          className="w-full h-7"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={(e) => {
@@ -59,16 +62,14 @@ function ConversationTitleBar() {
           >
             {activeConv.title}
           </span>
-          <button
-            className="conversation-title-edit-btn"
+          <Btn
+            size="icon-sm"
+            variant="ghost"
             title="Rename conversation"
             onClick={startEdit}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
+            <SquarePenIcon size={14} />
+          </Btn>
         </>
       )}
     </div>
@@ -82,7 +83,7 @@ export function ChatView() {
 
   return (
     <>
-      <div id="chat-view">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         {showSystemPromptEditor && (
           <SystemPromptEditor onClose={() => setShowSystemPromptEditor(false)} />
         )}

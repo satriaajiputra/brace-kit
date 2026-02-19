@@ -8,6 +8,8 @@ import type { Message } from '../types/index.ts';
 import { TextFileViewer } from './TextFileViewer.tsx';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from '../providers.ts';
+import { CheckIcon, CopyIcon, GitBranchIcon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-react';
+import { Btn } from './ui/Btn.tsx';
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -419,33 +421,33 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
     // If in edit mode for user message, show edit UI instead
     if (isEditing && message.role === 'user') {
       return (
-        <div className="message-edit-container">
+        <div className="">
           <textarea
             ref={textareaRef}
-            className="message-edit-textarea"
+            className="w-full mt-5 mb-0 overflow-y-autoborder-none outline-none resize-none max-inline-max field-sizing-content max-h-[150px]"
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <div className="message-edit-actions">
-            <button
-              className="message-edit-btn cancel"
+          <div className="mb-5 w-full flex justify-end gap-2">
+            <Btn
+              variant='ghost'
+              size='sm'
               onClick={handleCancel}
               title="Cancel (Escape)"
             >
-              <CloseIcon size={12} />
+              <XIcon size={14} />
               Cancel
-            </button>
-            <button
-              className="message-edit-btn submit"
+            </Btn>
+            <Btn
+              variant='default'
+              size='sm'
               onClick={handleSubmit}
               title="Submit (Enter)"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <CheckIcon size={14} />
               Submit
-            </button>
+            </Btn>
           </div>
         </div>
       );
@@ -489,10 +491,14 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
   const groundingChunks = message.groundingMetadata?.groundingChunks;
 
   if (isStreaming) {
+    const bubbleBgClass = message.role === 'user'
+      ? 'bg-gradient-to-br from-brand-900 to-purple-900 rounded-lg rounded-br-sm'
+      : 'bg-white/5 border border-border rounded-lg rounded-bl-sm';
+
     return (
-      <div className={`message ${message.role}`}>
-        <div className="message-role">{roleLabel}</div>
-        <div className="message-bubble" ref={bubbleRef} onMouseUp={handleMouseUp}>
+      <div className={`group flex flex-col gap-1 max-w-[95%] animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
+        <div className="font-semibold uppercase tracking-wider text-text-subtle px-1.5">{roleLabel}</div>
+        <div className={`prose prose-invert max-w-none relative break-words overflow-wrap px-4 py-1 pb-3 ${bubbleBgClass}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
           {message.content ? (
             <div dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
           ) : (
@@ -511,11 +517,15 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
 
           {quotePopup.visible && (
             <div
-              className="quote-popup"
-              style={{ left: quotePopup.x, top: quotePopup.y }}
+              className="absolute z-50 flex items-center bg-bg-surface-raised border border-border rounded-lg shadow-lg p-0.5 animate-fade-in"
+              style={{ left: quotePopup.x, top: quotePopup.y, transform: 'translate(-50%, -100%)' }}
               onMouseDown={(e) => e.preventDefault()} // Prevent losing selection
             >
-              <button className="quote-btn" onClick={handleQuoteClick} title="Quote selection">
+              <button
+                className="flex items-center justify-center w-7 h-7 border-none bg-transparent text-text-default rounded-sm cursor-pointer transition-all duration-150 hover:bg-brand-400 hover:text-white"
+                onClick={handleQuoteClick}
+                title="Quote selection"
+              >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M3 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
                   <path d="M15 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
@@ -528,17 +538,23 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
     );
   }
 
+  const bubbleBgClass = message.role === 'user'
+    ? 'bg-gradient-to-br from-brand-900 to-purple-900 rounded-lg rounded-br-sm'
+    : message.role === 'error'
+      ? 'bg-danger-400/10 border border-danger-400/30 text-danger-400 rounded-lg rounded-bl-sm'
+      : 'bg-white/5 border border-border rounded-lg rounded-bl-sm';
+
   return (
-    <div className={`message ${message.role} ${isEditing ? 'editing' : ''} ${message.isCompacted ? 'compacted' : ''}`}>
-      <div className="message-role">
+    <div className={`group flex flex-col gap-1 max-w-[95%] animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
+      <div className="font-semibold uppercase tracking-wider text-text-subtle px-1.5">
         {!message.summary && roleLabel}
         {message.isCompacted && !message.summary && (
-          <span className="compacted-indicator" title="This message is compressed & removed from context window">
+          <span className="ml-1 opacity-70" title="This message is compressed & removed from context window">
             (compacted)
           </span>
         )}
       </div>
-      <div className={`message-bubble ${isEditing ? 'editing' : ''} ${message.summary ? 'is-summary' : ''}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
+      <div className={`prose prose-invert prose-img:m-0 max-w-none relative break-words overflow-wrap px-4 py-0 ${bubbleBgClass} ${isEditing ? 'editing' : ''} ${message.summary ? 'is-summary' : ''}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
         {message.pageContext && (
           <div className="page-attachment">
             <div className="page-attachment-icon">
@@ -592,7 +608,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
               };
 
               return (
-                <div key={idx} className="generated-image-card">
+                <div key={idx} className="generated-image-card mb-5">
                   <img src={src} alt={`Generated image ${idx + 1}`} />
                   <div className="generated-image-actions">
                     <button className="generated-image-btn" onClick={handleCopy} title="Copy image">
@@ -683,11 +699,15 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
         )}
         {quotePopup.visible && (
           <div
-            className="quote-popup"
-            style={{ left: quotePopup.x, top: quotePopup.y }}
+            className="absolute z-50 flex items-center bg-bg-surface-raised border border-border rounded-lg shadow-lg p-0.5 animate-fade-in"
+            style={{ left: quotePopup.x, top: quotePopup.y, transform: 'translate(-50%, -100%)' }}
             onMouseDown={(e) => e.preventDefault()} // Prevent losing selection
           >
-            <button className="quote-btn" onClick={handleQuoteClick} title="Quote selection">
+            <button
+              className="flex items-center justify-center w-7 h-7 border-none bg-transparent text-text-default rounded-sm cursor-pointer transition-all duration-150 hover:bg-brand-400 hover:text-white"
+              onClick={handleQuoteClick}
+              title="Quote selection"
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M3 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
                 <path d="M15 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
@@ -704,48 +724,36 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
         />
       )}
       {message.role === 'user' && !isStreaming && messageIndex !== undefined && (
-        <div className="message-actions">
+        <div className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           {onEdit && !isEditing && (
-            <button
-              className="msg-action-btn"
+            <Btn
+              size='icon-sm'
+              variant='ghost'
               onClick={handleEditClick}
               title="Edit message"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              <span>Edit</span>
-            </button>
+              <PencilIcon size={14} />
+            </Btn>
           )}
           {onRegenerate && !isEditing && (
-            <button
-              className="msg-action-btn"
+            <Btn
+              size='icon-sm'
+              variant='ghost'
               onClick={() => onRegenerate(messageIndex)}
               title="Regenerate response"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M23 4v6h-6" />
-                <path d="M1 20v-6h6" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-              <span>Regenerate</span>
-            </button>
+              <RefreshCwIcon size={14} />
+            </Btn>
           )}
           {onBranch && !isEditing && (
-            <button
-              className="msg-action-btn"
+            <Btn
+              size='icon-sm'
+              variant='ghost'
               onClick={() => onBranch(messageIndex)}
               title="Branch from here"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="6" y1="3" x2="6" y2="15" />
-                <circle cx="18" cy="6" r="3" />
-                <circle cx="6" cy="18" r="3" />
-                <path d="M18 9a9 9 0 0 1-9 9" />
-              </svg>
-              <span>Branch</span>
-            </button>
+              <GitBranchIcon size={14} />
+            </Btn>
           )}
         </div>
       )}
@@ -992,39 +1000,29 @@ function MessageActions({
   }, [content]);
 
   return (
-    <div className="message-actions">
-      <button className={`msg-action-btn ${copied ? 'copied' : ''}`} onClick={handleCopy} title="Copy response">
+    <div className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+      <Btn
+        size='icon-sm'
+        variant='ghost'
+        className={copied ? 'text-success-400! bg-success-400/10!' : 'text-text-subtle'}
+        onClick={handleCopy}
+        title="Copy response"
+      >
         {copied ? (
-          <>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>Copied!</span>
-          </>
+          <CheckIcon size={14} />
         ) : (
-          <>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
-            <span>Copy</span>
-          </>
+          <CopyIcon size={14} />
         )}
-      </button>
+      </Btn>
       {onBranch && messageIndex !== undefined && (
-        <button
-          className="msg-action-btn"
+        <Btn
+          size='icon-sm'
+          variant='ghost'
           onClick={() => onBranch(messageIndex)}
           title="Branch from here"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="6" y1="3" x2="6" y2="15" />
-            <circle cx="18" cy="6" r="3" />
-            <circle cx="6" cy="18" r="3" />
-            <path d="M18 9a9 9 0 0 1-9 9" />
-          </svg>
-          <span>Branch</span>
-        </button>
+          <GitBranchIcon size={14} />
+        </Btn>
       )}
     </div>
   );
