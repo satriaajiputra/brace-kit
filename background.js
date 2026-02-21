@@ -155,6 +155,7 @@ async function handleChatRequest(message, sendResponse) {
 
     // Format and send request
     const { url, options: fetchOptions } = formatRequest(provider, messages, tools || [], options || {});
+
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {

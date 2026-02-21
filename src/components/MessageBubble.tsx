@@ -8,7 +8,7 @@ import type { Message } from '../types/index.ts';
 import { TextFileViewer } from './TextFileViewer.tsx';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from '../providers.ts';
-import { CheckIcon, CopyIcon, GitBranchIcon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-react';
+import { CheckIcon, ChevronRightIcon, CopyIcon, GitBranchIcon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-react';
 import { Btn } from './ui/Btn.tsx';
 
 const turndownService = new TurndownService({
@@ -454,27 +454,17 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
     }
     if (message.summary) {
       return (
-        <div className="summary-bubble">
+        <div className="py-3">
           <div
-            className="summary-badge clickable"
+            className="flex items-center gap-2 text-sm font-semibold text-text-muted cursor-pointer select-none transition-colors duration-200 hover:text-accent"
             onClick={() => setShowSummaryContent(!showSummaryContent)}
           >
-            <svg
-              className={`summary-toggle-icon ${showSummaryContent ? 'open' : ''}`}
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRightIcon size={14} className={`transition-transform duration-200 ${showSummaryContent ? 'rotate-90' : ''}`} />
             History Memory
           </div>
           {showSummaryContent && (
             <div
-              className="summary-content"
+              className=" leading-normal max-h-[250px] overflow-y-auto text-text-default pt-0 pb-1 mt-2 border-t border-border"
               dangerouslySetInnerHTML={{ __html: renderMarkdown(message.summary) }}
             />
           )}

@@ -25,7 +25,7 @@ export function App() {
 
   if (isLoading) {
     return (
-      <div id="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div id="app" className="flex items-center justify-center h-screen">
         <div className="typing-indicator">
           <span></span>
           <span></span>
@@ -45,9 +45,11 @@ export function App() {
   return (
     <div id="app">
       {shouldShowLockScreen && <LockScreen />}
-      {shouldShowLockScreen && <div className="lock-backdrop" />}
+      {shouldShowLockScreen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+      )}
       {store.isCompacting && (
-        <div className="compacting-overlay">
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center z-[1000] text-white gap-3 animate-[fadeIn_0.3s_ease]">
           <div className="compacting-spinner"></div>
           <div>Summarizing conversation...</div>
         </div>

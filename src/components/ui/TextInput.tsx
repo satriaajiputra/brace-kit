@@ -18,7 +18,7 @@ type TextInputType =
 
 type TextInputSize = 'sm' | 'default' | 'lg';
 
-export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
+export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size' | 'prefix' | 'suffix'> {
   type?: TextInputType;
   size?: TextInputSize;
   prefix?: React.ReactNode;

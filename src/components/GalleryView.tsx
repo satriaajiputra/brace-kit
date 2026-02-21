@@ -119,59 +119,75 @@ export function GalleryView() {
   }
 
   return (
-    <div className="gallery-view">
-      <div className="gallery-header">
-        <button className="gallery-back-btn" onClick={() => store.setView('chat')}>
+    <div className="flex flex-col h-full overflow-hidden bg-[var(--bg-primary)]">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
+        <button
+          className="flex items-center gap-1.5 bg-transparent border-none text-[var(--text-secondary)] cursor-pointer text-[0.8125rem] px-2 py-1 transition-colors duration-150 hover:text-[var(--text-primary)]"
+          onClick={() => store.setView('chat')}
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           Kembali
         </button>
-        <div className="gallery-header-center">
-          <span className="gallery-title">Gallery</span>
+        <div className="flex items-center gap-2 flex-1">
+          <span className="text-[0.9375rem] font-semibold text-[var(--text-primary)]">Gallery</span>
           {!loading && (
-            <span className="gallery-count">{images.length + markdownImages.length} gambar</span>
+            <span className="text-xs text-[var(--text-tertiary)] bg-[var(--bg-active)] px-2 py-0.5">
+              {images.length + markdownImages.length} gambar
+            </span>
           )}
         </div>
       </div>
 
-      <div className="gallery-content">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-[var(--bg-active)] scrollbar-track-transparent">
         {loading ? (
-          <div className="gallery-empty">
-            <div className="gallery-empty-icon">
+          <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center text-[var(--text-tertiary)]">
+            <div className="opacity-40">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>
                 <polyline points="21 15 16 10 5 21"/>
               </svg>
             </div>
-            <p>Memuat gambar...</p>
+            <p className="text-[0.9375rem] text-[var(--text-secondary)] font-medium">Memuat gambar...</p>
           </div>
         ) : images.length === 0 && markdownImages.length === 0 ? (
-          <div className="gallery-empty">
-            <div className="gallery-empty-icon">
+          <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center text-[var(--text-tertiary)]">
+            <div className="opacity-40">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>
                 <polyline points="21 15 16 10 5 21"/>
               </svg>
             </div>
-            <p>Belum ada gambar yang dihasilkan</p>
-            <span>Mulai conversation dan generate gambar untuk melihatnya di sini</span>
+            <p className="text-[0.9375rem] text-[var(--text-secondary)] font-medium">Belum ada gambar yang dihasilkan</p>
+            <span className="text-[0.8125rem] text-[var(--text-tertiary)] max-w-[240px]">
+              Mulai conversation dan generate gambar untuk melihatnya di sini
+            </span>
           </div>
         ) : (
-          <div className="gallery-grid">
+          <div className="grid grid-cols-3 gap-2.5">
             {images.map((img) => (
-              <div key={img.key} className="gallery-card" onClick={() => setLightbox(img)}>
-                <div className="gallery-card-img-wrap">
+              <div
+                key={img.key}
+                className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden cursor-pointer transition-all duration-150 hover:border-[var(--border-active)]"
+                onClick={() => setLightbox(img)}
+              >
+                <div className="relative aspect-square overflow-hidden bg-[var(--bg-tertiary)]">
                   <img
                     src={`data:${img.mimeType};base64,${img.data}`}
                     alt="Generated image"
-                    className="gallery-card-img"
+                    className="w-full h-full object-cover block"
                   />
-                  <div className="gallery-card-overlay" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1.5 opacity-0 transition-opacity duration-150 hover:opacity-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
-                      className="gallery-action-btn"
+                      className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
                       title="Lihat"
                       onClick={() => setLightbox(img)}
                     >
@@ -181,7 +197,7 @@ export function GalleryView() {
                       </svg>
                     </button>
                     <button
-                      className="gallery-action-btn"
+                      className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
                       title="Download"
                       onClick={() => handleDownload(img)}
                     >
@@ -192,7 +208,7 @@ export function GalleryView() {
                       </svg>
                     </button>
                     <button
-                      className="gallery-action-btn"
+                      className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
                       title="Salin"
                       onClick={() => handleCopy(img)}
                     >
@@ -203,24 +219,33 @@ export function GalleryView() {
                     </button>
                   </div>
                 </div>
-                <div className="gallery-card-info">
-                  <span className="gallery-card-conv">{getConvTitle(img.conversationId)}</span>
-                  <span className="gallery-card-date">{formatDate(img.createdAt)}</span>
+                <div className="px-2 py-1.5 flex flex-col gap-0.5">
+                  <span className="text-[0.6875rem] text-[var(--text-primary)] whitespace-nowrap overflow-hidden text-ellipsis font-medium">
+                    {getConvTitle(img.conversationId)}
+                  </span>
+                  <span className="text-[0.625rem] text-[var(--text-tertiary)]">{formatDate(img.createdAt)}</span>
                 </div>
               </div>
             ))}
             {markdownImages.map((img) => (
-              <div key={`${img.conversationId}::${img.url}`} className="gallery-card" onClick={() => setLightbox(img)}>
-                <div className="gallery-card-img-wrap">
+              <div
+                key={`${img.conversationId}::${img.url}`}
+                className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden cursor-pointer transition-all duration-150 hover:border-[var(--border-active)]"
+                onClick={() => setLightbox(img)}
+              >
+                <div className="relative aspect-square overflow-hidden bg-[var(--bg-tertiary)]">
                   <img
                     src={img.url}
                     alt="Image from conversation"
-                    className="gallery-card-img"
+                    className="w-full h-full object-cover block"
                     crossOrigin="anonymous"
                   />
-                  <div className="gallery-card-overlay" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1.5 opacity-0 transition-opacity duration-150 hover:opacity-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
-                      className="gallery-action-btn"
+                      className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
                       title="Lihat"
                       onClick={() => setLightbox(img)}
                     >
@@ -230,7 +255,7 @@ export function GalleryView() {
                       </svg>
                     </button>
                     <button
-                      className="gallery-action-btn"
+                      className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
                       title="Download"
                       onClick={() => handleDownload(img)}
                     >
@@ -241,7 +266,7 @@ export function GalleryView() {
                       </svg>
                     </button>
                     <button
-                      className="gallery-action-btn"
+                      className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
                       title="Salin URL"
                       onClick={() => handleCopy(img)}
                     >
@@ -252,9 +277,11 @@ export function GalleryView() {
                     </button>
                   </div>
                 </div>
-                <div className="gallery-card-info">
-                  <span className="gallery-card-conv">{getConvTitle(img.conversationId)}</span>
-                  <span className="gallery-card-date">{formatDate(img.createdAt)}</span>
+                <div className="px-2 py-1.5 flex flex-col gap-0.5">
+                  <span className="text-[0.6875rem] text-[var(--text-primary)] whitespace-nowrap overflow-hidden text-ellipsis font-medium">
+                    {getConvTitle(img.conversationId)}
+                  </span>
+                  <span className="text-[0.625rem] text-[var(--text-tertiary)]">{formatDate(img.createdAt)}</span>
                 </div>
               </div>
             ))}
@@ -262,25 +289,37 @@ export function GalleryView() {
         )}
       </div>
 
+      {/* Lightbox */}
       {lightbox && (
-        <div className="gallery-lightbox" onClick={() => setLightbox(null)}>
-          <div className="gallery-lightbox-inner" onClick={(e) => e.stopPropagation()}>
-            <button className="gallery-lightbox-close" onClick={() => setLightbox(null)}>
+        <div
+          className="fixed inset-0 bg-black/85 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className="relative bg-[var(--bg-secondary)] border border-[var(--border-subtle)] max-w-full max-h-full flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/50 border border-[var(--border-subtle)] text-[var(--text-secondary)] cursor-pointer z-[1] transition-colors duration-150 hover:text-[var(--text-primary)]"
+              onClick={() => setLightbox(null)}
+            >
               <CloseIcon size={18} />
             </button>
             <img
               src={isMarkdownImage(lightbox) ? lightbox.url : `data:${lightbox.mimeType};base64,${lightbox.data}`}
               alt="Generated image"
-              className="gallery-lightbox-img"
+              className="max-w-[min(600px,calc(100vw-32px))] max-h-[calc(100vh-160px)] object-contain block"
             />
-            <div className="gallery-lightbox-meta">
-              <div className="gallery-lightbox-info">
-                <span className="gallery-lightbox-conv">{getConvTitle(lightbox.conversationId)}</span>
-                <span className="gallery-lightbox-date">{formatDate(lightbox.createdAt)}</span>
+            <div className="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center gap-3 flex-wrap">
+              <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+                <span className="text-[0.8125rem] font-semibold text-[var(--text-primary)] whitespace-nowrap overflow-hidden text-ellipsis">
+                  {getConvTitle(lightbox.conversationId)}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">{formatDate(lightbox.createdAt)}</span>
               </div>
-              <div className="gallery-lightbox-actions">
+              <div className="flex gap-1.5 shrink-0">
                 <button
-                  className="gallery-lightbox-btn"
+                  className="flex items-center gap-1.25 px-2.5 py-1.25 bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs cursor-pointer transition-all duration-150 hover:text-[var(--text-primary)] hover:border-[var(--border-active)]"
                   onClick={() => handleDownload(lightbox)}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -291,7 +330,7 @@ export function GalleryView() {
                   Download
                 </button>
                 <button
-                  className="gallery-lightbox-btn"
+                  className="flex items-center gap-1.25 px-2.5 py-1.25 bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs cursor-pointer transition-all duration-150 hover:text-[var(--text-primary)] hover:border-[var(--border-active)]"
                   onClick={() => handleCopy(lightbox)}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -301,7 +340,7 @@ export function GalleryView() {
                   Salin
                 </button>
                 <button
-                  className="gallery-lightbox-btn gallery-lightbox-btn-primary"
+                  className="flex items-center gap-1.25 px-2.5 py-1.25 bg-[rgba(129,140,248,0.1)] border border-[rgba(129,140,248,0.3)] text-[var(--accent-primary)] text-xs cursor-pointer transition-all duration-150 hover:bg-[rgba(129,140,248,0.2)] hover:border-[var(--accent-primary)]"
                   onClick={() => handleJumpToConversation(lightbox.conversationId)}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
