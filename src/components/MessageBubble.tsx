@@ -546,33 +546,33 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
       </div>
       <div className={`prose prose-invert prose-img:m-0 max-w-none relative break-words overflow-wrap px-4 py-0 ${bubbleBgClass} ${isEditing ? 'editing' : ''} ${message.summary ? 'is-summary' : ''}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
         {message.pageContext && (
-          <div className="page-attachment">
-            <div className="page-attachment-icon">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 mb-2.5 bg-black/30 border border-border rounded-md">
+            <div className="flex items-center justify-center w-8 h-8 bg-brand-400/15 rounded-sm text-accent shrink-0">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
             </div>
-            <div className="page-attachment-info">
-              <div className="page-attachment-title">{message.pageContext.pageTitle}</div>
-              <div className="page-attachment-url">{message.pageContext.pageUrl}</div>
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="text-[0.85rem] font-semibold text-text-default truncate mb-0.5">{message.pageContext.pageTitle}</div>
+              <div className="text-[0.7rem] text-text-subtle truncate">{message.pageContext.pageUrl}</div>
             </div>
           </div>
         )}
         {message.selectedText && (
-          <div className="selection-attachment">
-            <div className="selection-attachment-icon">
+          <div className="flex items-start gap-2.5 px-3 py-2.5 mb-2.5 bg-black/30 border border-border rounded-md">
+            <div className="flex items-center justify-center w-8 h-8 bg-purple-400/15 rounded-sm text-accent-subtle shrink-0">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 7h16M4 12h16M4 17h10" />
               </svg>
             </div>
-            <div className="selection-attachment-info">
-              <div className="selection-attachment-text">
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="text-[0.8rem] text-text-muted italic leading-tight mb-1 line-clamp-2">
                 {message.selectedText.selectedText.length > 100
                   ? `${message.selectedText.selectedText.substring(0, 100)}...`
                   : message.selectedText.selectedText}
               </div>
-              <div className="selection-attachment-source">From: {message.selectedText.pageTitle}</div>
+              <div className="text-[0.7rem] text-text-subtle truncate">From: {message.selectedText.pageTitle}</div>
             </div>
           </div>
         )}
