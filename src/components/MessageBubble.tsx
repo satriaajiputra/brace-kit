@@ -486,7 +486,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
       : 'bg-white/5 border border-border rounded-lg rounded-bl-sm';
 
     return (
-      <div className={`group flex flex-col gap-1 max-w-[95%] animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
+      <div className={`group flex flex-col gap-1 max-w-full animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
         <div className="font-semibold uppercase tracking-wider text-text-subtle px-1.5">{roleLabel}</div>
         <div className={`prose prose-invert max-w-none relative break-words overflow-wrap px-4 py-1 pb-3 ${bubbleBgClass}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
           {message.content ? (
@@ -535,7 +535,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
       : 'bg-white/5 border border-border rounded-lg rounded-bl-sm';
 
   return (
-    <div className={`group flex flex-col gap-1 max-w-[95%] animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
+    <div className={`group flex flex-col gap-1 max-w-full animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
       <div className="font-semibold uppercase tracking-wider text-text-subtle px-1.5">
         {!message.summary && roleLabel}
         {message.isCompacted && !message.summary && (

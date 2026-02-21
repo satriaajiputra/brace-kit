@@ -329,16 +329,49 @@ function formatAnthropic(
   let system = '';
   const filtered: Record<string, unknown>[] = [];
 
+  // First pass: batch consecutive tool results together
+  // Anthropic expects all tool results in a single user message
+  const batchedMessages: (Message | { role: 'tool_batch'; tools: Message[] })[] = [];
+  let toolBatch: Message[] = [];
+
   for (const msg of messages) {
-    if (msg.role === 'system') {
-      system += (system ? '\n' : '') + msg.content;
-    } else if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+    if (msg.role === 'tool') {
+      toolBatch.push(msg);
+    } else {
+      // Flush any pending tool batch
+      if (toolBatch.length > 0) {
+        batchedMessages.push({ role: 'tool_batch', tools: toolBatch });
+        toolBatch = [];
+      }
+      batchedMessages.push(msg);
+    }
+  }
+  // Flush remaining tool batch
+  if (toolBatch.length > 0) {
+    batchedMessages.push({ role: 'tool_batch', tools: toolBatch });
+  }
+
+  // Second pass: format messages for Anthropic API
+  for (const msg of batchedMessages) {
+    if ('role' in msg && msg.role === 'tool_batch') {
+      // Batch all tool results into a single user message
+      const toolResults = (msg as { tools: Message[] }).tools;
+      const content: Record<string, unknown>[] = toolResults.map((t) => ({
+        type: 'tool_result',
+        tool_use_id: t.toolCallId,
+        content: typeof t.content === 'string' ? t.content : JSON.stringify(t.content),
+        is_error: t.content?.startsWith('Error:') || t.content?.includes('[DUPLICATE_CALL_SKIPPED]'),
+      }));
+      filtered.push({ role: 'user', content });
+    } else if ((msg as Message).role === 'system') {
+      system += (system ? '\n' : '') + (msg as Message).content;
+    } else if ((msg as Message).role === 'assistant' && (msg as Message).toolCalls && (msg as Message).toolCalls!.length > 0) {
       // Transform assistant messages with tool calls to Anthropic format
       const content: Record<string, unknown>[] = [];
-      if (msg.content) {
-        content.push({ type: 'text', text: msg.content });
+      if ((msg as Message).content) {
+        content.push({ type: 'text', text: (msg as Message).content });
       }
-      for (const tc of msg.toolCalls) {
+      for (const tc of (msg as Message).toolCalls!) {
         let input = {};
         try {
           input = JSON.parse(tc.arguments || '{}');
@@ -353,22 +386,12 @@ function formatAnthropic(
         });
       }
       filtered.push({ role: 'assistant', content });
-    } else if (msg.role === 'tool') {
-      // Transform tool result messages to Anthropic format
-      filtered.push({
-        role: 'user',
-        content: [
-          {
-            type: 'tool_result',
-            tool_use_id: msg.toolCallId,
-            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
-          },
-        ],
-      });
-    } else if (Array.isArray(msg.content)) {
+    } else if ((msg as Message).role && Array.isArray((msg as Message).content)) {
+      const m = msg as Message;
       // Convert OpenAI-style image_url format to Anthropic format
       const anthropicContent: Record<string, unknown>[] = [];
-      for (const part of msg.content as Array<{ type: string; text?: string; image_url?: { url: string } }>) {
+      const contentArray = m.content as unknown as Array<{ type: string; text?: string; image_url?: { url: string } }>;
+      for (const part of contentArray) {
         if (part.type === 'text' && part.text) {
           anthropicContent.push({ type: 'text', text: part.text });
         } else if (part.type === 'image_url' && part.image_url?.url) {
@@ -398,9 +421,11 @@ function formatAnthropic(
           }
         }
       }
-      filtered.push({ role: msg.role, content: anthropicContent });
-    } else {
-      filtered.push({ role: msg.role, content: msg.content });
+      filtered.push({ role: m.role, content: anthropicContent });
+    } else if ((msg as Message).role) {
+      // Regular message (user or assistant without tool calls)
+      const m = msg as Message;
+      filtered.push({ role: m.role, content: m.content });
     }
   }
 

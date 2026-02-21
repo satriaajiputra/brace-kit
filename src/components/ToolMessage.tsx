@@ -24,7 +24,7 @@ export function ToolMessage({ name, content, toolArguments, isCachedResult }: To
     : '';
 
   return (
-    <div className="flex flex-col gap-1 max-w-[95%] self-start animate-fade-in">
+    <div className="flex flex-col gap-1 max-w-full self-start animate-fade-in">
       <div className="relative break-words overflow-wrap px-4 py-4 pb-3 bg-success-400/5 border border-success-400/20 rounded-lg text-sm">
         <div className="flex items-center gap-1.5 font-semibold text-success-400 mb-1.5 text-sm">
           <WrenchIcon size={14} />
