@@ -47,52 +47,8 @@ export function MCPServersSettings() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {mcpServers.map((server) => {
-          const isActive = server.connected && server.enabled !== false;
-          return (
-            <div key={server.id} className="group flex items-center gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/40 hover:bg-secondary/40 transition-all">
-              <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <div
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
-                      }`}
-                    title={isActive ? 'Connected' : server.enabled === false ? 'Disabled' : 'Disconnected'}
-                  />
-                  <span className="text-sm font-medium text-foreground truncate">{server.name}</span>
-                </div>
-                <span className="text-[10px] text-muted-foreground truncate opacity-70">{server.url}</span>
-                {server.toolCount ? (
-                  <span className="inline-flex mt-1 px-1.5 py-0.5 w-fit rounded bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider">
-                    {server.toolCount} tools available
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={server.enabled !== false}
-                    onChange={(e) => toggleMCPServer(server.id, e.target.checked)}
-                  />
-                  <div className="w-7 h-4 bg-muted rounded-full peer peer-checked:bg-primary transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
-                </label>
-                <button
-                  className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
-                  title="Remove server"
-                  onClick={() => removeMCPServer(server.id)}
-                >
-                  <XIcon size={14} />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
       {showForm && (
-        <div className="flex flex-col gap-3 p-3 rounded-lg bg-secondary/30 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="flex flex-col gap-3 p-3 mb-2 rounded-lg bg-secondary/30 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex flex-col gap-1 px-0.5">
             <label htmlFor="mcp-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Server Name</label>
             <input
@@ -145,6 +101,50 @@ export function MCPServersSettings() {
           </button>
         </div>
       )}
+
+      <div className="flex flex-col gap-2">
+        {mcpServers.map((server) => {
+          const isActive = server.connected && server.enabled !== false;
+          return (
+            <div key={server.id} className="group flex items-center gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/40 hover:bg-secondary/40 transition-all">
+              <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
+                      }`}
+                    title={isActive ? 'Connected' : server.enabled === false ? 'Disabled' : 'Disconnected'}
+                  />
+                  <span className="text-sm font-medium text-foreground truncate">{server.name}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground truncate opacity-70">{server.url}</span>
+                {server.toolCount ? (
+                  <span className="inline-flex mt-1 px-1.5 py-0.5 w-fit rounded bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider">
+                    {server.toolCount} tools available
+                  </span>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={server.enabled !== false}
+                    onChange={(e) => toggleMCPServer(server.id, e.target.checked)}
+                  />
+                  <div className="w-7 h-4 bg-muted rounded-full peer peer-checked:bg-primary transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
+                </label>
+                <button
+                  className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                  title="Remove server"
+                  onClick={() => removeMCPServer(server.id)}
+                >
+                  <XIcon size={14} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
