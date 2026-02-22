@@ -45,20 +45,27 @@ export function MCPServersSettings() {
   // Tools reveal state
   const [expandedServerId, setExpandedServerId] = useState<string | null>(null);
   const [allTools, setAllTools] = useState<MCPTool[]>([]);
-  const [isLoadingTools, setIsLoadingTools] = useState(false);
+  const [loadingServers, setLoadingServers] = useState<Record<string, boolean>>({});
 
-  const fetchTools = useCallback(async () => {
-    setIsLoadingTools(true);
+  const fetchTools = useCallback(async (serverId?: string) => {
+    const id = serverId || expandedServerId;
+    if (!id) return;
+
+    setLoadingServers(prev => ({ ...prev, [id]: true }));
+
+    // Tiny delay for visual feedback/background sync
+    await new Promise(r => setTimeout(r, 400));
+
     const tools = await listTools();
     setAllTools(tools);
-    setIsLoadingTools(false);
-  }, [listTools]);
+    setLoadingServers(prev => ({ ...prev, [id]: false }));
+  }, [expandedServerId, listTools]);
 
   useEffect(() => {
-    if (expandedServerId) {
+    if (expandedServerId && !allTools.some(t => t._serverId === expandedServerId)) {
       fetchTools();
     }
-  }, [expandedServerId, fetchTools]);
+  }, [expandedServerId, fetchTools, allTools]);
 
   const handleSave = async () => {
     if (!name.trim() || !url.trim()) return;
@@ -120,6 +127,11 @@ export function MCPServersSettings() {
 
   const toggleExpand = (id: string) => {
     setExpandedServerId(expandedServerId === id ? null : id);
+  };
+
+  const handleRefresh = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    fetchTools(id);
   };
 
   return (
@@ -282,19 +294,48 @@ export function MCPServersSettings() {
               {/* Tools Revealed Section */}
               {isExpanded && (
                 <div className="px-2.5 pb-3 pt-1 border-t border-border/20 bg-background/40 animate-in slide-in-from-top-1 duration-300">
-                  <div className="flex flex-col gap-1.5 mt-1.5">
-                    {isLoadingTools ? (
-                      <div className="py-4 flex flex-col items-center justify-center gap-2 opacity-40">
-                        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs font-bold uppercase tracking-wider">Loading tools...</span>
+                  <div className="flex items-center justify-between mt-2 mb-1 px-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">Available Tools</span>
+                    <button
+                      onClick={(e) => handleRefresh(e, server.id)}
+                      disabled={loadingServers[server.id]}
+                      className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                    >
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        className={loadingServers[server.id] ? 'animate-spin' : ''}
+                      >
+                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24" />
+                        <path d="M21 3v9h-9" />
+                      </svg>
+                      Refresh
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    {loadingServers[server.id] ? (
+                      <div className="py-6 flex flex-col items-center justify-center gap-2 opacity-50">
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] animate-pulse">Synchronizing...</span>
                       </div>
                     ) : serverTools.length > 0 ? (
                       serverTools.map(tool => (
                         <ToolItem key={tool.name} tool={tool} />
                       ))
                     ) : (
-                      <div className="py-3 text-center text-xs font-bold text-muted-foreground/40 uppercase tracking-widest border border-dashed border-border/40 rounded">
-                        No tools found
+                      <div className="py-6 flex flex-col items-center justify-center gap-2 border border-dashed border-border/40 rounded bg-muted/10">
+                        <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em]">No tools discovered</span>
+                        <button
+                          onClick={(e) => handleRefresh(e, server.id)}
+                          className="text-[9px] font-bold text-primary underline underline-offset-2 opacity-60 hover:opacity-100"
+                        >
+                          Try manual refresh
+                        </button>
                       </div>
                     )}
                   </div>
