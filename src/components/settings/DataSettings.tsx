@@ -52,9 +52,9 @@ export function DataSettings() {
                 window.location.reload();
             }, 1500);
 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setStatus({ type: 'error', message: 'Failed to import data. Please check the file format.' });
+            setStatus({ type: 'error', message: err.message || 'Failed to import data. Please check the file format.' });
         }
     };
 
