@@ -34,7 +34,7 @@ function ToolItem({ tool }: { tool: MCPTool }) {
 }
 
 export function MCPServersSettings() {
-  const { mcpServers, addMCPServer, removeMCPServer, toggleMCPServer, updateMCPServer, listTools } = useMCP();
+  const { mcpServers, addMCPServer, removeMCPServer, toggleMCPServer, updateMCPServer } = useMCP();
   const [showForm, setShowForm] = useState(false);
   const [editingServerId, setEditingServerId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -46,26 +46,47 @@ export function MCPServersSettings() {
   const [expandedServerId, setExpandedServerId] = useState<string | null>(null);
   const [allTools, setAllTools] = useState<MCPTool[]>([]);
   const [loadingServers, setLoadingServers] = useState<Record<string, boolean>>({});
+  const [serverErrors, setServerErrors] = useState<Record<string, string | null>>({});
+  const [fetchedServers, setFetchedServers] = useState<Record<string, boolean>>({});
 
   const fetchTools = useCallback(async (serverId?: string) => {
     const id = serverId || expandedServerId;
     if (!id) return;
 
     setLoadingServers(prev => ({ ...prev, [id]: true }));
+    setServerErrors(prev => ({ ...prev, [id]: null }));
 
-    // Tiny delay for visual feedback/background sync
-    await new Promise(r => setTimeout(r, 400));
+    try {
+      // Tiny delay for visual feedback
+      await new Promise(r => setTimeout(r, 300));
 
-    const tools = await listTools();
-    setAllTools(tools);
-    setLoadingServers(prev => ({ ...prev, [id]: false }));
-  }, [expandedServerId, listTools]);
+      const messagePromise = chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Sync timeout - Background script not responding')), 5000)
+      );
+
+      const result = (await Promise.race([messagePromise, timeoutPromise])) as any;
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      const tools = result?.tools || [];
+      setAllTools(tools);
+      setFetchedServers(prev => ({ ...prev, [id]: true }));
+    } catch (e) {
+      console.error('[MCP] Fetch tools error:', e);
+      setServerErrors(prev => ({ ...prev, [id]: (e as Error).message }));
+    } finally {
+      setLoadingServers(prev => ({ ...prev, [id]: false }));
+    }
+  }, [expandedServerId]);
 
   useEffect(() => {
-    if (expandedServerId && !allTools.some(t => t._serverId === expandedServerId)) {
+    if (expandedServerId && !fetchedServers[expandedServerId]) {
       fetchTools();
     }
-  }, [expandedServerId, fetchTools, allTools]);
+  }, [expandedServerId, fetchTools, fetchedServers]);
 
   const handleSave = async () => {
     if (!name.trim() || !url.trim()) return;
@@ -321,7 +342,27 @@ export function MCPServersSettings() {
                     {loadingServers[server.id] ? (
                       <div className="py-6 flex flex-col items-center justify-center gap-2 opacity-50">
                         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] animate-pulse">Synchronizing...</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest animate-pulse">Synchronizing...</span>
+                      </div>
+                    ) : serverErrors[server.id] ? (
+                      <div className="py-6 flex flex-col items-center justify-center gap-2 border border-destructive/20 rounded bg-destructive/5 px-4 text-center">
+                        <div className="flex items-center gap-2 text-destructive">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                          </svg>
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Connection Error</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground leading-tight">
+                          {serverErrors[server.id]}
+                        </p>
+                        <button
+                          onClick={(e) => handleRefresh(e, server.id)}
+                          className="mt-1 text-[9px] font-bold text-primary underline underline-offset-2 opacity-80 hover:opacity-100"
+                        >
+                          Try reconnecting
+                        </button>
                       </div>
                     ) : serverTools.length > 0 ? (
                       serverTools.map(tool => (
@@ -329,7 +370,7 @@ export function MCPServersSettings() {
                       ))
                     ) : (
                       <div className="py-6 flex flex-col items-center justify-center gap-2 border border-dashed border-border/40 rounded bg-muted/10">
-                        <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em]">No tools discovered</span>
+                        <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">No tools discovered</span>
                         <button
                           onClick={(e) => handleRefresh(e, server.id)}
                           className="text-[9px] font-bold text-primary underline underline-offset-2 opacity-60 hover:opacity-100"

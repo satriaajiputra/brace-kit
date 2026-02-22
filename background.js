@@ -83,13 +83,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'MCP_DISCONNECT':
       mcpManager.removeServer(message.serverId);
       sendResponse({ success: true });
-      return true;
+      return false;
 
     case 'MCP_LIST_TOOLS':
-      const allTools = mcpManager.getAllTools();
-      console.log('[Background] MCP_LIST_TOOLS - clients:', mcpManager.clients.size, 'tools:', allTools);
-      sendResponse({ tools: allTools });
-      return true;
+      try {
+        const allTools = mcpManager.getAllTools();
+        console.log('[Background] MCP_LIST_TOOLS - clients:', mcpManager.clients.size, 'tools:', allTools);
+        sendResponse({ tools: allTools });
+      } catch (e) {
+        sendResponse({ tools: [], error: e.message });
+      }
+      return false;
 
     case 'MCP_CALL_TOOL':
       handleMCPToolCall(message, sendResponse);

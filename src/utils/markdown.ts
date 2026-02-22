@@ -77,7 +77,7 @@ const blockquotePlaceholders = new Map<string, { type: 'blockquote' | CalloutTyp
 
 // Pre-process markdown to convert GitHub-style callouts AND regular blockquotes to custom HTML
 // This must be done BEFORE marked parses the markdown
-function processBlockquotes(markdown: string, isStreaming?: boolean): string {
+function processBlockquotes(markdown: string): string {
   // First, process GitHub-style callouts
   const calloutPattern = /^> *\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n((?:>.*\n?)+)/gim;
 
@@ -203,7 +203,7 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
   let processedText = text.replace(/\[(\d+)\]/g, '<sup><a href="#cite-$1" class="citation-link text-primary hover:underline">[$1]</a></sup>');
 
   // Pre-process blockquotes (callouts + regular) BEFORE markdown parsing
-  processedText = processBlockquotes(processedText, isStreaming);
+  processedText = processBlockquotes(processedText);
 
   // Fix incomplete markdown tables during streaming
   if (isStreaming) {
