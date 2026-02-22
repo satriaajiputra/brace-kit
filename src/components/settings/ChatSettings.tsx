@@ -1,82 +1,117 @@
+// =============================================================================
+// Imports
+// =============================================================================
 import { useStore } from '../../store/index.ts';
 
+// =============================================================================
+// Chat Settings Component
+// =============================================================================
 export function ChatSettings() {
+  // ---------------------------------------------------------------------------
+  // Store & State Initialization
+  // ---------------------------------------------------------------------------
   const store = useStore();
   const isGemini = store.providerConfig.providerId === 'gemini' || store.providerConfig.format === 'gemini';
 
   return (
-    <section className="settings-section">
-      <h3>Chat</h3>
-      <div className="form-group">
-        <label htmlFor="system-prompt">System Prompt</label>
-        <textarea
-          id="system-prompt"
-          rows={3}
-          placeholder="You are a helpful assistant..."
-          value={store.providerConfig.systemPrompt}
-          onChange={(e) => {
-            store.setProviderConfig({ systemPrompt: e.target.value });
-            store.saveToStorage();
-          }}
-        />
+    <section className="flex flex-col gap-3 py-3 border-b border-border last:border-0">
+      <div className="flex flex-col gap-0.5 px-0.5">
+        <h3 className="text-sm font-semibold tracking-tight text-foreground">Chat</h3>
+        <p className="text-xs text-muted-foreground leading-none">Configure assistant behavior and tools</p>
       </div>
-      {isGemini && (
-        <div id="gemini-options" className="gemini-options">
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <span className="toggle-title">Google Search Grounding</span>
-              <span className="toggle-hint">Enable real-time web search (reduces hallucinations)</span>
+
+      <div className="flex flex-col gap-3">
+        {/* ---------------------------------------------------------------------------
+            System Prompt Configuration
+            - Allows users to define the AI's behavior and personality
+            --------------------------------------------------------------------------- */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="system-prompt" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 px-0.5">
+            System Prompt
+          </label>
+          <textarea
+            id="system-prompt"
+            rows={3}
+            className="w-full min-h-[70px] px-2.5 py-2 text-sm bg-muted/40 border border-input rounded-md focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/50 text-foreground resize-none"
+            placeholder="You are a helpful assistant..."
+            value={store.providerConfig.systemPrompt}
+            onChange={(e) => {
+              store.setProviderConfig({ systemPrompt: e.target.value });
+              store.saveToStorage();
+            }}
+          />
+        </div>
+
+        {/* ---------------------------------------------------------------------------
+            Gemini-Specific Options: Google Search Grounding
+            --------------------------------------------------------------------------- */}
+        {isGemini && (
+          <div className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40 border border-border/50 hover:bg-secondary/60 transition-colors">
+            <div className="flex flex-col gap-0.5 pr-2">
+              <span className="text-sm font-medium text-foreground">Google Search Grounding</span>
+              <span className="text-xs text-muted-foreground leading-tight">Enable real-time web search to reduce hallucinations</span>
             </div>
-            <label className="toggle-switch">
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
               <input
                 type="checkbox"
+                className="sr-only peer"
                 checked={store.enableGoogleSearch}
                 onChange={(e) => {
                   store.setEnableGoogleSearch(e.target.checked);
                   store.saveToStorage();
                 }}
               />
-              <span className="toggle-slider"></span>
+              <div className="w-8 h-4.5 bg-muted rounded-full peer peer-checked:bg-primary transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-3.5"></div>
             </label>
           </div>
-        </div>
-      )}
-      {!isGemini && (
-        <div className="gemini-options">
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <span className="toggle-title">Google Search Tool</span>
-              <span className="toggle-hint">Lets the AI search Google via Gemini backend (requires Gemini API key below)</span>
+        )}
+
+        {/* ---------------------------------------------------------------------------
+            Non-Gemini Options: Google Search Tool
+            --------------------------------------------------------------------------- */}
+        {!isGemini && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40 border border-border/50 hover:bg-secondary/60 transition-colors">
+              <div className="flex flex-col gap-0.5 pr-2">
+                <span className="text-sm font-medium text-foreground">Google Search Tool</span>
+                <span className="text-xs text-muted-foreground leading-tight">Search via Gemini backend (requires Gemini API key)</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={store.enableGoogleSearchTool}
+                  onChange={(e) => {
+                    store.setEnableGoogleSearchTool(e.target.checked);
+                    store.saveToStorage();
+                  }}
+                />
+                <div className="w-8 h-4.5 bg-muted rounded-full peer peer-checked:bg-primary transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-3.5"></div>
+              </label>
             </div>
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
-                checked={store.enableGoogleSearchTool}
-                onChange={(e) => {
-                  store.setEnableGoogleSearchTool(e.target.checked);
-                  store.saveToStorage();
-                }}
-              />
-              <span className="toggle-slider"></span>
-            </label>
+
+            {/* Gemini API Key Input */}
+            {store.enableGoogleSearchTool && (
+              <div className="flex flex-col gap-1.5 px-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <label htmlFor="google-search-api-key" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                  Gemini API Key (for search)
+                </label>
+                <input
+                  id="google-search-api-key"
+                  type="password"
+                  className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
+                  placeholder="AIza..."
+                  value={store.googleSearchApiKey || ''}
+                  onChange={(e) => {
+                    store.setGoogleSearchApiKey(e.target.value);
+                    store.saveToStorage();
+                  }}
+                />
+              </div>
+            )}
           </div>
-          {store.enableGoogleSearchTool && (
-            <div className="form-group" style={{ marginTop: '8px' }}>
-              <label htmlFor="google-search-api-key">Gemini API Key (for search)</label>
-              <input
-                id="google-search-api-key"
-                type="password"
-                placeholder="AIza..."
-                value={store.googleSearchApiKey}
-                onChange={(e) => {
-                  store.setGoogleSearchApiKey(e.target.value);
-                  store.saveToStorage();
-                }}
-              />
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

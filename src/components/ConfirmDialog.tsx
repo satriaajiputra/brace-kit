@@ -67,24 +67,26 @@ export function ConfirmDialog({
   return (
     <div
       ref={overlayRef}
-      className="confirm-dialog-overlay"
+      className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-background/40 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-message"
     >
-      <div className="confirm-dialog">
-        <h3 id="confirm-dialog-title" className="confirm-dialog-title">
-          {title}
-        </h3>
-        <p id="confirm-dialog-message" className="confirm-dialog-message">
-          {message}
-        </p>
-        <div className="confirm-dialog-actions">
+      <div className="w-full max-w-[320px] bg-card border border-border rounded-lg shadow-2xl p-4 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+        <div className="flex flex-col gap-1.5">
+          <h3 id="confirm-dialog-title" className="text-sm font-bold tracking-tight text-foreground uppercase">
+            {title}
+          </h3>
+          <p id="confirm-dialog-message" className="text-xs text-muted-foreground leading-relaxed">
+            {message}
+          </p>
+        </div>
+        <div className="flex items-center justify-end gap-2 pt-2">
           <button
             type="button"
-            className="confirm-dialog-btn cancel"
+            className="h-8 px-3 text-xs font-bold uppercase tracking-tight text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-all"
             onClick={onCancel}
           >
             {cancelLabel}
@@ -92,7 +94,10 @@ export function ConfirmDialog({
           <button
             ref={confirmButtonRef}
             type="button"
-            className={`confirm-dialog-btn confirm ${variant}`}
+            className={`h-8 px-4 text-xs font-bold uppercase tracking-tight rounded-sm transition-all shadow-sm active:scale-95 ${variant === 'danger'
+              ? 'bg-destructive text-destructive-foreground hover:brightness-110'
+              : 'bg-primary text-primary-foreground hover:brightness-110'
+              }`}
             onClick={onConfirm}
           >
             {confirmLabel}

@@ -40,11 +40,11 @@ function ConversationTitleBar() {
   if (!activeConv) return null;
 
   return (
-    <div className="border-b border-text-subtle/20 flex justify-between items-center gap-4 px-1 py-2">
+    <div className="border-b border-border/40 flex justify-between items-center gap-4 px-3 py-1.5 transition-colors">
       {isEditing ? (
         <TextInput
           ref={inputRef}
-          className="w-full h-7"
+          className="w-full h-8 text-sm"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={(e) => {
@@ -56,7 +56,7 @@ function ConversationTitleBar() {
       ) : (
         <>
           <span
-            className="conversation-title-text"
+            className="text-xs font-medium text-muted-foreground truncate hover:text-foreground transition-colors cursor-pointer"
             title="Double-click to rename"
             onDoubleClick={startEdit}
           >
@@ -65,10 +65,11 @@ function ConversationTitleBar() {
           <Btn
             size="icon-sm"
             variant="ghost"
+            className="h-6 w-6 opacity-40 hover:opacity-100"
             title="Rename conversation"
             onClick={startEdit}
           >
-            <SquarePenIcon size={14} />
+            <SquarePenIcon size={12} />
           </Btn>
         </>
       )}
@@ -82,15 +83,15 @@ export function ChatView() {
   const setShowSystemPromptEditor = useStore((state) => state.setShowSystemPromptEditor);
 
   return (
-    <>
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        {showSystemPromptEditor && (
-          <SystemPromptEditor onClose={() => setShowSystemPromptEditor(false)} />
-        )}
-        <ConversationTitleBar />
+    <div className="absolute inset-0 flex flex-col overflow-hidden animate-in fade-in duration-300">
+      {showSystemPromptEditor && (
+        <SystemPromptEditor onClose={() => setShowSystemPromptEditor(false)} />
+      )}
+      <ConversationTitleBar />
+      <div className="flex-1 overflow-hidden relative flex flex-col">
         {messages.length === 0 ? <WelcomeScreen /> : <MessageList />}
       </div>
       <InputArea />
-    </>
+    </div>
   );
 }

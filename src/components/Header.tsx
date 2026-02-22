@@ -5,20 +5,14 @@ export function Header() {
   const store = useStore();
 
   return (
-    <header className="flex items-center justify-between px-3.5 py-2.5 bg-bg-surface border-b border-border shrink-0 backdrop-blur-md z-10">
+    <header className="flex items-center justify-between px-3.5 py-2.5 bg-background border-b border-border shrink-0 backdrop-blur-md sticky top-0 z-10">
       <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-7 h-7 rounded-sm bg-gradient-to-br from-brand-400 to-purple-400 p-1">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="brightness-200">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <defs>
-              <linearGradient id="grad" x1="2" y1="2" x2="22" y2="22">
-                <stop stopColor="#818cf8" />
-                <stop offset="1" stopColor="#a78bfa" />
-              </linearGradient>
-            </defs>
+        <div className="flex items-center justify-center w-7 h-7 rounded-md bg-primary p-1 shadow-sm">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="brightness-125">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" className="text-primary-foreground" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <span className="font-semibold text-[0.95rem] bg-gradient-to-br from-brand-400 to-purple-400 bg-clip-text text-transparent">AI Sidebar</span>
+        <span className="font-bold text-base tracking-tight text-foreground">AI Sidebar</span>
       </div>
       <div className="flex gap-1">
         <IconButton

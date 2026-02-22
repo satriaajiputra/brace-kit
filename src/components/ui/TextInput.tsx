@@ -23,29 +23,47 @@ export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   size?: TextInputSize;
   prefix?: React.ReactNode;
   suffix?: React.ReactNode;
+  error?: boolean;
 }
 
 const sizeClasses: Record<TextInputSize, string> = {
-  sm: 'h-7 px-2.5 text-sm',
-  default: 'h-9 px-3 text-base',
-  lg: 'h-11 px-4 text-base',
+  sm: 'h-8 px-3 text-xs',
+  default: 'h-10 px-3.5 text-sm',
+  lg: 'h-12 px-4 text-base',
+};
+
+const prefixPadding: Record<TextInputSize, string> = {
+  sm: 'pl-9',
+  default: 'pl-10',
+  lg: 'pl-11',
+};
+
+const suffixPadding: Record<TextInputSize, string> = {
+  sm: 'pr-9',
+  default: 'pr-10',
+  lg: 'pr-11',
 };
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
-  ({ type = 'text', size = 'default', prefix, suffix, className, ...props }, ref) => {
+  ({ type = 'text', size = 'default', prefix, suffix, error, className, ...props }, ref) => {
     const hasAddon = prefix != null || suffix != null;
+
+    const inputClasses = cn(
+      'w-full flex items-center rounded-lg border bg-muted/20 backdrop-blur-sm text-foreground placeholder:text-muted-foreground/40 transition-all duration-300 outline-none',
+      'border-border/50 hover:border-border/80 focus:border-primary/50 focus:bg-muted/30 focus:ring-4 focus:ring-primary/10',
+      error && 'border-destructive/50 focus:border-destructive focus:ring-destructive/10 bg-destructive/5',
+      'disabled:pointer-events-none disabled:opacity-50 read-only:opacity-70 shadow-xs hover:shadow-sm',
+      sizeClasses[size],
+      prefix && prefixPadding[size],
+      suffix && suffixPadding[size],
+      !hasAddon && className
+    );
 
     const input = (
       <input
         ref={ref}
         type={type}
-        className={cn(
-          'rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--bg-tertiary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors duration-150 outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 disabled:pointer-events-none disabled:opacity-50 read-only:opacity-70',
-          sizeClasses[size],
-          prefix && 'pl-9',
-          suffix && 'pr-9',
-          !hasAddon && className
-        )}
+        className={inputClasses}
         {...props}
       />
     );
@@ -53,15 +71,15 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
     if (!hasAddon) return input;
 
     return (
-      <div className={cn('relative flex items-center', className)}>
+      <div className={cn('relative flex items-center w-full group', className)}>
         {prefix && (
-          <span className="pointer-events-none absolute left-2.5 flex items-center text-[var(--text-muted)]">
+          <span className="pointer-events-none absolute left-3 flex items-center justify-center text-muted-foreground/60 group-focus-within:text-primary/70 transition-colors duration-300">
             {prefix}
           </span>
         )}
         {input}
         {suffix && (
-          <span className="pointer-events-none absolute right-2.5 flex items-center text-[var(--text-muted)]">
+          <span className="pointer-events-none absolute right-3 flex items-center justify-center text-muted-foreground/60 group-focus-within:text-primary/70 transition-colors duration-300">
             {suffix}
           </span>
         )}

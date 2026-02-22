@@ -1,6 +1,6 @@
 import { useStore } from '../store/index.ts';
-import { IconButton } from './ui/IconButton.tsx';
-import { CloseIcon } from './icons/CloseIcon.tsx';
+import { Btn } from './ui/Btn.tsx';
+import { XIcon, RotateCcwIcon, SparklesIcon } from 'lucide-react';
 
 interface SystemPromptEditorProps {
     onClose: () => void;
@@ -25,45 +25,55 @@ export function SystemPromptEditor({ onClose }: SystemPromptEditorProps) {
     };
 
     return (
-        <div className="system-prompt-editor">
-            <div className="editor-header">
-                <div className="editor-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="3" y1="6" x2="9" y2="6" />
-                        <line x1="3" y1="12" x2="9" y2="12" />
-                        <line x1="3" y1="18" x2="9" y2="18" />
-                        <circle cx="12" cy="6" r="1.5" fill="currentColor" />
-                        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-                        <circle cx="12" cy="18" r="1.5" fill="currentColor" />
-                    </svg>
-                    System Instructions
-                </div>
-                <IconButton title="Close" onClick={onClose} size="sm" className="close-btn">
-                    <CloseIcon size={14} />
-                </IconButton>
-            </div>
-            <div className="editor-body">
-                <textarea
-                    rows={6}
-                    placeholder={defaultPrompt}
-                    value={currentPrompt}
-                    onChange={(e) => handleSave(e.target.value)}
-                    autoFocus
-                    spellCheck={false}
-                />
-                <div className="editor-footer">
-                    <div className="editor-actions">
-                        <button className="reset-btn" onClick={handleReset} disabled={!currentPrompt} title="Reset to default system prompt">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                                <polyline points="21 3 21 8 16 8" />
-                            </svg>
-                            Reset
-                        </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-in fade-in duration-200">
+            <div className="absolute inset-0 bg-background/40 backdrop-blur-sm" onClick={onClose} />
+
+            <div className="relative w-full max-w-md bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/20">
+                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
+                        <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-lg text-primary">
+                            <SparklesIcon size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm">System Instructions</span>
+                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold opacity-60">Custom Persona</span>
+                        </div>
                     </div>
-                    <div className="prompt-status">
-                        <div className={`status-dot ${currentPrompt ? 'active' : ''}`} />
-                        {currentPrompt ? 'Custom prompt active' : 'Using global default'}
+                    <Btn variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-destructive/10 hover:text-destructive">
+                        <XIcon size={18} />
+                    </Btn>
+                </div>
+
+                <div className="p-5 flex flex-col gap-4">
+                    <div className="relative group">
+                        <textarea
+                            className="w-full bg-muted/30 border border-border/40 rounded-lg p-3.5 text-sm leading-relaxed placeholder:text-muted-foreground/40 focus:bg-muted/50 focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none font-sans min-h-[180px]"
+                            placeholder={defaultPrompt || "Role of the AI..."}
+                            value={currentPrompt}
+                            onChange={(e) => handleSave(e.target.value)}
+                            autoFocus
+                            spellCheck={false}
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-muted/40 border border-border/40 rounded-full">
+                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${currentPrompt ? 'bg-primary shadow-[0_0_8px_var(--primary)]' : 'bg-muted-foreground/30'}`} />
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/80">
+                                {currentPrompt ? 'Custom Mode' : 'Global Default'}
+                            </span>
+                        </div>
+
+                        <Btn
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleReset}
+                            disabled={!currentPrompt}
+                            className="text-xs font-bold uppercase tracking-tight gap-1.5 opacity-70 hover:opacity-100 disabled:opacity-30"
+                        >
+                            <RotateCcwIcon size={12} />
+                            Reset
+                        </Btn>
                     </div>
                 </div>
             </div>

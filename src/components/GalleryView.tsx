@@ -2,17 +2,19 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useStore } from '../store/index.ts';
 import { getAllImages } from '../utils/imageDB.ts';
 import type { StoredImageRecord } from '../types/index.ts';
-import { CloseIcon } from './icons/CloseIcon.tsx';
-
-function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
+import {
+  XIcon,
+  ChevronLeftIcon,
+  DownloadIcon,
+  CopyIcon,
+  StarIcon,
+  ImageIcon,
+  MessageSquareIcon,
+  ChevronRightIcon,
+  ArrowLeftIcon,
+  SparklesIcon
+} from 'lucide-react';
+import { Btn } from './ui/Btn.tsx';
 
 interface MarkdownImage {
   type: 'url';
@@ -58,7 +60,7 @@ async function getMarkdownImages(conversations: { id: string; updatedAt: number 
         }
       }
     } catch {
-      // skip conversation jika gagal dimuat
+      // ignore
     }
   }
 
@@ -76,7 +78,7 @@ export function GalleryView() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
 
-  // Load favorites from storage
+  // Load favorites
   useEffect(() => {
     chrome.storage.local.get(FAVORITES_STORAGE_KEY).then((data) => {
       if (data[FAVORITES_STORAGE_KEY]) {
@@ -85,7 +87,7 @@ export function GalleryView() {
     });
   }, []);
 
-  // Restore scroll position after favorites change
+  // Sync scroll
   useEffect(() => {
     if (scrollContainerRef.current && scrollPositionRef.current > 0) {
       scrollContainerRef.current.scrollTop = scrollPositionRef.current;
@@ -93,13 +95,11 @@ export function GalleryView() {
     }
   }, [favorites]);
 
-  // Save favorites to storage
   const saveFavorites = useCallback(async (newFavorites: Set<string>) => {
     await chrome.storage.local.set({ [FAVORITES_STORAGE_KEY]: Array.from(newFavorites) });
   }, []);
 
   const toggleFavorite = useCallback((item: GalleryItem) => {
-    // Save current scroll position before state change
     if (scrollContainerRef.current) {
       scrollPositionRef.current = scrollContainerRef.current.scrollTop;
     }
@@ -129,30 +129,28 @@ export function GalleryView() {
       setMarkdownImages(mdImgs);
       setLoading(false);
     });
-  }, []);
+  }, [store.conversations]);
 
-  function getConvTitle(conversationId: string): string {
+  const getConvTitle = useCallback((conversationId: string): string => {
     const conv = store.conversations.find((c) => c.id === conversationId);
-    return conv?.title || 'Conversation';
-  }
+    return conv?.title || 'Untitled Chat';
+  }, [store.conversations]);
 
-  function handleDownload(item: GalleryItem) {
+  const handleDownload = (item: GalleryItem) => {
+    const link = document.createElement('a');
     if (isMarkdownImage(item)) {
-      const link = document.createElement('a');
       link.href = item.url;
       link.download = item.url.split('/').pop() || 'image';
       link.target = '_blank';
-      link.click();
-      return;
+    } else {
+      const ext = item.mimeType.split('/')[1] || 'png';
+      link.href = `data:${item.mimeType};base64,${item.data}`;
+      link.download = `generated-${item.key}.${ext}`;
     }
-    const ext = item.mimeType.split('/')[1] || 'png';
-    const link = document.createElement('a');
-    link.href = `data:${item.mimeType};base64,${item.data}`;
-    link.download = `generated-${item.key}.${ext}`;
     link.click();
-  }
+  };
 
-  async function handleCopy(item: GalleryItem) {
+  const handleCopy = async (item: GalleryItem) => {
     if (isMarkdownImage(item)) {
       await navigator.clipboard.writeText(item.url);
       return;
@@ -164,35 +162,27 @@ export function GalleryView() {
     } catch {
       await navigator.clipboard.writeText(`data:${item.mimeType};base64,${item.data}`);
     }
-  }
+  };
 
-  async function handleJumpToConversation(conversationId: string) {
+  const handleJumpToConversation = async (conversationId: string) => {
     setLightbox(null);
     await store.switchConversation(conversationId);
     store.setView('chat');
-  }
+  };
 
   const handleLightboxNav = useCallback((direction: 'prev' | 'next') => {
     if (!lightbox) return;
-    // Sort items with favorites first
     const allItems: GalleryItem[] = [...images, ...markdownImages].sort((a, b) => {
       const aFav = favorites.has(getItemId(a)) ? 1 : 0;
       const bFav = favorites.has(getItemId(b)) ? 1 : 0;
       return bFav - aFav;
     });
-    // Filter by tab
     const filteredItems = activeTab === 'favorites'
       ? allItems.filter((item) => favorites.has(getItemId(item)))
       : allItems;
-    const currentIndex = filteredItems.findIndex((item) => {
-      if (isMarkdownImage(item) && isMarkdownImage(lightbox)) {
-        return item.url === lightbox.url && item.conversationId === lightbox.conversationId;
-      }
-      if (!isMarkdownImage(item) && !isMarkdownImage(lightbox)) {
-        return item.key === lightbox.key;
-      }
-      return false;
-    });
+
+    const currentIndex = filteredItems.findIndex(item => getItemId(item) === getItemId(lightbox));
+
     if (direction === 'prev' && currentIndex > 0) {
       setLightbox(filteredItems[currentIndex - 1]);
     } else if (direction === 'next' && currentIndex < filteredItems.length - 1) {
@@ -203,207 +193,160 @@ export function GalleryView() {
   useEffect(() => {
     if (!lightbox) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        handleLightboxNav('prev');
-      } else if (e.key === 'ArrowRight') {
-        handleLightboxNav('next');
-      } else if (e.key === 'Escape') {
-        setLightbox(null);
-      }
+      if (e.key === 'ArrowLeft') handleLightboxNav('prev');
+      else if (e.key === 'ArrowRight') handleLightboxNav('next');
+      else if (e.key === 'Escape') setLightbox(null);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightbox, handleLightboxNav]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[var(--bg-primary)]">
+    <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
-        <button
-          className="flex items-center gap-1.5 bg-transparent border-none text-[var(--text-secondary)] cursor-pointer text-[0.8125rem] px-2 py-1 transition-colors duration-150 hover:text-[var(--text-primary)]"
+      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border/50 bg-card/50 backdrop-blur-md shrink-0">
+        <Btn
+          variant="ghost"
+          size="sm"
+          className="h-8 gap-2 text-muted-foreground hover:text-foreground pl-1 pr-2.5"
           onClick={() => store.setView('chat')}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Kembali
-        </button>
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-[0.9375rem] font-semibold text-[var(--text-primary)]">Gallery</span>
+          <ArrowLeftIcon size={14} />
+          <span className="text-xs">Back</span>
+        </Btn>
+        <div className="flex items-center gap-3 flex-1">
+          <span className="text-base font-bold text-foreground">Gallery</span>
           {!loading && (
-            <span className="text-xs text-[var(--text-tertiary)] bg-[var(--bg-active)] px-2 py-0.5">
-              {images.length + markdownImages.length} gambar
-            </span>
+            <div className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
+              {images.length + markdownImages.length} items
+            </div>
           )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)] shrink-0">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-background/80 backdrop-blur-sm shrink-0">
         <button
-          className={`px-3 py-1.5 text-[0.8125rem] font-medium transition-colors duration-150 ${activeTab === 'all'
-              ? 'text-[var(--text-primary)] bg-[var(--bg-active)]'
-              : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activeTab === 'all'
+            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
+            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             }`}
           onClick={() => setActiveTab('all')}
         >
-          Semua
+          All Images
         </button>
         <button
-          className={`px-3 py-1.5 text-[0.8125rem] font-medium transition-colors duration-150 flex items-center gap-1.5 ${activeTab === 'favorites'
-              ? 'text-[var(--text-primary)] bg-[var(--bg-active)]'
-              : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 ${activeTab === 'favorites'
+            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 scale-105'
+            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             }`}
           onClick={() => setActiveTab('favorites')}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={activeTab === 'favorites' ? "#fbbf24" : "none"} stroke={activeTab === 'favorites' ? "#fbbf24" : "currentColor"} strokeWidth="2">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-          Favorit
+          <StarIcon size={12} fill={activeTab === 'favorites' ? "currentColor" : "none"} />
+          Favorites
           {!loading && favorites.size > 0 && (
-            <span className={`text-[0.6875rem] px-1.5 py-0.5 ${activeTab === 'favorites' ? 'bg-amber-500/20 text-amber-400' : 'bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]'}`}>
+            <span className={`flex items-center justify-center min-w-4 h-4 rounded-full px-1 text-[9px] font-black ${activeTab === 'favorites' ? 'bg-white/20 text-white' : 'bg-muted/80 text-muted-foreground'}`}>
               {favorites.size}
             </span>
           )}
         </button>
       </div>
 
-      {/* Content */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-[var(--bg-active)] scrollbar-track-transparent">
+      {/* Grid Content */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-5 scrollbar-thin animate-in fade-in duration-500">
         {loading ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center text-[var(--text-tertiary)]">
-            <div className="opacity-40">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
+          <div className="flex flex-col items-center justify-center h-full gap-5 py-32 animate-in fade-in duration-700">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+              <div className="relative w-16 h-16 rounded-lg bg-card/50 backdrop-blur-md border border-primary/20 flex items-center justify-center shadow-2xl">
+                <SparklesIcon size={28} className="text-primary animate-spin duration-3000" />
+              </div>
             </div>
-            <p className="text-[0.9375rem] text-[var(--text-secondary)] font-medium">Memuat gambar...</p>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary animate-pulse">Syncing Library</span>
+              <span className="text-[9px] text-muted-foreground/50 font-medium">Fetching captured assets...</span>
+            </div>
           </div>
         ) : images.length === 0 && markdownImages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center text-[var(--text-tertiary)]">
-            <div className="opacity-40">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
+          <div className="flex flex-col items-center justify-center py-32 text-center text-muted-foreground gap-5">
+            <div className="w-20 h-20 bg-muted/20 rounded-lg flex items-center justify-center">
+              <ImageIcon size={32} className="opacity-20 translate-y-1" />
             </div>
-            <p className="text-[0.9375rem] text-[var(--text-secondary)] font-medium">Belum ada gambar yang dihasilkan</p>
-            <span className="text-[0.8125rem] text-[var(--text-tertiary)] max-w-[240px]">
-              Mulai conversation dan generate gambar untuk melihatnya di sini
-            </span>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-bold text-foreground">Capture the void</p>
+              <span className="text-xs max-w-[200px] leading-relaxed opacity-60">
+                Generated images and captured screenshots will drift through this space.
+              </span>
+            </div>
           </div>
         ) : (() => {
-          // Combine and sort items - favorites first
           const allItems: GalleryItem[] = [...images, ...markdownImages];
           const sortedItems = [...allItems].sort((a, b) => {
             const aFav = isFavorite(a) ? 1 : 0;
             const bFav = isFavorite(b) ? 1 : 0;
-            return bFav - aFav;
+            return bFav - aFav || (b.createdAt - a.createdAt);
           });
-          // Filter by tab
           const filteredItems = activeTab === 'favorites'
             ? sortedItems.filter((item) => isFavorite(item))
             : sortedItems;
 
           if (filteredItems.length === 0) {
             return (
-              <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center text-[var(--text-tertiary)]">
-                <div className="opacity-40">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
+              <div className="flex flex-col items-center justify-center py-32 text-center text-muted-foreground gap-5 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="w-16 h-16 bg-muted/20 rounded-lg flex items-center justify-center">
+                  <StarIcon size={24} className="opacity-20" />
                 </div>
-                <p className="text-[0.9375rem] text-[var(--text-secondary)] font-medium">Belum ada gambar favorit</p>
-                <span className="text-[0.8125rem] text-[var(--text-tertiary)] max-w-[240px]">
-                  Klik ikon bintang pada gambar untuk menambahkan ke favorit
-                </span>
+                <p className="text-xs font-bold uppercase tracking-widest opacity-60">No favorites yet</p>
               </div>
             );
           }
 
           return (
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {filteredItems.map((item) => {
                 const isMd = isMarkdownImage(item);
-                const itemKey = isMd ? `md:${(item as MarkdownImage).conversationId}::${(item as MarkdownImage).url}` : (item as StoredImageRecord).key;
-                const imgSrc = isMd ? (item as MarkdownImage).url : `data:${(item as StoredImageRecord).mimeType};base64,${(item as StoredImageRecord).data}`;
+                const itemKey = getItemId(item);
+                const imgSrc = isMd ? item.url : `data:${item.mimeType};base64,${item.data}`;
                 const fav = isFavorite(item);
 
                 return (
                   <div
                     key={itemKey}
-                    className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden cursor-pointer transition-all duration-150 hover:border-[var(--border-active)]"
+                    className="group relative bg-card border border-border/50 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1"
                     onClick={() => setLightbox(item)}
                   >
-                    <div className="relative aspect-square overflow-hidden bg-[var(--bg-tertiary)]">
+                    <div className="relative aspect-square overflow-hidden bg-muted/20">
                       <img
                         src={imgSrc}
-                        alt="Generated image"
-                        className="w-full h-full object-cover block"
+                        alt="Gallery Asset"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         crossOrigin={isMd ? "anonymous" : undefined}
                       />
-                      {/* Favorite indicator */}
-                      {fav && (
-                        <div className="absolute top-1.5 left-1.5">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="2">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                        </div>
-                      )}
-                      <div
-                        className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1.5 opacity-0 transition-opacity duration-150 hover:opacity-100"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
-                          title="Lihat"
-                          onClick={() => setLightbox(item)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        </button>
-                        <button
-                          className={`flex items-center justify-center w-7 h-7 ${fav ? 'bg-amber-500/30 border-amber-400/50' : 'bg-white/12 border-white/15'} text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]`}
-                          title={fav ? "Hapus Favorit" : "Favorit"}
-                          onClick={() => toggleFavorite(item)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill={fav ? "#fbbf24" : "none"} stroke={fav ? "#fbbf24" : "currentColor"} strokeWidth="2">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                        </button>
-                        <button
-                          className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
-                          title="Download"
-                          onClick={() => handleDownload(item)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
-                        </button>
-                        <button
-                          className="flex items-center justify-center w-7 h-7 bg-white/12 border border-white/15 text-[var(--text-primary)] cursor-pointer transition-colors duration-150 hover:bg-white/[0.22]"
-                          title="Salin"
-                          onClick={() => handleCopy(item)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" />
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                          </svg>
-                        </button>
+
+                      {/* Favorite/Action Overlays */}
+                      <div className="absolute top-2 left-2 z-10 transition-transform duration-300 group-hover:scale-110">
+                        {fav && (
+                          <div className="p-1.5 bg-amber-500 rounded-lg shadow-lg shadow-amber-500/30">
+                            <StarIcon size={12} fill="white" className="text-white" />
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div className="px-2 py-1.5 flex flex-col gap-0.5">
-                      <span className="text-[0.6875rem] text-[var(--text-primary)] whitespace-nowrap overflow-hidden text-ellipsis font-medium">
-                        {getConvTitle(item.conversationId)}
-                      </span>
-                      <span className="text-[0.625rem] text-[var(--text-tertiary)]">{formatDate(item.createdAt)}</span>
+
+                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-3 gap-1.5">
+                        <div className="flex-1 min-w-0 mb-0.5">
+                          <div className="text-[10px] text-white/60 font-medium truncate leading-tight">
+                            {getConvTitle(item.conversationId)}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            className="w-7 h-7 bg-white/10 backdrop-blur-md rounded-md flex items-center justify-center text-white hover:bg-primary transition-colors"
+                            onClick={(e) => { e.stopPropagation(); toggleFavorite(item); }}
+                          >
+                            <StarIcon size={12} fill={fav ? "currentColor" : "none"} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -413,131 +356,113 @@ export function GalleryView() {
         })()}
       </div>
 
-      {/* Lightbox */}
+      {/* Lightbox / Cinema Mode */}
       {lightbox && (() => {
-        // Sort items with favorites first
         const allItems: GalleryItem[] = [...images, ...markdownImages].sort((a, b) => {
-          const aFav = favorites.has(getItemId(a)) ? 1 : 0;
-          const bFav = favorites.has(getItemId(b)) ? 1 : 0;
-          return bFav - aFav;
+          const aFav = isFavorite(a) ? 1 : 0;
+          const bFav = isFavorite(b) ? 1 : 0;
+          return bFav - aFav || (b.createdAt - a.createdAt);
         });
-        // Filter by tab
         const filteredItems = activeTab === 'favorites'
           ? allItems.filter((item) => favorites.has(getItemId(item)))
           : allItems;
-        const currentIndex = filteredItems.findIndex((item) => {
-          if (isMarkdownImage(item) && isMarkdownImage(lightbox)) {
-            return item.url === lightbox.url && item.conversationId === lightbox.conversationId;
-          }
-          if (!isMarkdownImage(item) && !isMarkdownImage(lightbox)) {
-            return item.key === lightbox.key;
-          }
-          return false;
-        });
+
+        const currentIndex = filteredItems.findIndex(item => getItemId(item) === getItemId(lightbox));
         const hasPrev = currentIndex > 0;
         const hasNext = currentIndex < filteredItems.length - 1;
 
-        const handlePrev = () => {
-          if (hasPrev) setLightbox(filteredItems[currentIndex - 1]);
-        };
-
-        const handleNext = () => {
-          if (hasNext) setLightbox(filteredItems[currentIndex + 1]);
-        };
-
         return (
           <div
-            className="fixed inset-0 bg-black/85 z-[1000] flex items-center justify-center backdrop-blur-sm"
+            className="fixed inset-0 bg-background/95 backdrop-blur-2xl z-[1000] flex items-center justify-center animate-in fade-in duration-300"
             onClick={() => setLightbox(null)}
           >
-            {/* Prev Button */}
-            <button
-              className={`absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-black/60 border border-white/20 text-white/80 cursor-pointer z-[10] transition-all duration-150 hover:text-white hover:bg-black/80 ${!hasPrev ? 'opacity-30 pointer-events-none' : ''}`}
-              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-              disabled={!hasPrev}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-
-            {/* Next Button */}
-            <button
-              className={`absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-black/60 border border-white/20 text-white/80 cursor-pointer z-[10] transition-all duration-150 hover:text-white hover:bg-black/80 ${!hasNext ? 'opacity-30 pointer-events-none' : ''}`}
-              onClick={(e) => { e.stopPropagation(); handleNext(); }}
-              disabled={!hasNext}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-
-            <div
-              className="relative bg-[var(--bg-secondary)] border border-[var(--border-subtle)] max-w-[calc(100vw-80px)] max-h-[calc(100vh-48px)] flex flex-col overflow-hidden mx-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/50 border border-[var(--border-subtle)] text-[var(--text-secondary)] cursor-pointer z-[1] transition-colors duration-150 hover:text-[var(--text-primary)]"
+            {/* Controls Overlay */}
+            <div className="absolute inset-x-0 top-0 p-5 flex items-center justify-between z-10 bg-linear-to-b from-background to-transparent pointer-events-none">
+              <div className="flex flex-col gap-0.5 pointer-events-auto">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">
+                  Captured Content
+                </span>
+                <span className="text-sm font-bold text-foreground">
+                  {getConvTitle(lightbox.conversationId)}
+                </span>
+              </div>
+              <Btn
+                variant="ghost"
+                size="icon"
                 onClick={() => setLightbox(null)}
+                className="rounded-full bg-background/40 backdrop-blur-md border border-border/50 hover:bg-destructive/10 hover:text-destructive pointer-events-auto"
               >
-                <CloseIcon size={18} />
+                <XIcon size={20} />
+              </Btn>
+            </div>
+
+            <div className="absolute inset-x-0 bottom-10 px-5 flex items-center justify-center gap-4 z-10 pointer-events-none">
+              <div className="flex items-center gap-1.5 p-1.5 bg-background/40 backdrop-blur-xl border border-white/5 rounded-lg pointer-events-auto shadow-2xl">
+                <Btn
+                  variant="ghost"
+                  size="sm"
+                  className={`gap-2 ${isFavorite(lightbox) ? 'text-amber-500' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); toggleFavorite(lightbox); }}
+                >
+                  <StarIcon size={14} fill={isFavorite(lightbox) ? "currentColor" : "none"} />
+                  Favorite
+                </Btn>
+                <div className="w-px h-4 bg-border/20 mx-1" />
+                <Btn variant="ghost" size="sm" className="gap-2" onClick={(e) => { e.stopPropagation(); handleCopy(lightbox); }}>
+                  <CopyIcon size={14} />
+                  Copy
+                </Btn>
+                <Btn variant="ghost" size="sm" className="gap-2" onClick={(e) => { e.stopPropagation(); handleDownload(lightbox); }}>
+                  <DownloadIcon size={14} />
+                  Save
+                </Btn>
+                <div className="w-px h-4 bg-border/20 mx-1" />
+                <Btn
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-primary"
+                  onClick={(e) => { e.stopPropagation(); handleJumpToConversation(lightbox.conversationId); }}
+                >
+                  <MessageSquareIcon size={14} />
+                  Go to Chat
+                </Btn>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="absolute inset-y-0 left-4 flex items-center z-20 pointer-events-none">
+              <button
+                className={`w-12 h-12 rounded-full border border-white/10 bg-background/20 backdrop-blur-md text-white flex items-center justify-center transition-all duration-300 pointer-events-auto
+                   ${hasPrev ? 'hover:bg-primary hover:scale-110 opacity-100 shadow-xl' : 'opacity-20 translate-x-10 grayscale pointer-events-none'}`}
+                onClick={(e) => { e.stopPropagation(); handleLightboxNav('prev'); }}
+              >
+                <ChevronLeftIcon size={24} />
               </button>
+            </div>
+            <div className="absolute inset-y-0 right-4 flex items-center z-20 pointer-events-none">
+              <button
+                className={`w-12 h-12 rounded-full border border-white/10 bg-background/20 backdrop-blur-md text-white flex items-center justify-center transition-all duration-300 pointer-events-auto
+                   ${hasNext ? 'hover:bg-primary hover:scale-110 opacity-100 shadow-xl' : 'opacity-20 -translate-x-10 grayscale pointer-events-none'}`}
+                onClick={(e) => { e.stopPropagation(); handleLightboxNav('next'); }}
+              >
+                <ChevronRightIcon size={24} />
+              </button>
+            </div>
+
+            {/* Image Container */}
+            <div
+              className="max-w-[90vw] max-h-[75vh] relative animate-in zoom-in-95 duration-500"
+              onClick={e => e.stopPropagation()}
+            >
               <img
                 src={isMarkdownImage(lightbox) ? lightbox.url : `data:${lightbox.mimeType};base64,${lightbox.data}`}
-                alt="Generated image"
-                className="max-w-full max-h-[calc(100vh-160px)] object-contain block"
+                alt="Cinema View"
+                className="w-full h-full object-contain rounded-lg shadow-[0_0_100px_rgba(var(--primary-rgb),0.1)] grayscale-0 transition-all duration-700"
               />
-              <div className="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center gap-3 flex-wrap">
-                <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-                  <span className="text-[0.8125rem] font-semibold text-[var(--text-primary)] whitespace-nowrap overflow-hidden text-ellipsis">
-                    {getConvTitle(lightbox.conversationId)}
-                  </span>
-                  <span className="text-xs text-[var(--text-tertiary)]">{formatDate(lightbox.createdAt)}</span>
-                </div>
-                <div className="flex gap-1.5 shrink-0 items-center">
-                  <span className="text-xs text-[var(--text-tertiary)] mr-2">
-                    {currentIndex + 1} / {filteredItems.length}
-                  </span>
-                  <button
-                    className={`flex items-center gap-1.25 px-2.5 py-1.25 ${isFavorite(lightbox) ? 'bg-amber-500/20 border-amber-400/40 text-amber-400' : 'bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-secondary)]'} text-xs cursor-pointer transition-all duration-150 hover:border-[var(--border-active)]`}
-                    onClick={() => toggleFavorite(lightbox)}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={isFavorite(lightbox) ? "#fbbf24" : "none"} stroke={isFavorite(lightbox) ? "#fbbf24" : "currentColor"} strokeWidth="2">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                    {isFavorite(lightbox) ? 'Favorit' : 'Favoritkan'}
-                  </button>
-                  <button
-                    className="flex items-center gap-1.25 px-2.5 py-1.25 bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs cursor-pointer transition-all duration-150 hover:text-[var(--text-primary)] hover:border-[var(--border-active)]"
-                    onClick={() => handleDownload(lightbox)}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
-                  </button>
-                  <button
-                    className="flex items-center gap-1.25 px-2.5 py-1.25 bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs cursor-pointer transition-all duration-150 hover:text-[var(--text-primary)] hover:border-[var(--border-active)]"
-                    onClick={() => handleCopy(lightbox)}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                    Salin
-                  </button>
-                  <button
-                    className="flex items-center gap-1.25 px-2.5 py-1.25 bg-[rgba(129,140,248,0.1)] border border-[rgba(129,140,248,0.3)] text-[var(--accent-primary)] text-xs cursor-pointer transition-all duration-150 hover:bg-[rgba(129,140,248,0.2)] hover:border-[var(--accent-primary)]"
-                    onClick={() => handleJumpToConversation(lightbox.conversationId)}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    Buka Conversation
-                  </button>
-                </div>
+              <div className="absolute -bottom-8 inset-x-0 text-center pointer-events-none">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">
+                  Item {currentIndex + 1} of {filteredItems.length}
+                </span>
               </div>
             </div>
           </div>

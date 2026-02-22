@@ -3,14 +3,15 @@ import TurndownService from 'turndown';
 import { renderMarkdown } from '../utils/markdown.ts';
 import { copyToClipboard } from '../utils/formatters.ts';
 import { useStore } from '../store/index.ts';
-import { CloseIcon } from './icons/CloseIcon.tsx';
 import type { Message, Attachment, PageContext, SelectedText } from '../types/index.ts';
 import { TextFileViewer } from './TextFileViewer.tsx';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from '../providers.ts';
-import { CheckIcon, ChevronRightIcon, CopyIcon, GitBranchIcon, PencilIcon, RefreshCwIcon, XIcon, PlusIcon, FileTextIcon, GlobeIcon } from 'lucide-react';
+import { CheckIcon, ChevronRightIcon, CopyIcon, GitBranchIcon, PencilIcon, RefreshCwIcon, XIcon, PlusIcon, FileTextIcon, GlobeIcon, DownloadIcon, StarIcon } from 'lucide-react';
 import { Btn } from './ui/Btn.tsx';
 import { MAX_FILE_SIZE, MAX_IMAGE_DIMENSION } from '../types/index.ts';
+
+const FAVORITES_STORAGE_KEY = 'gallery_favorites';
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -443,6 +444,14 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
     }
   }, []);
 
+  const handleTableExpand = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const cell = target.closest('.md-expandable-cell');
+    if (cell) {
+      cell.classList.toggle('expanded');
+    }
+  }, []);
+
   const handleMouseUp = useCallback(() => {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
@@ -524,16 +533,18 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
 
     ref.addEventListener('click', handleCopyCode as unknown as EventListener);
     ref.addEventListener('click', handleTableActions as unknown as EventListener);
+    ref.addEventListener('click', handleTableExpand as unknown as EventListener);
     ref.addEventListener('click', handleLinkClick as unknown as EventListener);
     ref.addEventListener('click', handleImageActions as unknown as EventListener);
 
     return () => {
       ref.removeEventListener('click', handleCopyCode as unknown as EventListener);
       ref.removeEventListener('click', handleTableActions as unknown as EventListener);
+      ref.removeEventListener('click', handleTableExpand as unknown as EventListener);
       ref.removeEventListener('click', handleLinkClick as unknown as EventListener);
       ref.removeEventListener('click', handleImageActions as unknown as EventListener);
     };
-  }, [handleCopyCode, handleTableActions, handleLinkClick, handleImageActions]);
+  }, [handleCopyCode, handleTableActions, handleTableExpand, handleLinkClick, handleImageActions]);
 
   // Close lightbox on Escape
   useEffect(() => {
@@ -544,6 +555,148 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [lightboxSrc]);
+
+  const activeConversationId = useStore((state) => state.activeConversationId);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Load favorites from storage
+  useEffect(() => {
+    chrome.storage.local.get(FAVORITES_STORAGE_KEY).then((data) => {
+      if (data[FAVORITES_STORAGE_KEY]) {
+        setFavorites(new Set(data[FAVORITES_STORAGE_KEY]));
+      }
+    });
+  }, []);
+
+  const toggleFavorite = useCallback(async (id: string) => {
+    const newFavs = new Set(favorites);
+    if (newFavs.has(id)) {
+      newFavs.delete(id);
+    } else {
+      newFavs.add(id);
+    }
+    setFavorites(newFavs);
+    await chrome.storage.local.set({ [FAVORITES_STORAGE_KEY]: Array.from(newFavs) });
+  }, [favorites]);
+
+  // Handle markdown image favorite clicks via event delegation
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // Favorite Button
+      const favBtn = target.closest('.md-image-favorite-btn');
+      if (favBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const src = (favBtn as HTMLElement).dataset.src;
+        if (src && activeConversationId) {
+          const favId = `md:${activeConversationId}::${src}`;
+          toggleFavorite(favId);
+        }
+        return;
+      }
+
+      // Copy Button
+      const copyBtn = target.closest('.md-image-copy-btn');
+      if (copyBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const src = (copyBtn as HTMLElement).dataset.src;
+        if (src) {
+          copyImageToClipboard(src).then(ok => {
+            if (ok) {
+              const originalHtml = copyBtn.innerHTML;
+              copyBtn.classList.add('bg-green-500', 'text-white');
+              copyBtn.classList.remove('bg-black/60', 'hover:bg-primary');
+              copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+              setTimeout(() => {
+                copyBtn.classList.remove('bg-green-500', 'text-white');
+                copyBtn.classList.add('bg-black/60', 'hover:bg-primary');
+                copyBtn.innerHTML = originalHtml;
+              }, 1500);
+            }
+          });
+        }
+        return;
+      }
+
+      // Download Button
+      const downloadBtn = target.closest('.md-image-download-btn');
+      if (downloadBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const src = (downloadBtn as HTMLElement).dataset.src;
+        if (src) {
+          const originalHtml = downloadBtn.innerHTML;
+          downloadBtn.classList.add('bg-primary', 'text-white');
+          downloadBtn.classList.remove('bg-black/60');
+          downloadBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+          // Direct download logic for MD images
+          const link = document.createElement('a');
+          link.href = src;
+          link.download = `image-${Date.now()}.${src.split('.').pop()?.split('?')[0] || 'png'}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          setTimeout(() => {
+            downloadBtn.classList.remove('bg-primary', 'text-white');
+            downloadBtn.classList.add('bg-black/60');
+            downloadBtn.innerHTML = originalHtml;
+          }, 1500);
+        }
+      }
+    };
+
+    el.addEventListener('click', handleClick);
+    return () => el.removeEventListener('click', handleClick);
+  }, [activeConversationId, toggleFavorite]);
+
+  // Sync markdown image favorite indicators with global favorites state
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (!el || !activeConversationId) return;
+
+    const wrappers = el.querySelectorAll('.md-image-wrapper');
+    wrappers.forEach((wrapper) => {
+      const src = (wrapper as HTMLElement).dataset.src;
+      if (!src) return;
+
+      const favId = `md:${activeConversationId}::${src}`;
+      const isFav = favorites.has(favId);
+
+      const indicator = wrapper.querySelector('.md-image-fav-indicator');
+      const favBtn = wrapper.querySelector('.md-image-favorite-btn');
+      const favIcon = favBtn?.querySelector('.fav-icon');
+
+      if (indicator) {
+        if (isFav) {
+          indicator.classList.remove('hidden');
+        } else {
+          indicator.classList.add('hidden');
+        }
+      }
+
+      if (favIcon) {
+        if (isFav) {
+          favBtn?.classList.add('bg-amber-500');
+          favBtn?.classList.remove('bg-black/60', 'hover:bg-primary');
+          favIcon.setAttribute('fill', 'white');
+          favIcon.setAttribute('stroke', 'white');
+        } else {
+          favBtn?.classList.remove('bg-amber-500');
+          favBtn?.classList.add('bg-black/60', 'hover:bg-primary');
+          favIcon.setAttribute('fill', 'none');
+          favIcon.setAttribute('stroke', 'currentColor');
+        }
+      }
+    });
+  }, [favorites, activeConversationId, message.content, message.displayContent, showSummaryContent]);
 
   const roleLabel = message.role === 'user' ? 'You' : message.role === 'error' ? 'Error' : 'AI';
 
@@ -567,7 +720,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
                 onClick={handleRemoveEditPageContext}
                 title="Remove page context"
               >
-                <CloseIcon size={14} />
+                <XIcon size={14} />
               </button>
             </div>
           )}
@@ -588,7 +741,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
                 onClick={handleRemoveEditSelectedText}
                 title="Remove selection"
               >
-                <CloseIcon size={10} />
+                <XIcon size={10} />
               </button>
             </div>
           )}
@@ -617,7 +770,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
                     onClick={() => handleRemoveEditAttachment(idx)}
                     title="Remove"
                   >
-                    <CloseIcon size={12} />
+                    <XIcon size={12} />
                   </button>
                 </div>
               ))}
@@ -667,7 +820,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
             onChange={(e) => setEditText(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <div className="mb-5 w-full flex justify-end gap-2 mt-2">
+          <div className="mb-1 w-full flex justify-end gap-2 mt-2">
             <Btn
               variant='ghost'
               size='sm'
@@ -720,44 +873,46 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
 
   if (isStreaming) {
     const bubbleBgClass = message.role === 'user'
-      ? 'bg-gradient-to-br from-brand-900 to-purple-900 rounded-lg rounded-br-sm'
-      : 'bg-white/5 border border-border rounded-lg rounded-bl-sm';
+      ? 'bg-muted/40 border border-border rounded-lg rounded-br-sm'
+      : 'bg-muted/40 border border-border rounded-lg rounded-bl-sm';
 
     return (
-      <div className={`group flex flex-col gap-1 max-w-full animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
-        <div className="font-semibold uppercase tracking-wider text-text-subtle px-1.5">{roleLabel}</div>
-        <div className={`prose prose-invert max-w-none relative break-words overflow-wrap px-4 py-1 pb-3 ${bubbleBgClass}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
+      <div className={`group flex flex-col gap-1 max-w-[92%] animate-in fade-in slide-in-from-bottom-2 duration-300 ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1.5">{roleLabel}</div>
+        <div className={`prose prose-invert prose-sm prose-p:my-2 prose-hr:my-4 max-w-none relative break-words px-3.5 py-1.5 pb-2.5 ${bubbleBgClass}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
           {message.content ? (
-            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
+            <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
           ) : (
-            <div className="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
+            <div className="flex gap-1 py-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce"></span>
             </div>
           )}
           {isImageGenerationModel && (
-            <div className="image-generation-skeleton">
-              <div className="image-generation-skeleton-shimmer" />
-              <div className="image-generation-skeleton-label">Generating image...</div>
+            <div className="mt-2 h-40 w-full rounded-md bg-muted/30 animate-pulse flex items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+              <div className="text-xs font-medium text-muted-foreground flex flex-col items-center gap-2">
+                <RefreshCwIcon size={16} className="animate-spin text-primary/60" />
+                Generating image...
+              </div>
             </div>
           )}
 
           {quotePopup.visible && (
             <div
-              className="absolute z-50 flex items-center bg-bg-surface-raised border border-border rounded-lg shadow-lg p-0.5 animate-fade-in"
+              className="absolute z-10 flex items-center bg-popover/95 backdrop-blur-md border border-border rounded-md shadow-xl p-0.5 animate-in fade-in zoom-in-95 duration-200"
               style={{ left: quotePopup.x, top: quotePopup.y, transform: 'translate(-50%, -100%)' }}
-              onMouseDown={(e) => e.preventDefault()} // Prevent losing selection
+              onMouseDown={(e) => e.preventDefault()}
             >
               <button
-                className="flex items-center justify-center w-7 h-7 border-none bg-transparent text-text-default rounded-sm cursor-pointer transition-all duration-150 hover:bg-brand-400 hover:text-white"
+                className="flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-sm transition-all"
                 onClick={handleQuoteClick}
-                title="Quote selection"
+                title="Quote"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M3 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
-                  <path d="M15 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
-                </svg>
+                <div className="flex items-center justify-center">
+                  <CopyIcon size={14} />
+                </div>
               </button>
             </div>
           )}
@@ -767,92 +922,98 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
   }
 
   const bubbleBgClass = message.role === 'user'
-    ? 'bg-gradient-to-br from-brand-900 to-purple-900 rounded-lg rounded-br-sm'
+    ? 'bg-muted/40 border border-border rounded-lg rounded-br-sm'
     : message.role === 'error'
-      ? 'bg-danger-400/10 border border-danger-400/30 text-danger-400 rounded-lg rounded-bl-sm'
-      : 'bg-white/5 border border-border rounded-lg rounded-bl-sm';
+      ? 'bg-destructive/10 border border-destructive/20 text-destructive rounded-lg rounded-bl-sm'
+      : 'bg-muted/40 border border-border rounded-lg rounded-bl-sm';
 
   return (
-    <div className={`group flex flex-col gap-1 max-w-full animate-fade-in ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
-      <div className="font-semibold uppercase tracking-wider text-text-subtle px-1.5">
+    <div className={`group flex flex-col gap-1 max-w-[92%] animate-in fade-in slide-in-from-bottom-2 duration-300 ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
+      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1.5">
         {!message.summary && roleLabel}
         {message.isCompacted && !message.summary && (
-          <span className="ml-1 opacity-70" title="This message is compressed & removed from context window">
-            (compacted)
-          </span>
+          <span className="ml-1 opacity-50 font-medium">· Compacted</span>
         )}
       </div>
-      <div className={`prose prose-invert prose-img:m-0 max-w-none relative break-words overflow-wrap px-4 py-0 ${bubbleBgClass} ${isEditing ? 'editing' : ''} ${message.summary ? 'is-summary' : ''}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
+      <div className={`prose prose-invert prose-sm prose-p:my-2 prose-hr:my-4 max-w-none relative break-words px-3.5 py-0 ${bubbleBgClass} ${isEditing ? 'ring-2 ring-primary/30' : ''} ${message.summary ? 'border-dashed border-primary/30 bg-primary/5' : ''}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
         {message.pageContext && (
-          <div className="flex items-center gap-2.5 px-3 py-2.5 mb-2.5 bg-black/30 border border-border rounded-md mt-4">
-            <div className="flex items-center justify-center w-8 h-8 bg-brand-400/15 rounded-sm text-accent shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
+          <div className="flex items-center gap-2.5 px-3 py-2 my-2.5 bg-black/20 border border-white/5 rounded-md mt-4">
+            <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-sm text-primary shrink-0">
+              <GlobeIcon size={16} />
             </div>
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="text-[0.85rem] font-semibold text-text-default truncate mb-0.5">{message.pageContext.pageTitle}</div>
-              <div className="text-[0.7rem] text-text-subtle truncate">{message.pageContext.pageUrl}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold text-foreground truncate uppercase tracking-tight">{message.pageContext.pageTitle}</div>
+              <div className="text-[10px] text-muted-foreground truncate opacity-70 mt-0.5">{message.pageContext.pageUrl}</div>
             </div>
           </div>
         )}
         {message.selectedText && (
-          <div className="flex items-start gap-2.5 px-3 py-2.5 mb-2.5 bg-black/30 border border-border rounded-md">
-            <div className="flex items-center justify-center w-8 h-8 bg-purple-400/15 rounded-sm text-accent-subtle shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 7h16M4 12h16M4 17h10" />
-              </svg>
+          <div className="flex items-start gap-2.5 px-3 py-2 my-2.5 bg-black/20 border border-white/5 rounded-md">
+            <div className="flex items-center justify-center w-8 h-8 bg-purple-500/10 rounded-sm text-purple-400 shrink-0">
+              <FileTextIcon size={16} />
             </div>
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="text-[0.8rem] text-text-muted italic leading-tight mb-1 line-clamp-2">
-                {message.selectedText.selectedText.length > 100
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-muted-foreground italic leading-relaxed line-clamp-2">
+                "{message.selectedText.selectedText.length > 100
                   ? `${message.selectedText.selectedText.substring(0, 100)}...`
-                  : message.selectedText.selectedText}
+                  : message.selectedText.selectedText}"
               </div>
-              <div className="text-[0.7rem] text-text-subtle truncate">From: {message.selectedText.pageTitle}</div>
             </div>
           </div>
         )}
-        {renderedContent}
+        <div className="text-foreground text-sm leading-relaxed py-2.5">
+          {renderedContent}
+        </div>
         {message.generatedImages && message.generatedImages.length > 0 && (
-          <div className="generated-images">
+          <div className="flex flex-wrap gap-2 mb-3">
             {message.generatedImages.map((img, idx) => {
               const src = `data:${img.mimeType};base64,${img.data}`;
-              const ext = img.mimeType.split('/')[1] || 'png';
-              const filename = `generated-image-${idx + 1}.${ext}`;
-
-              const handleCopy = () => {
-                fetch(src)
-                  .then(r => r.blob())
-                  .then(blob => navigator.clipboard.write([new ClipboardItem({ [img.mimeType]: blob })]));
-              };
-
-              const handleDownload = () => {
-                const a = document.createElement('a');
-                a.href = src;
-                a.download = filename;
-                a.click();
-              };
+              const imageKey = img.imageRef || (activeConversationId ? `img_${activeConversationId}_${messageIndex}_${idx}` : '');
+              const favId = `db:${imageKey}`;
+              const isFavorited = favorites.has(favId);
 
               return (
-                <div key={idx} className="generated-image-card mb-5">
-                  <img src={src} alt={`Generated image ${idx + 1}`} />
-                  <div className="generated-image-actions">
-                    <button className="generated-image-btn" onClick={handleCopy} title="Copy image">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                      Copy
+                <div key={idx} className="group/img w-full relative rounded-md overflow-hidden border border-border/50 shadow-md transition-transform hover:scale-[1.02]">
+                  <img src={src} alt="Generated" className="my-0! w-full cursor-zoom-in" onClick={() => setLightboxSrc(src)} />
+                  {isFavorited && (
+                    <div className="absolute top-2.5 left-2.5 p-1.5 bg-amber-500 rounded-lg shadow-lg shadow-amber-500/40 z-10 animate-in zoom-in-50 duration-300">
+                      <StarIcon size={12} fill="white" className="text-white" />
+                    </div>
+                  )}
+                  <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover/img:opacity-100 transition-opacity">
+                    <button
+                      className={`h-6 w-6 flex items-center justify-center backdrop-blur-md rounded-sm transition-all
+                        ${isFavorited ? 'bg-amber-500 text-white' : 'bg-black/60 text-white hover:bg-primary'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(favId);
+                      }}
+                      title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <StarIcon size={12} fill={isFavorited ? "currentColor" : "none"} />
                     </button>
-                    <button className="generated-image-btn" onClick={handleDownload} title="Download image">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      Download
+                    <button
+                      className="h-6 w-6 flex items-center justify-center bg-black/60 backdrop-blur-md text-white rounded-sm hover:bg-primary transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyImageToClipboard(src);
+                      }}
+                      title="Copy"
+                    >
+                      <CopyIcon size={12} />
+                    </button>
+                    <button
+                      className="h-6 w-6 flex items-center justify-center bg-black/60 backdrop-blur-md text-white rounded-sm hover:bg-primary transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const a = document.createElement('a');
+                        a.href = src;
+                        a.download = `generated-${Date.now()}.${img.mimeType.split('/')[1] || 'png'}`;
+                        a.click();
+                      }}
+                      title="Download"
+                    >
+                      <DownloadIcon size={12} />
                     </button>
                   </div>
                 </div>
@@ -861,64 +1022,43 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
           </div>
         )}
         {message.attachments && message.attachments.length > 0 && (
-          <div className="message-attachments">
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {message.attachments.map((att, idx) => (
               att.type === 'image' ? (
-                <img
-                  key={idx}
-                  src={att.data}
-                  alt={att.name}
-                  style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-                  title={att.name}
-                />
-              ) : att.type === 'text' ? (
-                <div
-                  key={idx}
-                  className="text-file-attachment"
-                  onClick={() => setTextFileViewer({ isOpen: true, name: att.name, content: att.data })}
-                  title={`Click to view ${att.name}`}
-                >
-                  <div className="text-file-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10 9 9 9 8 9" />
-                    </svg>
-                  </div>
-                  <div className="text-file-name">{att.name}</div>
+                <div key={idx} className="relative rounded-sm overflow-hidden border border-border/50 group/att">
+                  <img src={att.data} alt={att.name} className="w-12 h-12 object-cover cursor-zoom-in" onClick={() => setLightboxSrc(att.data)} />
                 </div>
-              ) : null
+              ) : (
+                <button
+                  key={idx}
+                  className="flex items-center gap-2 px-2.5 py-1.5 bg-muted/30 border border-border/50 rounded-sm hover:bg-muted/50 transition-all text-xs text-muted-foreground group/att"
+                  onClick={() => setTextFileViewer({ isOpen: true, name: att.name, content: att.data })}
+                >
+                  <FileTextIcon size={14} className="text-primary/60" />
+                  <span className="font-medium truncate max-w-[120px]">{att.name}</span>
+                </button>
+              )
             ))}
           </div>
         )}
         {groundingChunks && groundingChunks.length > 0 && (
-          <div className="grounding-citations">
-            <div className="grounding-citations-header">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
-              </svg>
+          <div className="mt-4 pt-3 border-t border-border/10">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+              <GlobeIcon size={10} />
               Sources
             </div>
-            <div className="grounding-citations-list">
+            <div className="flex flex-wrap gap-1">
               {groundingChunks.map((chunk, idx) => (
                 chunk.web && (
                   <a
                     key={idx}
-                    id={`cite-${idx + 1}`}
                     href={chunk.web.uri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="grounding-source"
-                    title={chunk.web.uri}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-muted/20 border border-border/40 rounded-sm text-xs text-muted-foreground hover:bg-muted/40 hover:text-primary transition-all"
                   >
-                    <span>[{idx + 1}]</span>
-                    <span>{chunk.web.title || new URL(chunk.web.uri).hostname}</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
-                    </svg>
+                    <span className="font-bold text-primary/60">[{idx + 1}]</span>
+                    <span className="max-w-[140px] truncate">{chunk.web.title || new URL(chunk.web.uri).hostname}</span>
                   </a>
                 )
               ))}
@@ -927,19 +1067,16 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
         )}
         {quotePopup.visible && (
           <div
-            className="absolute z-50 flex items-center bg-bg-surface-raised border border-border rounded-lg shadow-lg p-0.5 animate-fade-in"
+            className="absolute z-10 flex items-center bg-popover/95 backdrop-blur-md border border-border rounded-md shadow-xl p-0.5 animate-in fade-in zoom-in-95 duration-200"
             style={{ left: quotePopup.x, top: quotePopup.y, transform: 'translate(-50%, -100%)' }}
-            onMouseDown={(e) => e.preventDefault()} // Prevent losing selection
+            onMouseDown={(e) => e.preventDefault()}
           >
             <button
-              className="flex items-center justify-center w-7 h-7 border-none bg-transparent text-text-default rounded-sm cursor-pointer transition-all duration-150 hover:bg-brand-400 hover:text-white"
+              className="flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-sm transition-all"
               onClick={handleQuoteClick}
-              title="Quote selection"
+              title="Quote"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M3 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
-                <path d="M15 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-3 5.5-5 5.5" />
-              </svg>
+              <CopyIcon size={14} />
             </button>
           </div>
         )}
@@ -952,34 +1089,22 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
         />
       )}
       {message.role === 'user' && !isStreaming && messageIndex !== undefined && (
-        <div className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        <div className={`flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 px-1 ${message.role === 'user' ? 'justify-end' : ''}`}>
+          {!isEditing && (
+            <MessageCopyButton content={message.content} />
+          )}
           {onEdit && !isEditing && (
-            <Btn
-              size='icon-sm'
-              variant='ghost'
-              onClick={handleEditClick}
-              title="Edit message"
-            >
+            <Btn size="icon-sm" variant="ghost" onClick={handleEditClick} title="Edit">
               <PencilIcon size={14} />
             </Btn>
           )}
           {onRegenerate && !isEditing && (
-            <Btn
-              size='icon-sm'
-              variant='ghost'
-              onClick={() => onRegenerate(messageIndex)}
-              title="Regenerate response"
-            >
+            <Btn size="icon-sm" variant="ghost" onClick={() => onRegenerate(messageIndex)} title="Regenerate">
               <RefreshCwIcon size={14} />
             </Btn>
           )}
           {onBranch && !isEditing && (
-            <Btn
-              size='icon-sm'
-              variant='ghost'
-              onClick={() => onBranch(messageIndex)}
-              title="Branch from here"
-            >
+            <Btn size="icon-sm" variant="ghost" onClick={() => onBranch(messageIndex)} title="Branch">
               <GitBranchIcon size={14} />
             </Btn>
           )}
@@ -989,10 +1114,9 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
       {/* Confirm Dialog for Submit with after-messages */}
       <ConfirmDialog
         isOpen={showSubmitConfirm}
-        title="Confirm Edit"
-        message="Editing this message will clear all subsequent messages and regenerate the response. Continue?"
+        title="Regenerate Response?"
+        message="Editing this message will clear all following messages and start a new response. Continue?"
         confirmLabel="Continue"
-        cancelLabel="Cancel"
         onConfirm={handleConfirmSubmit}
         onCancel={() => setShowSubmitConfirm(false)}
       />
@@ -1000,17 +1124,38 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
       {/* Confirm Dialog for Cancel with changes */}
       <ConfirmDialog
         isOpen={showCancelConfirm}
-        title="Discard Changes"
+        title="Discard Changes?"
         message="You have unsaved changes. Are you sure you want to discard them?"
         confirmLabel="Discard"
-        cancelLabel="Keep Editing"
         variant="danger"
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelConfirm(false)}
       />
 
       {lightboxSrc && (
-        <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+        <ImageLightbox
+          src={lightboxSrc}
+          isFavorited={favorites.has(
+            (() => {
+              if (!message.generatedImages) return '';
+              const idx = message.generatedImages.findIndex(img => `data:${img.mimeType};base64,${img.data}` === lightboxSrc);
+              if (idx === -1) return '';
+              const img = message.generatedImages[idx];
+              const imageKey = img.imageRef || (activeConversationId ? `img_${activeConversationId}_${messageIndex}_${idx}` : '');
+              return `db:${imageKey}`;
+            })()
+          )}
+          favId={(() => {
+            if (!message.generatedImages) return '';
+            const idx = message.generatedImages.findIndex(img => `data:${img.mimeType};base64,${img.data}` === lightboxSrc);
+            if (idx === -1) return '';
+            const img = message.generatedImages[idx];
+            const imageKey = img.imageRef || (activeConversationId ? `img_${activeConversationId}_${messageIndex}_${idx}` : '');
+            return `db:${imageKey}`;
+          })()}
+          onToggleFavorite={toggleFavorite}
+          onClose={() => setLightboxSrc(null)}
+        />
       )}
 
       {textFileViewer.isOpen && (
@@ -1048,11 +1193,24 @@ function copyImageToClipboard(src: string): Promise<boolean> {
   });
 }
 
-function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+function ImageLightbox({
+  src,
+  favId,
+  isFavorited,
+  onToggleFavorite,
+  onClose
+}: {
+  src: string;
+  favId?: string;
+  isFavorited?: boolean;
+  onToggleFavorite?: (id: string) => void;
+  onClose: () => void;
+}) {
   const [copySuccess, setCopySuccess] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
     copyImageToClipboard(src).then((ok) => {
       if (ok) {
         setCopySuccess(true);
@@ -1061,59 +1219,175 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
     });
   };
 
-  const handleDownload = () => {
-    const a = document.createElement('a');
-    a.href = src;
-    const ext = src.split('.').pop()?.split('?')[0] || 'png';
-    a.download = `image.${ext}`;
-    a.click();
-    setDownloadSuccess(true);
-    setTimeout(() => setDownloadSuccess(false), 1500);
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      let downloadUrl = src;
+      let ext = 'png';
+
+      // Parse extension from Data URL or file path
+      if (src.startsWith('data:')) {
+        const mimeMatch = src.match(/data:([^;]+);/);
+        if (mimeMatch) {
+          ext = mimeMatch[1].split('/')[1] || 'png';
+        }
+      } else {
+        ext = src.split('.').pop()?.split('?')[0] || 'png';
+        // For external URLs, fetch as blob to ensure download attribute works (CORS)
+        try {
+          const res = await fetch(src);
+          const blob = await res.blob();
+          downloadUrl = URL.createObjectURL(blob);
+        } catch (e) {
+          console.error("Fetch failed, falling back to direct link", e);
+        }
+      }
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `attachment-${Date.now()}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      if (downloadUrl.startsWith('blob:')) {
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 100);
+      }
+
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 1500);
+    } catch (err) {
+      console.error('Download failed:', err);
+    }
   };
 
   return (
-    <div className="lightbox-overlay" onClick={onClose}>
-      <div className="lightbox-toolbar" onClick={(e) => e.stopPropagation()}>
-        <button
-          className={`lightbox-btn${copySuccess ? ' lightbox-btn-success' : ''}`}
-          onClick={handleCopy}
-          title="Copy image"
+    <div
+      className="fixed inset-0 z-1000 flex items-center justify-center bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300"
+      onClick={onClose}
+    >
+      {/* Controls Overlay Header */}
+      <div className="absolute inset-x-0 top-0 p-5 flex items-center justify-between z-10 bg-linear-to-b from-background to-transparent pointer-events-none">
+        <div className="flex flex-col gap-0.5 pointer-events-auto">
+          <span className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">
+            Attachment Detail
+          </span>
+          <span className="text-sm font-bold text-foreground">
+            Image Viewer
+          </span>
+        </div>
+        <Btn
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="rounded-full bg-background/40 backdrop-blur-md border border-border/50 hover:bg-destructive/10 hover:text-destructive pointer-events-auto"
         >
-          {copySuccess ? (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
+          <XIcon size={20} />
+        </Btn>
+      </div>
+
+      {/* Bottom Action Bar */}
+      <div className="absolute inset-x-0 bottom-10 px-5 flex items-center justify-center gap-4 z-10 pointer-events-none">
+        <div className="flex items-center gap-1.5 p-1.5 bg-background/40 backdrop-blur-xl border border-white/5 rounded-lg pointer-events-auto shadow-2xl">
+          {favId && onToggleFavorite && (
+            <>
+              <Btn
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${isFavorited ? 'text-amber-500 bg-amber-500/10' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite(favId);
+                }}
+              >
+                <StarIcon size={14} fill={isFavorited ? "currentColor" : "none"} />
+                {isFavorited ? 'Favorited' : 'Favorite'}
+              </Btn>
+              <div className="w-px h-4 bg-border/20 mx-1" />
+            </>
           )}
-        </button>
-        <button
-          className={`lightbox-btn${downloadSuccess ? ' lightbox-btn-success' : ''}`}
-          onClick={handleDownload}
-          title="Download image"
+          <Btn
+            variant="ghost"
+            size="sm"
+            className={`gap-2 ${copySuccess ? 'text-green-500 bg-green-500/10' : ''}`}
+            onClick={handleCopy}
+          >
+            {copySuccess ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+            {copySuccess ? 'Copied' : 'Copy'}
+          </Btn>
+          <div className="w-px h-4 bg-border/20 mx-1" />
+          <Btn
+            variant="ghost"
+            size="sm"
+            className={`gap-2 ${downloadSuccess ? 'text-primary bg-primary/10' : ''}`}
+            onClick={handleDownload}
+          >
+            <DownloadIcon size={14} />
+            {downloadSuccess ? 'Saving...' : 'Download'}
+          </Btn>
+        </div>
+      </div>
+
+      {/* Image Container */}
+      <div
+        className="max-w-[90vw] max-h-[75vh] relative animate-in zoom-in-95 duration-500"
+        onClick={e => e.stopPropagation()}
+      >
+        <img
+          src={src}
+          alt="Preview"
+          className="w-full h-full object-contain rounded-lg shadow-[0_0_100px_rgba(var(--primary-rgb),0.2)] grayscale-0"
+        />
+      </div>
+    </div>
+  );
+}
+
+function MessageCopyButton({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    copyToClipboard(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [content]);
+
+  return (
+    <Btn
+      size="icon-sm"
+      variant="ghost"
+      className={copied ? 'text-green-500! bg-green-500/10!' : ''}
+      onClick={handleCopy}
+      title="Copy"
+    >
+      {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+    </Btn>
+  );
+}
+
+function MessageActions({
+  content,
+  messageIndex,
+  onBranch,
+}: {
+  content: string;
+  messageIndex?: number;
+  onBranch?: (index: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 px-1">
+      <MessageCopyButton content={content} />
+      {onBranch && messageIndex !== undefined && (
+        <Btn
+          size="icon-sm"
+          variant="ghost"
+          onClick={() => onBranch(messageIndex)}
+          title="Branch"
         >
-          {downloadSuccess ? (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          )}
-        </button>
-        <button className="lightbox-btn lightbox-close-btn" onClick={onClose} title="Close (Esc)">
-          <CloseIcon size={15} />
-        </button>
-      </div>
-      <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-        <img src={src} alt="Lightbox preview" className="lightbox-img" />
-      </div>
+          <GitBranchIcon size={14} />
+        </Btn>
+      )}
     </div>
   );
 }
@@ -1248,51 +1522,4 @@ function readFileAsDataURL(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
-}
-
-function MessageActions({
-  content,
-  messageIndex,
-  onBranch,
-}: {
-  content: string;
-  messageIndex?: number;
-  onBranch?: (index: number) => void;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(() => {
-    copyToClipboard(content).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }, [content]);
-
-  return (
-    <div className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-      <Btn
-        size='icon-sm'
-        variant='ghost'
-        className={copied ? 'text-success-400! bg-success-400/10!' : 'text-text-subtle'}
-        onClick={handleCopy}
-        title="Copy response"
-      >
-        {copied ? (
-          <CheckIcon size={14} />
-        ) : (
-          <CopyIcon size={14} />
-        )}
-      </Btn>
-      {onBranch && messageIndex !== undefined && (
-        <Btn
-          size='icon-sm'
-          variant='ghost'
-          onClick={() => onBranch(messageIndex)}
-          title="Branch from here"
-        >
-          <GitBranchIcon size={14} />
-        </Btn>
-      )}
-    </div>
-  );
 }

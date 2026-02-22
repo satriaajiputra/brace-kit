@@ -11,21 +11,21 @@ export interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<BtnVariant, string> = {
   default:
-    'bg-[var(--accent-primary)] text-white border-transparent hover:opacity-90 active:opacity-80',
+    'bg-primary text-primary-foreground border-transparent hover:brightness-110 active:scale-95 shadow-sm',
   destructive:
-    'bg-[var(--color-danger-500)] text-white border-transparent hover:bg-[var(--color-danger-400)] active:bg-[var(--color-danger-600)]',
+    'bg-destructive text-destructive-foreground border-transparent hover:brightness-110 active:scale-95 shadow-sm',
   outline:
-    'border-[var(--border-default)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)]',
+    'border-border bg-transparent text-foreground hover:bg-muted active:bg-muted/80',
   secondary:
-    'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:bg-[var(--bg-active)]',
+    'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80 active:bg-secondary/60',
   ghost:
-    'border-transparent bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:bg-[var(--bg-active)]',
-  link: 'border-transparent bg-transparent text-[var(--accent-primary)] underline-offset-4 hover:underline active:opacity-70',
+    'border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80',
+  link: 'border-transparent bg-transparent text-primary underline-offset-4 hover:underline active:opacity-70',
 };
 
 const sizeClasses: Record<BtnSize, string> = {
-  default: 'h-9 px-4 py-2 text-base',
-  sm: 'h-7 px-3 py-1 text-sm',
+  default: 'h-9 px-4 py-2 text-sm',
+  sm: 'h-8 px-3 py-1.5 text-xs font-semibold uppercase tracking-tight',
   lg: 'h-11 px-6 py-2.5 text-base',
   icon: 'h-9 w-9 p-0',
   'icon-sm': 'h-7 w-7 p-0',
@@ -33,7 +33,7 @@ const sizeClasses: Record<BtnSize, string> = {
 };
 
 const base =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-sm)] border font-medium transition-all duration-150 cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border font-medium transition-all duration-200 cursor-pointer select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30 disabled:grayscale [&_svg]:pointer-events-none [&_svg]:shrink-0';
 
 export function Btn({
   children,

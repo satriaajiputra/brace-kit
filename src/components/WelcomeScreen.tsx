@@ -1,37 +1,68 @@
+import { BookOpenIcon, MousePointer2Icon, SparklesIcon } from 'lucide-react';
 import { usePageContext } from '../hooks/usePageContext.ts';
+import { Btn } from './ui/Btn.tsx';
 
 export function WelcomeScreen() {
   const { attachPageContext, grabSelection } = usePageContext();
 
   return (
-    <div id="welcome">
-      <div className="welcome-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#wgrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <defs>
-            <linearGradient id="wgrad" x1="2" y1="2" x2="22" y2="22">
-              <stop stopColor="#818cf8"/>
-              <stop offset="1" stopColor="#a78bfa"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      <h2>AI Sidebar</h2>
-      <p>Chat with AI about the current page or anything else.</p>
-      <div className="welcome-actions">
-        <button className="welcome-btn" onClick={attachPageContext}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-          Read Current Page
-        </button>
-        <button className="welcome-btn" onClick={grabSelection}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-          </svg>
-          Grab Selection
-        </button>
+    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95 duration-700">
+      <div className="w-full max-w-[280px] space-y-8">
+
+        {/* Branding Section */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full group-hover:bg-primary/30 transition-colors duration-500" />
+            <div className="relative w-20 h-20 rounded-lg bg-card/80 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl rotate-3 group-hover:rotate-6 transition-transform duration-500">
+              <SparklesIcon size={36} className="text-primary animate-pulse" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              AI Sidebar
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium max-w-[220px] leading-relaxed mx-auto">
+              Your intelligent companion for the web. Explore, analyze, and create.
+            </p>
+          </div>
+        </div>
+
+        {/* Action Grid */}
+        <div className="grid gap-3 animate-in slide-in-from-bottom-6 duration-700 delay-200">
+          <Btn
+            variant="default"
+            size="lg"
+            className="px-4! w-full justify-start h-14 rounded-lg gap-4 group/btn"
+            onClick={attachPageContext}
+          >
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform">
+              <BookOpenIcon size={16} />
+            </div>
+            <div className="flex flex-col items-start gap-0">
+              <span className="text-xs font-bold uppercase tracking-widest">Read Page</span>
+              <span className="text-[10px] opacity-60 font-medium">Analyze current context</span>
+            </div>
+          </Btn>
+
+          <Btn
+            variant="outline"
+            size="lg"
+            className="px-4! w-full justify-start h-14 rounded-lg gap-4 border-border/50 bg-card/50 backdrop-blur-md group/btn"
+            onClick={grabSelection}
+          >
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover/btn:scale-110 transition-transform">
+              <MousePointer2Icon size={16} />
+            </div>
+            <div className="flex flex-col items-start gap-0">
+              <span className="text-xs font-bold uppercase tracking-widest">Grab Selection</span>
+              <span className="text-[10px] opacity-60 font-medium">Focus on highlighted text</span>
+            </div>
+          </Btn>
+        </div>
+
+        <div className="pt-4 animate-in fade-in duration-1000 delay-500 text-[10px] text-muted-foreground/40 font-bold uppercase tracking-[0.3em]">
+          Powered by Advanced Intelligence
+        </div>
       </div>
     </div>
   );

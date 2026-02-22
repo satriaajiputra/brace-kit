@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../../store/index.ts';
 import { MEMORY_CATEGORIES, MEMORY_CATEGORY_LABELS } from '../../types/index.ts';
 import type { MemoryCategory, Memory } from '../../types/index.ts';
-import { CloseIcon } from '../icons/CloseIcon.tsx';
+import { PencilIcon, PlusIcon, XIcon } from 'lucide-react';
 
 export function MemorySettings() {
   const store = useStore();
@@ -48,7 +48,7 @@ export function MemorySettings() {
 
   const handleAddMemory = () => {
     if (!newMemoryContent.trim()) return;
-    
+
     store.addMemory({
       id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       category: newMemoryCategory,
@@ -59,125 +59,132 @@ export function MemorySettings() {
       updatedAt: Date.now(),
     });
     store.saveToStorage();
-    
+
     setNewMemoryContent('');
     setShowAddForm(false);
   };
 
   return (
-    <section className="settings-section">
-      <div className="section-header-row">
-        <h3>Memory</h3>
-        <label className="toggle-switch">
+    <section className="flex flex-col gap-3 py-3 border-b border-border last:border-0">
+      <div className="flex items-center justify-between px-0.5">
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-sm font-semibold tracking-tight text-foreground">Memory</h3>
+          <p className="text-xs text-muted-foreground leading-none">Personalize assistant behavior</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer shrink-0">
           <input
             type="checkbox"
+            className="sr-only peer"
             checked={store.memoryEnabled}
             onChange={(e) => {
               store.setMemoryEnabled(e.target.checked);
               store.saveToStorage();
             }}
           />
-          <span className="toggle-slider"></span>
+          <div className="w-8 h-4.5 bg-muted rounded-full peer peer-checked:bg-primary transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-3.5"></div>
         </label>
       </div>
-      <p className="memory-description">
+
+      <p className="text-xs text-muted-foreground leading-tight px-0.5 mb-1">
         AI automatically learns your preferences from conversations. You can also add memories manually.
       </p>
-      
+
       {!showAddForm ? (
-        <button 
-          className="btn-secondary" 
+        <button
+          className="w-full h-8 flex items-center justify-center gap-2 bg-secondary/60 hover:bg-secondary text-foreground text-xs font-medium rounded-md border border-border/50 transition-all shadow-sm group"
           onClick={() => setShowAddForm(true)}
-          style={{ marginBottom: '1rem' }}
         >
-          + Add Memory
+          <PlusIcon size={14} />
+          Add Memory
         </button>
       ) : (
-        <div style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-          <select 
+        <div className="flex flex-col gap-2 p-3 rounded-lg bg-secondary/30 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-300">
+          <select
+            className="w-full h-8 px-2 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all text-foreground cursor-pointer"
             value={newMemoryCategory}
             onChange={(e) => setNewMemoryCategory(e.target.value as MemoryCategory)}
-            style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'white' }}
           >
             {MEMORY_CATEGORIES.map(cat => (
               <option key={cat} value={cat}>{MEMORY_CATEGORY_LABELS[cat]}</option>
             ))}
           </select>
           <textarea
+            className="w-full min-h-[60px] p-2 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground resize-none"
             value={newMemoryContent}
             onChange={(e) => setNewMemoryContent(e.target.value)}
-            placeholder="Enter memory content..."
-            style={{ width: '100%', minHeight: '60px', marginBottom: '0.5rem', padding: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'white', resize: 'vertical' }}
+            placeholder="What should I remember?"
           />
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn-primary" onClick={handleAddMemory}>Save</button>
-            <button className="btn-secondary" onClick={() => { setShowAddForm(false); setNewMemoryContent(''); }}>Cancel</button>
+          <div className="flex gap-2">
+            <button className="flex-1 h-7 bg-primary text-primary-foreground text-xs font-medium rounded hover:bg-primary/90 transition-colors" onClick={handleAddMemory}>Save</button>
+            <button className="flex-1 h-7 bg-muted text-muted-foreground text-xs font-medium rounded hover:bg-muted/80 transition-colors" onClick={() => { setShowAddForm(false); setNewMemoryContent(''); }}>Cancel</button>
           </div>
         </div>
       )}
 
-      <div id="memory-list" className="memory-list">
+      <div className="flex flex-col gap-4 mt-1 max-h-[320px] overflow-y-auto pr-1 scroll-smooth">
         {store.memories.length === 0 ? (
-          <p className="empty-text">No memories yet. Chat more to build personalization.</p>
+          <div className="flex flex-col items-center justify-center py-4 px-2 text-center rounded-lg border border-dashed border-border/50 bg-secondary/10">
+            <p className="text-xs text-muted-foreground italic">No memories yet. Chat more to build personalization.</p>
+          </div>
         ) : (
           MEMORY_CATEGORIES.map((cat) => {
             const items = store.memories.filter((m) => m.category === cat);
             if (items.length === 0) return null;
 
             return (
-              <div key={cat} className="memory-category">
-                <div className="memory-category-header">{MEMORY_CATEGORY_LABELS[cat as MemoryCategory]}</div>
-                {items.map((item) => (
-                  <div key={item.id} className="memory-item">
-                    {editingMemory?.id === item.id ? (
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <textarea
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          style={{ width: '100%', minHeight: '50px', padding: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'white', resize: 'vertical', fontSize: '0.9rem' }}
-                          autoFocus
-                        />
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button className="btn-primary" onClick={handleSaveEdit} style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}>Save</button>
-                          <button className="btn-secondary" onClick={handleCancelEdit} style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}>Cancel</button>
+              <div key={cat} className="flex flex-col gap-1.5">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-0.5">{MEMORY_CATEGORY_LABELS[cat as MemoryCategory]}</div>
+                <div className="flex flex-col gap-1">
+                  {items.map((item) => (
+                    <div key={item.id} className="group relative flex items-start gap-2 p-2 rounded-md bg-secondary/30 hover:bg-secondary/40 border border-border/50 transition-all">
+                      {editingMemory?.id === item.id ? (
+                        <div className="flex-1 flex flex-col gap-2">
+                          <textarea
+                            className="w-full min-h-[50px] p-2 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all text-foreground resize-none"
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            autoFocus
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button className="px-2 h-6 bg-primary text-primary-foreground text-[10px] font-bold uppercase rounded hover:bg-primary/90 transition-colors" onClick={handleSaveEdit}>Save</button>
+                            <button className="px-2 h-6 bg-muted text-muted-foreground text-[10px] font-bold uppercase rounded hover:bg-muted/80 transition-colors" onClick={handleCancelEdit}>Cancel</button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="memory-item-text">{item.content}</span>
-                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                          <button
-                            className="memory-item-edit"
-                            title="Edit"
-                            onClick={() => handleStartEdit(item)}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', transition: 'all 0.2s' }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
-                            onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          </button>
-                          <button
-                            className="memory-item-delete"
-                            title="Remove"
-                            onClick={() => handleDeleteMemory(item.id)}
-                          >
-                            <CloseIcon size={10} />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
+                      ) : (
+                        <>
+                          <span className="flex-1 text-xs text-foreground/90 leading-normal">{item.content}</span>
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-all"
+                              title="Edit"
+                              onClick={() => handleStartEdit(item)}
+                            >
+                              <PencilIcon size={14} />
+                            </button>
+                            <button
+                              className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
+                              title="Remove"
+                              onClick={() => handleDeleteMemory(item.id)}
+                            >
+                              <XIcon size={14} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })
         )}
       </div>
+
       {store.memories.length > 0 && (
-        <button id="btn-clear-memories" className="btn-danger" onClick={handleClearMemories}>
+        <button
+          className="mt-2 w-full h-8 flex items-center justify-center bg-destructive/5 text-destructive hover:bg-destructive/10 text-[10px] font-bold uppercase tracking-wider rounded border border-destructive/20 transition-all"
+          onClick={handleClearMemories}
+        >
           Clear All Memories ({store.memories.length})
         </button>
       )}

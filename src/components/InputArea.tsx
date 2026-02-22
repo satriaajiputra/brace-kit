@@ -9,6 +9,7 @@ import { SelectionPreview } from './SelectionPreview.tsx';
 import { PageContextPreview } from './PageContextPreview.tsx';
 import { ProviderPopover } from './ProviderPopover.tsx';
 import { XAI_IMAGE_MODELS, GEMINI_IMAGE_MODELS } from '../providers.ts';
+import { GlobeIcon, PaperclipIcon, SquareTerminal } from 'lucide-react';
 
 const SLASH_COMMANDS = [
   { cmd: '/compact', desc: 'Summarize and compress conversation' },
@@ -187,17 +188,17 @@ export function InputArea() {
   }, [store.pageContext, store]);
 
   return (
-    <div id="input-area">
+    <div id="input-area" className="flex flex-col gap-1.5 p-3 bg-background border-t border-border">
       <PageContextPreview />
       <FilePreview />
       <SelectionPreview />
 
       {/* Image Options Row */}
       {isImageGenerationModel && (
-        <div className="flex items-center gap-2 px-1 pt-1.5 pb-1">
-          <label className="text-xs text-text-muted whitespace-nowrap">Aspect Ratio:</label>
+        <div className="flex items-center gap-2 px-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 whitespace-nowrap">Aspect Ratio</label>
           <select
-            className="text-xs text-text-default bg-bg-surface-raised border border-border-subtle rounded px-1.5 py-0.5 cursor-pointer outline-none focus:border-border-active disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-xs bg-muted/40 border border-input rounded-md px-2 py-0.5 cursor-pointer outline-none transition-all hover:bg-muted/60 focus:ring-1 focus:ring-ring disabled:opacity-50 text-foreground"
             value={imageAspectRatio}
             onChange={(e) => setImageAspectRatio(e.target.value)}
             disabled={store.isStreaming}
@@ -224,47 +225,38 @@ export function InputArea() {
       )}
 
       {/* Input Row */}
-      <div className="group relative flex items-center gap-1.5 bg-bg-surface-raised border border-text-subtle rounded-lg p-1.5 transition-all duration-150 focus-within:border-accent focus-within:ring-2 focus-within:ring-brand-400/20">
+      <div className="group relative flex items-center gap-1 bg-muted/40 border border-input rounded-md py-1 px-2 transition-all duration-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
         {/* Left Action Buttons */}
         <div className="flex shrink-0 items-center">
           <button
             type="button"
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded transition-all duration-150 ${store.pageContext
-              ? 'text-accent bg-brand-400/15'
-              : 'text-text-subtle hover:text-accent hover:bg-brand-400/10'
+            className={`flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 ${store.pageContext
+              ? 'text-primary bg-primary/15'
+              : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
               }`}
             title="Add current page to context"
             onClick={handleAttachClick}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
+            <GlobeIcon size={16} />
           </button>
           <button
             type="button"
-            className="flex items-center justify-center w-8 h-8 border-none bg-transparent text-text-subtle rounded transition-all duration-150 hover:text-accent hover:bg-brand-400/10"
+            className="flex items-center justify-center w-8 h-8 text-muted-foreground rounded-md transition-all duration-200 hover:text-primary hover:bg-primary/10"
             title="Attach file (image, txt, csv, pdf)"
             onClick={() => fileInputRef.current?.click()}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-            </svg>
+            <PaperclipIcon size={16} />
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded transition-all duration-150 ${store.showSystemPromptEditor
-              ? 'text-accent bg-brand-400/15'
-              : 'text-text-subtle hover:text-accent hover:bg-brand-400/10'
+            className={`flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 ${store.showSystemPromptEditor
+              ? 'text-primary bg-primary/15'
+              : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
               }`}
             title="System Prompt"
             onClick={() => store.setShowSystemPromptEditor(!store.showSystemPromptEditor)}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="4 17 10 11 4 5" />
-              <line x1="12" y1="19" x2="20" y2="19" />
-            </svg>
+            <SquareTerminal size={16} />
           </button>
           <input
             type="file"
@@ -278,21 +270,21 @@ export function InputArea() {
 
         {/* Slash Commands Popover */}
         {filteredCommands.length > 0 && (
-          <div className="absolute bottom-full left-0 right-0 bg-bg-surface border border-border-subtle rounded-md shadow-lg mb-2 overflow-hidden z-[100] animate-in slide-in-from-bottom-2 duration-200">
+          <div className="absolute bottom-full left-0 right-0 bg-popover border border-border rounded-md shadow-xl mb-2 overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-md">
             {filteredCommands.map(({ cmd, desc }) => (
               <div
                 key={cmd}
-                className={`px-3.5 py-2.5 cursor-pointer flex flex-col gap-0.5 transition-colors ${cmd === autocompleteSuggestion
-                  ? 'bg-bg-selected'
-                  : 'hover:bg-bg-hover'
+                className={`px-3 py-2 cursor-pointer flex flex-col gap-0 transition-colors ${cmd === autocompleteSuggestion
+                  ? 'bg-accent/20 text-accent-foreground'
+                  : 'hover:bg-accent/10 focus:bg-accent/20'
                   }`}
                 onClick={() => {
                   setText(cmd + ' ');
                   textareaRef.current?.focus();
                 }}
               >
-                <div className="font-semibold text-[13px] text-accent font-mono">{cmd}</div>
-                <div className="text-[11px] text-text-subtle">{desc}</div>
+                <div className="font-bold text-xs text-primary font-mono">{cmd}</div>
+                <div className="text-[10px] text-muted-foreground leading-tight tracking-tight">{desc}</div>
               </div>
             ))}
           </div>
@@ -303,19 +295,19 @@ export function InputArea() {
           {/* Ghost text overlay for autocomplete */}
           <div
             ref={ghostRef}
-            className="absolute inset-0 pointer-events-none overflow-hidden whitespace-pre-wrap break-words font-sans text-[0.95rem] leading-[1.5] py-1 px-0.5 max-h-[120px]"
+            className="absolute inset-0 pointer-events-none overflow-hidden whitespace-pre-wrap break-words font-sans text-sm leading-relaxed py-1.5 px-1 max-h-[120px]"
             aria-hidden="true"
           >
             <span className="text-transparent">{text}</span>
             {autocompleteSuggestion && (
-              <span className="text-text-subtle/50 italic">
+              <span className="text-muted-foreground/40 italic">
                 {autocompleteSuggestion.slice(text.length)}
               </span>
             )}
           </div>
           <textarea
             ref={textareaRef}
-            className="relative w-full border-none bg-transparent text-text-default font-sans text-[0.95rem] resize-none leading-[1.5] max-h-[120px] py-1 px-0.5 outline-none placeholder:text-text-subtle"
+            className="relative w-full border-none bg-transparent text-foreground font-sans text-sm resize-none leading-relaxed max-h-[120px] py-1.5 px-1 outline-none placeholder:text-muted-foreground/60"
             placeholder={placeholder}
             rows={1}
             value={text}
@@ -338,25 +330,25 @@ export function InputArea() {
         {store.isStreaming ? (
           <button
             type="button"
-            className="flex items-center justify-center w-8 h-8 border-none rounded bg-red-500/80 text-white cursor-pointer transition-all duration-150 shrink-0 hover:bg-red-500"
+            className="flex items-center justify-center w-8 h-8 rounded-md bg-destructive/80 text-destructive-foreground cursor-pointer transition-all duration-200 shrink-0 hover:bg-destructive active:scale-95"
             onClick={stopStreaming}
             title="Stop generating"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" />
             </svg>
           </button>
         ) : (
           <button
             type="button"
-            className="flex items-center justify-center w-8 h-8 border-none rounded cursor-pointer transition-all duration-150 shrink-0 bg-gradient-to-br from-brand-400 to-purple-400 text-white shadow-glow hover:shadow-glow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+            className="flex items-center justify-center w-8 h-8 rounded-md cursor-pointer transition-all duration-200 shrink-0 bg-primary text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed disabled:scale-100"
             onClick={handleSend}
             disabled={!text.trim() && store.attachments.length === 0}
             title="Send message"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
             </svg>
           </button>
         )}
@@ -367,23 +359,23 @@ export function InputArea() {
         <ProviderPopover isOpen={showProviderPopover} onClose={() => setShowProviderPopover(false)} />
 
         {/* Footer Left - Provider Info */}
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-1.5 items-center">
           <button
             type="button"
-            className={`text-[0.7rem] px-1.5 py-0.5 rounded-full font-medium cursor-pointer border-none transition-all duration-150 font-sans ${showProviderPopover
-              ? 'bg-brand-400/20 text-accent'
-              : 'bg-brand-400/10 text-accent hover:bg-brand-400/20'
+            className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border transition-all duration-200 ${showProviderPopover
+              ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+              : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
               }`}
             onClick={() => setShowProviderPopover(v => !v)}
           >
-            {providerInfo.isConfigured ? providerInfo.providerName : 'No provider configured'}
+            {providerInfo.isConfigured ? providerInfo.providerName : 'No Provider'}
           </button>
           {providerInfo.model && (
             <button
               type="button"
-              className={`text-[0.7rem] px-1.5 py-0.5 rounded-full font-medium cursor-pointer border-none transition-all duration-150 font-sans ${showProviderPopover
-                ? 'bg-purple-400/20 text-purple-400'
-                : 'bg-purple-400/10 text-purple-400 hover:bg-purple-400/20'
+              className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border transition-all duration-200 ${showProviderPopover
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
                 }`}
               onClick={() => setShowProviderPopover(v => !v)}
             >
@@ -396,11 +388,11 @@ export function InputArea() {
         <div className="flex items-center">
           {percentUntilCompact <= 15 && (
             <span
-              className={`text-[10.5px] font-medium px-1.5 py-0.5 rounded-[10px] border transition-all duration-200 ${percentUntilCompact <= 5
-                ? 'text-red-400 bg-red-400/10 border-red-400/20 font-semibold'
+              className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md border transition-all duration-300 ${percentUntilCompact <= 5
+                ? 'text-destructive bg-destructive/10 border-destructive/20 animate-pulse'
                 : percentUntilCompact <= 10
-                  ? 'text-amber-400 bg-amber-400/10 border-amber-400/20'
-                  : 'text-text-subtle bg-bg-surface-glass border-border-subtle'
+                  ? 'text-warning bg-warning/10 border-warning/20'
+                  : 'text-muted-foreground bg-muted/20 border-border'
                 }`}
               title={`${tokens.toLocaleString()} / ${contextWindow.toLocaleString()} tokens used. Auto-compact at ${compactThresholdPercent}%.`}
             >

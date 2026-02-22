@@ -57,9 +57,17 @@ export function MessageList() {
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-3 scrollbar-thin" ref={containerRef} onScroll={handleScroll}>
+    <div
+      className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-5 scrollbar-thin scroll-smooth"
+      ref={containerRef}
+      onScroll={handleScroll}
+    >
       {messages.map((msg, idx) => {
         if (msg.role === 'tool') {
+          // Hide 'Calling...' status to avoid persistent 'Running' indicators if synchronization fails
+          if (msg.content.includes('Calling...')) {
+            return null;
+          }
           return (
             <ToolMessage
               key={idx}

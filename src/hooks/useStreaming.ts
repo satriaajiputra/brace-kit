@@ -125,10 +125,16 @@ export function useStreaming() {
 
         // Use fresh state to avoid stale closure race condition with multiple tool calls
         const freshMessages = useStore.getState().messages;
-        const callingIdx = freshMessages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
+        const callingIdx = [...freshMessages].reverse().findIndex((m) => 
+          m.role === 'tool' && 
+          String(m.toolCallId) === String(tc.id) &&
+          String(m.content).includes('Calling...')
+        );
+        
         if (callingIdx !== -1) {
+          const actualIdx = (freshMessages.length - 1) - callingIdx;
           const updated = [...freshMessages];
-          updated[callingIdx] = { ...updated[callingIdx], content: resultText };
+          updated[actualIdx] = { ...updated[actualIdx], content: resultText };
           store.setMessages(updated);
         } else {
           store.addMessage({
@@ -142,10 +148,16 @@ export function useStreaming() {
       } catch (e) {
         // Use fresh state to avoid stale closure race condition with multiple tool calls
         const freshMessages = useStore.getState().messages;
-        const callingIdx = freshMessages.findIndex((m) => m.role === 'tool' && m.toolCallId === tc.id);
+        const callingIdx = [...freshMessages].reverse().findIndex((m) => 
+          m.role === 'tool' && 
+          String(m.toolCallId) === String(tc.id) &&
+          String(m.content).includes('Calling...')
+        );
+
         if (callingIdx !== -1) {
+          const actualIdx = (freshMessages.length - 1) - callingIdx;
           const updated = [...freshMessages];
-          updated[callingIdx] = { ...updated[callingIdx], content: `Error: ${(e as Error).message}` };
+          updated[actualIdx] = { ...updated[actualIdx], content: `Error: ${(e as Error).message}` };
           store.setMessages(updated);
         } else {
           store.addMessage({

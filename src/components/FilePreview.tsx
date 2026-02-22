@@ -8,54 +8,55 @@ export function FilePreview() {
   if (attachments.length === 0) return null;
 
   return (
-    <div className="flex items-start justify-between px-2.5 py-2 mb-1.5 bg-brand-400/[0.08] border border-brand-400/15 rounded-sm animate-slide-down gap-2">
-      <div className="flex flex-wrap gap-2 flex-1">
+    <div className="flex items-start justify-between px-2 py-2 mb-1 bg-primary/5 border border-primary/20 rounded-md animate-in fade-in slide-in-from-top-2 gap-2">
+      <div className="flex flex-wrap gap-1.5 flex-1">
         {attachments.map((att) => (
           <div
             key={att.id}
-            className={`flex items-center gap-1.5 px-2 py-1.5 bg-bg-surface-raised border border-border rounded-sm text-[0.8rem] text-text-muted max-w-50 ${
-              att.type === 'image' ? 'p-1 flex-col items-start gap-1' : ''
-            }`}
+            className={`flex items-center gap-1.5 px-2 py-1 bg-muted/30 border border-border rounded-sm text-[10px] text-muted-foreground min-w-0 max-w-[150px] ${att.type === 'image' ? 'p-1 flex-col items-start gap-1' : ''
+              }`}
           >
             {att.type === 'error' ? (
               <>
-                <div className="flex items-center gap-1 overflow-hidden">
-                  <span className="text-danger-400 text-xs">{escapeHtml(att.name)}: {att.error}</span>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-destructive font-medium truncate">{escapeHtml(att.name)}: {att.error}</span>
                 </div>
                 <button
-                  className="flex items-center justify-center w-4 h-4 border-none bg-transparent text-text-subtle cursor-pointer rounded-full shrink-0 transition-all duration-150 hover:bg-danger-400/20 hover:text-danger-400"
+                  className="flex items-center justify-center w-4.5 h-4.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-sm shrink-0 transition-all"
                   onClick={() => removeAttachment(att.id)}
                   title="Remove"
                 >
-                  <CloseIcon size={12} />
+                  <CloseIcon size={10} />
                 </button>
               </>
             ) : att.type === 'image' ? (
               <>
-                <img src={att.data} alt={att.name} className="w-15 h-15 object-cover rounded-sm" />
-                <div className="flex items-center gap-1 overflow-hidden">
-                  <span className="truncate max-w-30">{escapeHtml(att.name)}</span>
+                <div className="relative group/img">
+                  <img src={att.data} alt={att.name} className="w-12 h-12 object-cover rounded-sm" />
+                  <button
+                    className="absolute -top-1 -right-1 flex items-center justify-center w-4.5 h-4.5 bg-destructive text-destructive-foreground rounded-sm shadow-sm opacity-0 group-hover/img:opacity-100 transition-opacity"
+                    onClick={() => removeAttachment(att.id)}
+                    title="Remove"
+                  >
+                    <CloseIcon size={10} />
+                  </button>
                 </div>
-                <button
-                  className="flex items-center justify-center w-4 h-4 border-none bg-transparent text-text-subtle cursor-pointer rounded-full shrink-0 transition-all duration-150 hover:bg-danger-400/20 hover:text-danger-400"
-                  onClick={() => removeAttachment(att.id)}
-                  title="Remove"
-                >
-                  <CloseIcon size={12} />
-                </button>
+                <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
+                  <span className="truncate text-[9px] font-medium opacity-70">{escapeHtml(att.name)}</span>
+                </div>
               </>
             ) : (
               <>
-                <div className="flex items-center gap-1 overflow-hidden">
-                  <span>{att.type === 'pdf' ? '📄' : '📃'}</span>
-                  <span className="truncate max-w-30">{escapeHtml(att.name)}</span>
+                <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+                  <span className="text-xs">{att.type === 'pdf' ? '📄' : '📃'}</span>
+                  <span className="truncate font-medium">{escapeHtml(att.name)}</span>
                 </div>
                 <button
-                  className="flex items-center justify-center w-4 h-4 border-none bg-transparent text-text-subtle cursor-pointer rounded-full shrink-0 transition-all duration-150 hover:bg-danger-400/20 hover:text-danger-400"
+                  className="flex items-center justify-center w-4.5 h-4.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-sm shrink-0 transition-all"
                   onClick={() => removeAttachment(att.id)}
                   title="Remove"
                 >
-                  <CloseIcon size={12} />
+                  <CloseIcon size={10} />
                 </button>
               </>
             )}
@@ -63,7 +64,7 @@ export function FilePreview() {
         ))}
       </div>
       <button
-        className="flex items-center justify-center w-6 h-6 border-none bg-transparent text-text-subtle rounded-full cursor-pointer shrink-0 transition-all duration-150 hover:bg-danger-400/20 hover:text-danger-400"
+        className="flex items-center justify-center w-6 h-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md shrink-0 transition-all"
         onClick={clearAllAttachments}
         title="Remove all files"
       >

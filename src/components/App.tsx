@@ -43,21 +43,20 @@ export function App() {
     store.security.passwordHash !== null;
 
   return (
-    <div id="app">
+    <div id="app" className="relative flex flex-col h-screen overflow-hidden bg-background text-foreground">
       {shouldShowLockScreen && <LockScreen />}
-      {shouldShowLockScreen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
-      )}
       {store.isCompacting && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center z-[1000] text-white gap-3 animate-[fadeIn_0.3s_ease]">
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center z-[1000] text-white gap-3 animate-in fade-in duration-300">
           <div className="compacting-spinner"></div>
-          <div>Summarizing conversation...</div>
+          <div className="text-sm font-medium">Summarizing conversation...</div>
         </div>
       )}
       <Header />
-      {view === 'chat' && <ChatView />}
-      {view === 'settings' && <SettingsPanel />}
-      {view === 'gallery' && <GalleryView />}
+      <main className="flex-1 relative overflow-hidden">
+        {view === 'chat' && <ChatView />}
+        {view === 'settings' && <SettingsPanel />}
+        {view === 'gallery' && <GalleryView />}
+      </main>
       <HistoryDrawer />
     </div>
   );
