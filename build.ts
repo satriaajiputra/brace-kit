@@ -12,7 +12,7 @@ if (!existsSync(outDir)) {
 
 // Build the React app
 const result = await build({
-  entrypoints: ['./src/index.tsx', './src/content.ts', './background.js'],
+  entrypoints: ['./src/index.tsx', './src/content.ts', './src/onboarding.tsx', './background.js'],
   outdir: outDir,
   format: 'esm',
   target: 'browser',
@@ -20,6 +20,9 @@ const result = await build({
   sourcemap: 'external',
   splitting: false,
   external: ['chrome', './mcp.js'],
+  define: {
+    'process.env.NODE_ENV': '"production"',
+  },
   plugins: [tailwindPlugin],
 });
 
@@ -30,6 +33,7 @@ if (result.success) {
   // Copy static files
   const filesToCopy = [
     { from: './public/sidebar.html', to: `${outDir}/sidebar.html` },
+    { from: './public/onboarding.html', to: `${outDir}/onboarding.html` },
     { from: './manifest.json', to: `${outDir}/manifest.json` },
   ];
 
@@ -101,7 +105,7 @@ if (result.success) {
   // Flatten dist/src/* to dist/ (Bun preserves src/ subdir structure)
   const srcOutDir = join(outDir, 'src');
   if (existsSync(srcOutDir)) {
-    const flatFiles = ['index.js', 'index.js.map', 'content.js', 'content.js.map', 'index.css'];
+    const flatFiles = ['index.js', 'index.js.map', 'content.js', 'content.js.map', 'index.css', 'onboarding.js', 'onboarding.js.map', 'onboarding.css'];
     for (const file of flatFiles) {
       const from = join(srcOutDir, file);
       const to = join(outDir, file);

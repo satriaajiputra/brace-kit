@@ -1,4 +1,4 @@
-// Background service worker for AI Sidebar extension
+// Background service worker for BraceKit extension
 // Handles: sidebar panel, message routing, LLM API calls, MCP orchestration
 
 import { PROVIDER_PRESETS, formatRequest, parseStream, parseXAIImageResponse, fetchModels, GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from './src/providers.ts';
@@ -33,10 +33,14 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
 // Add context menu for sending selected text
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('onboarding.html') });
+  }
+
   chrome.contextMenus.create({
     id: 'send-to-ai-sidebar',
-    title: 'Send to AI Sidebar',
+    title: 'Send to BraceKit',
     contexts: ['selection'],
   });
 });

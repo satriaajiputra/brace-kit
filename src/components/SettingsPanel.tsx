@@ -90,9 +90,12 @@ export function SettingsPanel() {
           {activeTab === 'security' && <SecuritySettings />}
         </div>
 
-        <section className="mt-8 pt-6 border-t border-border/50 text-center opacity-40">
+        <section className="mt-8 pt-6 border-t border-border/50 text-center opacity-40 flex flex-col gap-1.5">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-            AI Sidebar v1.0.0
+            BraceKit v{chrome.runtime.getManifest().version}
+          </p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.4em] text-muted-foreground/60">
+            Part of Nexifle Labs
           </p>
         </section>
       </div>

@@ -1,4 +1,4 @@
-# AI Sidebar — Chrome Extension
+# BraceKit — Chrome Extension
 
 An AI-powered Chrome sidebar that reads the current page content and lets you chat with multiple LLM providers. Features MCP (Model Context Protocol) support, highlighted text selection, and streaming responses with markdown rendering.
 
@@ -10,7 +10,7 @@ An AI-powered Chrome sidebar that reads the current page content and lets you ch
 - 🛠️ **MCP Support** — Connect MCP servers for tool usage
 - ⚙️ **Custom Configuration** — API keys, custom endpoints, system prompts, model selection
 - 🌙 **Dark Theme** — Premium dark UI with glassmorphism effects
-- 📋 **Context Menu** — Right-click selected text → "Send to AI Sidebar"
+- 📋 **Context Menu** — Right-click selected text → "Send to BraceKit"
 
 ## Installation
 
@@ -40,7 +40,7 @@ An AI-powered Chrome sidebar that reads the current page content and lets you ch
 ### Highlighted Text
 - Select text on any webpage — it automatically appears in the sidebar
 - Or click "Grab Selection" to manually grab the current selection
-- Right-click selected text → "Send to AI Sidebar"
+- Right-click selected text → "Send to BraceKit"
 
 ### MCP Servers
 - Open Settings → MCP Servers section

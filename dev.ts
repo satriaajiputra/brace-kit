@@ -35,7 +35,7 @@ async function runBuild(): Promise<boolean> {
   }
 
   const result = await build({
-    entrypoints: ['./src/index.tsx', './src/content.ts', './background.js'],
+    entrypoints: ['./src/index.tsx', './src/content.ts', './src/onboarding.tsx', './background.js'],
     outdir: outDir,
     format: 'esm',
     target: 'browser',
@@ -43,6 +43,9 @@ async function runBuild(): Promise<boolean> {
     sourcemap: 'external',
     splitting: false,
     external: ['chrome', './mcp.js'],
+    define: {
+      'process.env.NODE_ENV': '"development"',
+    },
     plugins: [tailwindPlugin],
   });
 
@@ -57,6 +60,7 @@ async function runBuild(): Promise<boolean> {
   // Copy static files
   const filesToCopy: { from: string; to: string }[] = [
     { from: './public/sidebar.html', to: `${outDir}/sidebar.html` },
+    { from: './public/onboarding.html', to: `${outDir}/onboarding.html` },
     { from: './manifest.json', to: `${outDir}/manifest.json` },
   ];
 
@@ -94,7 +98,7 @@ async function runBuild(): Promise<boolean> {
   // Flatten dist/src/* to dist/
   const srcOutDir = join(outDir, 'src');
   if (existsSync(srcOutDir)) {
-    for (const file of ['index.js', 'index.js.map', 'content.js', 'content.js.map', 'index.css']) {
+    for (const file of ['index.js', 'index.js.map', 'content.js', 'content.js.map', 'index.css', 'onboarding.js', 'onboarding.js.map', 'onboarding.css']) {
       const from = join(srcOutDir, file);
       const to = join(outDir, file);
       if (existsSync(from)) renameSync(from, to);

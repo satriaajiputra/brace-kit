@@ -3,7 +3,10 @@ import { useStore } from '../store/index.ts';
 import { IconButton } from './ui/IconButton.tsx';
 import { MoonIcon, SunIcon } from 'lucide-react';
 import { ConfirmDialog } from './ui/ConfirmDialog.tsx';
+import { Logo } from './ui/Logo.tsx';
 import { useChat } from '../hooks/useChat.ts';
+
+const isDev = process.env.NODE_ENV === 'development';
 
 export function Header() {
   const store = useStore();
@@ -35,23 +38,10 @@ export function Header() {
         onCancel={() => setShowConfirm(false)}
       />
       <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-7 h-7 rounded-md bg-primary p-1 shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20">
-
-            <path
-              d="M17,8 Q17,14 14,17 Q10,20 10,24 Q10,28 14,31 Q17,34 17,40"
-              fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round"
-            />
-
-            <path
-              d="M31,8 Q31,14 34,17 Q38,20 38,24 Q38,28 34,31 Q31,34 31,40"
-              fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round"
-            />
-
-            <circle cx="24" cy="24" r="4" fill="currentColor" />
-          </svg>
+        <div className="flex items-center text-white justify-center w-7 h-7 rounded-md bg-primary p-1 shadow-sm text-primary-foreground">
+          <Logo />
         </div>
-        <span className="font-bold text-base tracking-tight text-foreground">AI Sidebar</span>
+        <span className="font-bold text-base tracking-tight text-foreground">BraceKit</span>
       </div>
       <div className="flex gap-1">
         <IconButton
@@ -89,6 +79,18 @@ export function Header() {
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </IconButton>
+
+        {isDev && (
+          <IconButton
+            title="Onboarding (Dev)"
+            onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('onboarding.html') })}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+          </IconButton>
+        )}
 
         <IconButton
           title="Settings"

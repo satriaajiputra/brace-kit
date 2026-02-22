@@ -14,9 +14,6 @@ import { GlobeIcon, PaperclipIcon, SquareTerminal } from 'lucide-react';
 const SLASH_COMMANDS = [
   { cmd: '/compact', desc: 'Summarize and compress conversation' },
   { cmd: '/rename', desc: 'Rename conversation based on history' },
-  { cmd: '/resume', desc: 'Resume previous conversation context' },
-  { cmd: '/clear', desc: 'Clear conversation history' },
-  { cmd: '/help', desc: 'Show available commands' },
 ];
 
 export function InputArea() {
@@ -88,12 +85,12 @@ export function InputArea() {
   }, [showProviderPopover]);
 
   const placeholder = store.pageContext
-    ? 'Ask about this page...'
+    ? 'Ask about this page... (type \'/\' for commands)'
     : store.attachments.length > 0
-      ? 'Ask about attached files...'
+      ? 'Ask about attached files... (type \'/\' for commands)'
       : selectedText
-        ? 'Ask about the selected text...'
-        : 'What\'s on your mind?';
+        ? 'Ask about the selected text... (type \'/\' for commands)'
+        : 'What\'s on your mind? (type \'/\' for commands)';
 
   const { quotedText, setQuotedText } = store;
 

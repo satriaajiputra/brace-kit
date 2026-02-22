@@ -19,7 +19,7 @@ export function WelcomeScreen() {
           </div>
           <div className="space-y-1">
             <h1 className="text-2xl font-black tracking-tight text-foreground">
-              AI Sidebar
+              BraceKit
             </h1>
             <p className="text-xs text-muted-foreground font-medium max-w-[220px] leading-relaxed mx-auto">
               Your intelligent companion for the web. Explore, analyze, and create.

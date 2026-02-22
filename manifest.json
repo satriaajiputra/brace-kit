@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Sidebar",
+  "name": "BraceKit",
   "version": "1.0.0",
   "description": "AI-powered sidebar that reads your current page and chats with multiple LLM providers",
   "permissions": [
@@ -39,6 +39,6 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Open AI Sidebar"
+    "default_title": "Open BraceKit"
   }
 }
