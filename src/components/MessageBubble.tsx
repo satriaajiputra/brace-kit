@@ -879,7 +879,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
     return (
       <div className={`group flex flex-col gap-1 max-w-[92%] animate-in fade-in slide-in-from-bottom-2 duration-300 ${message.role === 'user' ? 'self-end' : 'self-start'}`}>
         <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1.5">{roleLabel}</div>
-        <div className={`prose prose-invert prose-sm prose-p:my-2 prose-hr:my-4 max-w-none relative break-words px-3.5 py-1.5 pb-2.5 ${bubbleBgClass}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
+        <div className={`prose dark:prose-invert prose-sm prose-p:my-2 prose-hr:my-4 max-w-none relative break-words px-3.5 py-1.5 pb-2.5 ${bubbleBgClass}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
           {message.content ? (
             <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
           ) : (
@@ -935,7 +935,7 @@ export function MessageBubble({ message, isStreaming, messageIndex, onBranch, on
           <span className="ml-1 opacity-50 font-medium">· Compacted</span>
         )}
       </div>
-      <div className={`prose prose-invert prose-sm prose-p:my-2 prose-hr:my-4 max-w-none relative break-words px-3.5 py-0 ${bubbleBgClass} ${isEditing ? 'ring-2 ring-primary/30' : ''} ${message.summary ? 'border-dashed border-primary/30 bg-primary/5' : ''}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
+      <div className={`prose dark:prose-invert prose-sm prose-p:my-2 prose-hr:my-4 max-w-none relative break-words px-3.5 py-0 ${bubbleBgClass} ${isEditing ? 'ring-2 ring-primary/30' : ''} ${message.summary ? 'border-dashed border-primary/30 bg-primary/5' : ''}`} ref={bubbleRef} onMouseUp={handleMouseUp}>
         {message.pageContext && (
           <div className="flex items-center gap-2.5 px-3 py-2 my-2.5 bg-black/20 border border-white/5 rounded-md mt-4">
             <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-sm text-primary shrink-0">

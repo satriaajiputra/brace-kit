@@ -277,6 +277,7 @@ export interface AppState {
 
   // UI State
   view: 'chat' | 'settings' | 'gallery';
+  theme: 'light' | 'dark';
   historyDrawerOpen: boolean;
   settingsSection: string | null;
   showSystemPromptEditor: boolean;
@@ -335,6 +336,7 @@ export interface AppState {
   setQuotedText: (text: string | null) => void;
 
   setView: (view: 'chat' | 'settings' | 'gallery') => void;
+  setTheme: (theme: 'light' | 'dark') => void;
   setHistoryDrawerOpen: (open: boolean) => void;
   toggleHistoryDrawer: () => void;
   setShowSystemPromptEditor: (show: boolean) => void;

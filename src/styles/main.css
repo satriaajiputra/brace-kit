@@ -273,7 +273,7 @@
 }
 
 .table-wrapper {
-    @apply shadow-2xl backdrop-blur-md;
+    @apply backdrop-blur-md;
 }
 
 .table-container::-webkit-scrollbar {
@@ -309,11 +309,6 @@
 .table-wrapper.fullscreen .md-table {
     @apply text-sm;
     /* Slightly larger text in fullscreen */
-}
-
-/* Ensure toolbar stays at top or bottom in fullscreen */
-.table-wrapper.fullscreen .flex {
-    @apply border-t-0 border-b border-border/50 mb-0;
 }
 
 /* Table Cell Expansion Logic */

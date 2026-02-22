@@ -1,5 +1,6 @@
 import { useStore } from '../store/index.ts';
 import { IconButton } from './ui/IconButton.tsx';
+import { MoonIcon, SunIcon } from 'lucide-react';
 
 export function Header() {
   const store = useStore();
@@ -15,6 +16,12 @@ export function Header() {
         <span className="font-bold text-base tracking-tight text-foreground">AI Sidebar</span>
       </div>
       <div className="flex gap-1">
+        <IconButton
+          title={store.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          onClick={() => store.setTheme(store.theme === 'dark' ? 'light' : 'dark')}
+        >
+          {store.theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+        </IconButton>
         <IconButton
           title="Gallery"
           onClick={() => store.setView('gallery')}

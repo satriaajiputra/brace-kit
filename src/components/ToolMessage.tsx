@@ -74,12 +74,12 @@ export function ToolMessage({ name, content, toolArguments, isCachedResult }: To
           <div className="mb-2">
             <button
               onClick={() => setIsArgsExpanded(!isArgsExpanded)}
-              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-black/20 border border-white/5 hover:bg-black/30 transition-all group/args
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-muted/40 border border-border/30 hover:bg-muted/60 transition-all group/args
                 ${isArgsExpanded ? 'rounded-b-none border-b-0' : ''}`}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">Args</span>
-                <span className={`text-[10px] font-mono text-muted-foreground/60 truncate transition-opacity duration-300 ${isArgsExpanded ? 'opacity-0' : 'opacity-100'}`}>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary/70">Args</span>
+                <span className={`text-[10px] font-mono text-foreground/70 truncate transition-opacity duration-300 ${isArgsExpanded ? 'opacity-0' : 'opacity-100'}`}>
                   {argsDisplay.length > 40 ? argsDisplay.slice(0, 40) + '...' : argsDisplay}
                 </span>
               </div>
@@ -89,8 +89,8 @@ export function ToolMessage({ name, content, toolArguments, isCachedResult }: To
               />
             </button>
             {isArgsExpanded && (
-              <div className="px-2.5 py-2 bg-black/25 border border-white/5 border-t-0 rounded-b-lg animate-in slide-in-from-top-1 duration-200">
-                <div className="text-[10px] font-mono text-muted-foreground/80 break-all leading-relaxed">
+              <div className="px-2.5 py-2 bg-muted/20 border border-border/30 border-t-0 rounded-b-lg animate-in slide-in-from-top-1 duration-200">
+                <div className="text-[10px] font-mono text-foreground/90 break-all leading-relaxed font-medium">
                   {argsDisplay}
                 </div>
               </div>
@@ -108,7 +108,7 @@ export function ToolMessage({ name, content, toolArguments, isCachedResult }: To
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Result</span>
-                <span className={`text-[10px] font-mono text-muted-foreground/60 truncate transition-opacity duration-300 ${isResultExpanded ? 'opacity-0' : 'opacity-100'}`}>
+                <span className={`text-[10px] font-mono text-foreground/70 truncate transition-opacity duration-300 ${isResultExpanded ? 'opacity-0' : 'opacity-100'}`}>
                   {content.length > 50 ? content.slice(0, 50) + '...' : content}
                 </span>
               </div>

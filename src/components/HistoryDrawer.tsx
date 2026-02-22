@@ -308,7 +308,7 @@ export function HistoryDrawer() {
         onClick={() => store.setHistoryDrawerOpen(false)}
       />
 
-      <div className={`relative w-72 h-full bg-card/95 backdrop-blur-2xl border-l border-border/50 shadow-2xl flex flex-col transition-all duration-300 
+      <div className={`relative w-10/12 h-full bg-card/95 backdrop-blur-2xl border-l border-border/50 shadow-2xl flex flex-col transition-all duration-300 
         ${isVisible ? 'animate-in slide-in-from-right-full' : 'animate-out slide-out-to-right-full'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
           <div className="flex items-center gap-2 font-semibold text-foreground">

@@ -20,6 +20,17 @@ export function App() {
     });
   }, []);
 
+  // Sync theme with document element
+  useEffect(() => {
+    if (store.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  }, [store.theme]);
+
   // Setup streaming listener - must be before any conditional returns
   useStreaming();
 

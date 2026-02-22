@@ -75,6 +75,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   // UI State
   view: 'chat',
+  theme: 'dark',
   historyDrawerOpen: false,
   settingsSection: null,
   showSystemPromptEditor: false,
@@ -314,6 +315,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   setView: (view) => set({ view }),
 
+  setTheme: (theme) => {
+    set({ theme });
+    get().saveToStorage();
+  },
+
   setHistoryDrawerOpen: (historyDrawerOpen) => set({ historyDrawerOpen }),
 
   toggleHistoryDrawer: () =>
@@ -386,6 +392,7 @@ export const useStore = create<AppState>((set, get) => ({
         'googleSearchApiKey',
         'security',
         'compactConfig',
+        'theme',
       ]);
 
       const updates: Partial<AppState> = {};
@@ -422,6 +429,9 @@ export const useStore = create<AppState>((set, get) => ({
       }
       if (data.compactConfig) {
         updates.compactConfig = data.compactConfig;
+      }
+      if (data.theme) {
+        updates.theme = data.theme;
       }
 
       // Load session auth state (persists during browser session)
@@ -511,6 +521,7 @@ export const useStore = create<AppState>((set, get) => ({
         memoryEnabled: state.memoryEnabled,
         security: state.security,
         compactConfig: state.compactConfig,
+        theme: state.theme,
       });
     } catch (e) {
       console.warn('Failed to save settings:', e);
