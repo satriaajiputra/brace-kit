@@ -6,7 +6,7 @@ import tailwindPlugin from 'bun-plugin-tailwind';
 const outDir = './dist';
 const WS_PORT = 35729;
 
-// --- WebSocket server untuk notifikasi hot reload ---
+// --- WebSocket server for hot reload notifications ---
 const clients = new Set<ServerWebSocket<unknown>>();
 
 const wsServer = Bun.serve({
@@ -26,9 +26,9 @@ const wsServer = Bun.serve({
   },
 });
 
-console.log(`[dev] Hot reload server berjalan di ws://localhost:${WS_PORT}`);
+console.log(`[dev] Hot reload server running at ws://localhost:${WS_PORT}`);
 
-// --- Fungsi build ---
+// --- Build function ---
 async function runBuild(): Promise<boolean> {
   if (!existsSync(outDir)) {
     mkdirSync(outDir, { recursive: true });
@@ -47,7 +47,7 @@ async function runBuild(): Promise<boolean> {
   });
 
   if (!result.success) {
-    console.error('[dev] Build gagal:');
+    console.error('[dev] Build failed:');
     for (const log of result.logs) {
       console.error(log);
     }
@@ -87,11 +87,11 @@ async function runBuild(): Promise<boolean> {
     try {
       copyFileSync(from, to);
     } catch (e: unknown) {
-      console.warn(`[dev] Gagal copy ${from}: ${(e as Error).message}`);
+      console.warn(`[dev] Failed to copy ${from}: ${(e as Error).message}`);
     }
   }
 
-  // Flatten dist/src/* ke dist/
+  // Flatten dist/src/* to dist/
   const srcOutDir = join(outDir, 'src');
   if (existsSync(srcOutDir)) {
     for (const file of ['index.js', 'index.js.map', 'content.js', 'content.js.map', 'index.css']) {
@@ -104,13 +104,13 @@ async function runBuild(): Promise<boolean> {
   return true;
 }
 
-// --- Tulis file hot-reload.js ke dist/ ---
+// --- Write hot-reload.js to dist/ ---
 async function writeHotReloadClient() {
   const clientJs = `(function() {
   const ws = new WebSocket('ws://localhost:${WS_PORT}');
   ws.onmessage = function(e) {
     if (e.data === 'reload') {
-      console.log('[hot-reload] Perubahan terdeteksi, memuat ulang...');
+      console.log('[hot-reload] Changes detected, reloading...');
       location.reload();
     }
   };
@@ -122,20 +122,20 @@ async function writeHotReloadClient() {
   await Bun.write(join(outDir, 'hot-reload.js'), clientJs);
 }
 
-// --- Inject hot reload client ke sidebar.html ---
+// --- Inject hot reload client into sidebar.html ---
 async function injectHotReloadScript() {
   const htmlPath = join(outDir, 'sidebar.html');
   if (!existsSync(htmlPath)) return;
 
   const html = await Bun.file(htmlPath).text();
 
-  if (html.includes('hot-reload.js')) return; // sudah ada
+  if (html.includes('hot-reload.js')) return; // already injected
 
   const injected = html.replace('</body>', `  <script src="hot-reload.js"></script>\n</body>`);
   await Bun.write(htmlPath, injected);
 }
 
-// --- Notifikasi semua client untuk reload ---
+// --- Notify all clients to reload ---
 function notifyClients() {
   for (const client of clients) {
     try {
@@ -153,26 +153,26 @@ function debounce(fn: () => void, ms: number) {
   };
 }
 
-// --- Build pertama ---
-console.log('[dev] Membangun...');
+// --- Initial build ---
+console.log('[dev] Building...');
 const ok = await runBuild();
 if (ok) {
   await writeHotReloadClient();
   await injectHotReloadScript();
-  console.log('[dev] Build awal selesai. Memantau perubahan...\n');
+  console.log('[dev] Initial build complete. Watching for changes...\n');
 } else {
   process.exit(1);
 }
 
 // --- Watch file changes ---
 const debouncedRebuild = debounce(async () => {
-  console.log('[dev] Perubahan terdeteksi, membangun ulang...');
+  console.log('[dev] Changes detected, rebuilding...');
   const success = await runBuild();
   if (success) {
     await writeHotReloadClient();
     await injectHotReloadScript();
     notifyClients();
-    console.log('[dev] Rebuild selesai, sidebar akan reload otomatis.\n');
+    console.log('[dev] Rebuild complete, sidebar will reload automatically.\n');
   }
 }, 300);
 
@@ -184,8 +184,8 @@ for (const dir of watchDirs) {
   }
 }
 
-console.log('[dev] Memantau perubahan di: src/, public/, background.js, manifest.json');
-console.log('[dev] Muat extension dari folder dist/ dan aktifkan Developer Mode di Chrome.\n');
+console.log('[dev] Watching for changes in: src/, public/, background.js, manifest.json');
+console.log('[dev] Load extension from dist/ folder and enable Developer Mode in Chrome.\n');
 
-// Jaga proses tetap hidup
+// Keep process alive
 await new Promise(() => {});
