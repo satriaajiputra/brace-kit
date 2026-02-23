@@ -245,10 +245,23 @@ Output ONLY the title string.`;
     // Auto compact check
     const currentProvider = getProvider(store.providerConfig.providerId);
     const contextWindow = store.providerConfig.contextWindow || currentProvider.contextWindow || store.compactConfig.defaultContextWindow;
-    const estimatedTokens = estimateTokenCount(store.messages);
 
-    if (estimatedTokens > contextWindow * store.compactConfig.threshold) {
-      console.log('[useChat] Threshold reached, auto compacting...');
+    // Use actual token count from API if available, otherwise fall back to estimation
+    // The tokenUsage is updated after each stream completes, so we use promptTokenCount
+    // which represents the input tokens for the last request
+    let currentTokens: number;
+    if (store.tokenUsage?.promptTokenCount) {
+      // Use actual token count from the last API response
+      currentTokens = store.tokenUsage.promptTokenCount;
+      console.log('[useChat] Using actual token count:', currentTokens);
+    } else {
+      // Fall back to estimation
+      currentTokens = estimateTokenCount(store.messages);
+      console.log('[useChat] Using estimated token count:', currentTokens);
+    }
+
+    if (currentTokens > contextWindow * store.compactConfig.threshold) {
+      console.log('[useChat] Threshold reached, auto compacting...', { currentTokens, threshold: contextWindow * store.compactConfig.threshold });
       await compactConversation();
     }
 

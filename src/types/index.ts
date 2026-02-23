@@ -282,6 +282,9 @@ export interface AppState {
   compactConfig: CompactConfig;
   isCompacting: boolean;
 
+  // Token Usage (for auto-compact)
+  tokenUsage: TokenUsageType | null;
+
   // UI State
   view: 'chat' | 'settings' | 'gallery';
   theme: 'light' | 'dark';
@@ -366,6 +369,9 @@ export interface AppState {
   setCompactConfig: (config: Partial<CompactConfig>) => void;
   setIsCompacting: (isCompacting: boolean) => void;
   compactConversation: (id: string) => Promise<void>;
+
+  // Token Usage Actions
+  setTokenUsage: (usage: TokenUsageType | null) => void;
 }
 
 // ==================== Constants ====================
@@ -396,3 +402,14 @@ export const ALLOWED_FILE_TYPES: Record<string, 'image' | 'text' | 'pdf'> = {
   'text/csv': 'text',
   'application/pdf': 'pdf',
 };
+
+// ==================== Token Usage Types ====================
+
+// Import for use in AppState
+import type { TokenUsage as TokenUsageType } from '../providers/types.ts';
+
+/**
+ * Token usage metadata from API responses
+ * Re-exported from providers for convenience
+ */
+export type { TokenUsage } from '../providers/types.ts';

@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/index.ts';
-import type { ToolCall, GroundingMetadata, GeneratedImage } from '../types/index.ts';
+import type { ToolCall, GroundingMetadata, GeneratedImage, TokenUsage } from '../types/index.ts';
 import { GEMINI_NO_TOOLS_MODELS, XAI_IMAGE_MODELS } from '../providers/presets.ts';
 import { useMemory } from './useMemory.ts';
 import { useMessageBuilder } from './chat/useMessageBuilder.ts';
@@ -265,6 +265,7 @@ export function useStreaming() {
       toolCalls?: ToolCall[];
       groundingMetadata?: GroundingMetadata;
       images?: GeneratedImage[];
+      usage?: TokenUsage;
       error?: string;
     }) => {
       const currentRequestId = useStore.getState().currentRequestId;
@@ -298,6 +299,12 @@ export function useStreaming() {
             if (!first.done) {
               processedDoneRequestsRef.current.delete(first.value);
             }
+          }
+
+          // Update token usage in store for auto-compact
+          if (message.usage) {
+            console.log('[useStreaming] Token usage:', message.usage);
+            store.setTokenUsage(message.usage);
           }
 
           const finalContent = message.fullContent || useStore.getState().streamingContent;

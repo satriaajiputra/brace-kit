@@ -112,6 +112,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
   isCompacting: false,
 
+  // Token Usage (for auto-compact with real API data)
+  tokenUsage: null,
+
   // UI State
   view: 'chat',
   theme: 'dark',
@@ -426,6 +429,8 @@ export const useStore = create<AppState>((set, get) => ({
     })),
 
   setIsCompacting: (isCompacting) => set({ isCompacting }),
+
+  setTokenUsage: (tokenUsage) => set({ tokenUsage }),
 
   compactConversation: async (_id) => {
     // This will be implemented or called from useChat or a dedicated service
