@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'bun:test';
 import { formatGemini, parseGeminiStream } from '../../../src/providers/formats/gemini.ts';
 import type { Message, MCPTool } from '../../../src/types/index.ts';
+import { createMockStreamResponse } from '../../helpers/stream-mock';
 
 describe('Gemini Format', () => {
   describe('formatGemini', () => {
@@ -203,35 +204,12 @@ describe('Gemini Format', () => {
   });
 
   describe('parseGeminiStream', () => {
-    function createMockResponse(chunks: string[]): Response {
-      const encoder = new TextEncoder();
-      const encodedChunks = chunks.map((c) => encoder.encode(c));
-
-      let index = 0;
-      const reader = {
-        read: async () => {
-          if (index < encodedChunks.length) {
-            return { done: false, value: encodedChunks[index++] };
-          }
-          return { done: true, value: undefined };
-        },
-        cancel: () => {},
-        releaseLock: () => {},
-      };
-
-      return {
-        body: {
-          getReader: () => reader,
-        },
-      } as unknown as Response;
-    }
-
     it('should parse text content', async () => {
       const chunks = [
         'data: {"candidates":[{"content":{"parts":[{"text":"Hello"}]}}]}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {
@@ -247,7 +225,7 @@ describe('Gemini Format', () => {
         'data: {"candidates":[{"content":{"parts":[{"text":"Let me think...","thought":true}]}}]}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {
@@ -263,7 +241,7 @@ describe('Gemini Format', () => {
         'data: {"candidates":[{"content":{"parts":[{"functionCall":{"name":"search","args":{"query":"test"}}}]}}]}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {
@@ -281,7 +259,7 @@ describe('Gemini Format', () => {
         'data: {"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"image/png","data":"base64data"}}]}}]}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {
@@ -301,7 +279,7 @@ describe('Gemini Format', () => {
         'data: {"candidates":[{"content":{"parts":[{"text":"Search result"}]},"groundingMetadata":{"webSearchQueries":["test query"]}}]}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {
@@ -318,7 +296,7 @@ describe('Gemini Format', () => {
         'data: {"candidates":[{"finishReason":"IMAGE_SAFETY","finishMessage":"Image filtered"}]}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {
@@ -333,7 +311,7 @@ describe('Gemini Format', () => {
     it('should parse IMAGE_OTHER error', async () => {
       const chunks = ['data: {"candidates":[{"finishReason":"IMAGE_OTHER"}]}\n\n'];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {
@@ -349,7 +327,7 @@ describe('Gemini Format', () => {
       controller.abort();
 
       const chunks = ['data: {"candidates":[{"content":{"parts":[{"text":"Test"}]}}]}\n\n'];
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response, controller.signal)) {
@@ -365,7 +343,7 @@ describe('Gemini Format', () => {
         'data: {"candidates":[{"content":{"parts":[{"text":"Test"}]}}]}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseGeminiStream(response)) {

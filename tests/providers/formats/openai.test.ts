@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'bun:test';
 import { formatOpenAI, parseOpenAIStream } from '../../../src/providers/formats/openai.ts';
 import type { Message, MCPTool } from '../../../src/types/index.ts';
+import { createMockStreamResponse } from '../../helpers/stream-mock';
 
 describe('OpenAI Format', () => {
   describe('formatOpenAI', () => {
@@ -192,34 +193,10 @@ describe('OpenAI Format', () => {
   });
 
   describe('parseOpenAIStream', () => {
-    // Helper to create a mock response with streaming data
-    function createMockResponse(chunks: string[]): Response {
-      const encoder = new TextEncoder();
-      const encodedChunks = chunks.map((c) => encoder.encode(c));
-
-      let index = 0;
-      const reader = {
-        read: async () => {
-          if (index < encodedChunks.length) {
-            return { done: false, value: encodedChunks[index++] };
-          }
-          return { done: true, value: undefined };
-        },
-        cancel: () => {},
-        releaseLock: () => {},
-      };
-
-      return {
-        body: {
-          getReader: () => reader,
-        },
-      } as unknown as Response;
-    }
-
     it('should parse text content', async () => {
       const chunks = ['data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n', 'data: [DONE]\n\n'];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseOpenAIStream(response)) {
@@ -236,7 +213,7 @@ describe('OpenAI Format', () => {
         'data: [DONE]\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseOpenAIStream(response)) {
@@ -252,7 +229,7 @@ describe('OpenAI Format', () => {
     it('should handle [DONE] message', async () => {
       const chunks = ['data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n', 'data: [DONE]\n\n'];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseOpenAIStream(response)) {
@@ -270,7 +247,7 @@ describe('OpenAI Format', () => {
         'data: [DONE]\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseOpenAIStream(response)) {
@@ -287,7 +264,7 @@ describe('OpenAI Format', () => {
         'data: [DONE]\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseOpenAIStream(response)) {
@@ -302,7 +279,7 @@ describe('OpenAI Format', () => {
       controller.abort();
 
       const chunks = ['data: {"choices":[{"delta":{"content":"Test"}}]}\n\n'];
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseOpenAIStream(response, controller.signal)) {

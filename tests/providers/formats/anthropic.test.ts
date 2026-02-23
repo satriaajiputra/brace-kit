@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'bun:test';
 import { formatAnthropic, parseAnthropicStream } from '../../../src/providers/formats/anthropic.ts';
 import type { Message, MCPTool } from '../../../src/types/index.ts';
+import { createMockStreamResponse } from '../../helpers/stream-mock';
 
 describe('Anthropic Format', () => {
   describe('formatAnthropic', () => {
@@ -215,35 +216,12 @@ describe('Anthropic Format', () => {
   });
 
   describe('parseAnthropicStream', () => {
-    function createMockResponse(chunks: string[]): Response {
-      const encoder = new TextEncoder();
-      const encodedChunks = chunks.map((c) => encoder.encode(c));
-
-      let index = 0;
-      const reader = {
-        read: async () => {
-          if (index < encodedChunks.length) {
-            return { done: false, value: encodedChunks[index++] };
-          }
-          return { done: true, value: undefined };
-        },
-        cancel: () => {},
-        releaseLock: () => {},
-      };
-
-      return {
-        body: {
-          getReader: () => reader,
-        },
-      } as unknown as Response;
-    }
-
     it('should parse text content', async () => {
       const chunks = [
         'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Hello"}}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseAnthropicStream(response)) {
@@ -259,7 +237,7 @@ describe('Anthropic Format', () => {
         'data: {"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"Let me think..."}}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseAnthropicStream(response)) {
@@ -275,7 +253,7 @@ describe('Anthropic Format', () => {
         'data: {"type":"content_block_start","content_block":{"type":"tool_use","id":"toolu_123","name":"search"}}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseAnthropicStream(response)) {
@@ -295,7 +273,7 @@ describe('Anthropic Format', () => {
         'data: {"type":"content_block_delta","delta":{"type":"input_json_delta","partial_json":"{\\"query\\"" }}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseAnthropicStream(response)) {
@@ -313,7 +291,7 @@ describe('Anthropic Format', () => {
         'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"After stop"}}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseAnthropicStream(response)) {
@@ -330,7 +308,7 @@ describe('Anthropic Format', () => {
         'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Test"}}\n\n',
       ];
 
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseAnthropicStream(response)) {
@@ -347,7 +325,7 @@ describe('Anthropic Format', () => {
       const chunks = [
         'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Test"}}\n\n',
       ];
-      const response = createMockResponse(chunks);
+      const response = createMockStreamResponse(chunks);
       const results = [];
 
       for await (const chunk of parseAnthropicStream(response, controller.signal)) {
