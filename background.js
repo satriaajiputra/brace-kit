@@ -4,6 +4,7 @@
 import { PROVIDER_PRESETS, formatRequest, parseStream, parseXAIImageResponse, fetchModels, GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from './src/providers.ts';
 import { MCPManager } from './mcp.js';
 import { migrateOldConversations } from './src/utils/conversationDB.ts';
+import { isBuiltinTool, executeTool } from './src/background/tools/index.js';
 
 const mcpManager = new MCPManager();
 
@@ -117,7 +118,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case 'GOOGLE_SEARCH_TOOL':
-      handleGoogleSearchTool(message, sendResponse);
+      handleGoogleSearchToolDirect(message, sendResponse);
       return true;
 
     case 'MEMORY_EXTRACT':
@@ -480,18 +481,15 @@ async function handleMCPToolCall(message, sendResponse) {
   try {
     const { name, arguments: args } = message;
 
-    // Intercept google_search tool - route to Gemini grounding
-    if (name === 'google_search') {
-      await handleGoogleSearchTool(message, sendResponse);
+    // Check if this is a built-in tool and execute it
+    if (isBuiltinTool(name)) {
+      const { googleSearchApiKey } = await chrome.storage.local.get('googleSearchApiKey');
+      const result = await executeTool(name, args, { googleSearchApiKey });
+      sendResponse(result);
       return;
     }
 
-    // Intercept continue_message tool - handled locally
-    if (name === 'continue_message') {
-      sendResponse({ content: [{ text: 'Chain message initiated. You may continue your response now.' }] });
-      return;
-    }
-
+    // Otherwise, route to MCP servers
     const found = await mcpManager.callTool(name);
     if (!found) {
       sendResponse({ error: `Tool "${name}" not found` });
@@ -504,67 +502,13 @@ async function handleMCPToolCall(message, sendResponse) {
   }
 }
 
-async function handleGoogleSearchTool(message, sendResponse) {
+// Direct Google Search handler for GOOGLE_SEARCH_TOOL message type
+async function handleGoogleSearchToolDirect(message, sendResponse) {
   try {
     const { arguments: args } = message;
-    const query = args?.query || args?.q || '';
-
-    if (!query) {
-      sendResponse({ content: [{ text: 'Error: query parameter is required' }] });
-      return;
-    }
-
-    // Load Gemini API key from storage
     const { googleSearchApiKey } = await chrome.storage.local.get('googleSearchApiKey');
-    if (!googleSearchApiKey) {
-      sendResponse({ content: [{ text: 'Error: Google Search API key not configured. Set it in Settings > Chat.' }] });
-      return;
-    }
-
-    const geminiApiUrl = 'https://generativelanguage.googleapis.com/v1beta';
-    const model = 'gemini-2.5-flash-lite';
-    const url = `${geminiApiUrl}/models/${model}:generateContent?key=${googleSearchApiKey}`;
-
-    const body = {
-      contents: [{ role: 'user', parts: [{ text: query }] }],
-      tools: [{ google_search: {} }],
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const error = await getFriendlyErrorMessage(response, 'Google Search Error');
-      sendResponse({ content: [{ text: error }] });
-      return;
-    }
-
-    const data = await response.json();
-    const candidate = data.candidates?.[0];
-    const text = candidate?.content?.parts?.map(p => p.text).filter(Boolean).join('') || '';
-    const groundingMetadata = candidate?.groundingMetadata;
-
-    let result = text;
-
-    // Append source links if available
-    if (groundingMetadata?.groundingChunks?.length > 0) {
-      const sources = groundingMetadata.groundingChunks
-        .filter(c => c.web?.uri)
-        .map((c, i) => `[${i + 1}] ${c.web.title ? c.web.title + ' - ' : ''}${c.web.uri}`)
-        .join('\n');
-      if (sources) {
-        result += `\n\nSources:\n${sources}`;
-      }
-    }
-
-    if (groundingMetadata?.webSearchQueries?.length > 0) {
-      result = `Search queries: ${groundingMetadata.webSearchQueries.join(', ')}\n\n${result}`;
-    }
-
-    sendResponse({ content: [{ text: result || 'No results found.' }] });
+    const result = await executeTool('google_search', args, { googleSearchApiKey });
+    sendResponse(result);
   } catch (e) {
     sendResponse({ content: [{ text: `Google Search Error: ${e.message}` }] });
   }

@@ -4,6 +4,7 @@ import type { ToolCall, GroundingMetadata, MCPTool, GeneratedImage } from '../ty
 import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from '../providers.ts';
 import { useMemory } from './useMemory.ts';
 import { useChat } from './useChat.ts';
+import { getAllTools, isBuiltinTool as isBuiltinToolCheck } from '../services/toolRegistry.ts';
 
 function addInlineCitations(text: string, groundingMetadata?: GroundingMetadata): string {
   if (!groundingMetadata?.groundingSupports || !groundingMetadata?.groundingChunks) {
@@ -122,9 +123,22 @@ export function useStreaming() {
 
       try {
         let resultText = '';
+
+        // Handle continue_message locally (built-in tool)
         if (tc.name === 'continue_message') {
           resultText = 'Chain message initiated. You may continue your response now.';
+        } else if (isBuiltinToolCheck(tc.name)) {
+          // Other built-in tools go through background
+          const result = await chrome.runtime.sendMessage({
+            type: 'MCP_CALL_TOOL',
+            name: tc.name,
+            arguments: args,
+          });
+          resultText =
+            result?.content?.map((c: { text?: string }) => c.text || JSON.stringify(c)).join('\n') ||
+            JSON.stringify(result);
         } else {
+          // MCP tools go through background
           const result = await chrome.runtime.sendMessage({
             type: 'MCP_CALL_TOOL',
             name: tc.name,
@@ -195,14 +209,14 @@ export function useStreaming() {
     }
 
     // Get MCP tools
-    let tools: MCPTool[] = [];
+    let mcpTools: MCPTool[] = [];
     try {
       const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
       if (mcpRes?.tools) {
         const enabledServerIds = new Set(
           store.mcpServers.filter((s) => s.enabled !== false).map((s) => s.id)
         );
-        tools = mcpRes.tools.filter((tool: MCPTool & { _serverId?: string }) =>
+        mcpTools = mcpRes.tools.filter((tool: MCPTool & { _serverId?: string }) =>
           enabledServerIds.has(tool._serverId || '')
         );
       }
@@ -215,42 +229,16 @@ export function useStreaming() {
 
     const currentModel = store.providerConfig.model || '';
     const isGemini = store.providerConfig.providerId === 'gemini' || store.providerConfig.format === 'gemini';
-
-    // Inject google_search tool for non-Gemini providers when enabled
-    if (!isGemini && store.enableGoogleSearchTool && store.googleSearchApiKey) {
-      tools = [
-        {
-          name: 'google_search',
-          description: 'Search the web using Google. Use this to find current information, news, facts, or any topic that requires up-to-date web search results.',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              query: { type: 'string', description: 'The search query to look up on the web' },
-            },
-            required: ['query'],
-          },
-        },
-        ...tools,
-      ];
-    }
     const supportsFunctionCalling = !isGemini || (!GEMINI_NO_TOOLS_MODELS.includes(currentModel) && !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel));
 
-    if (supportsFunctionCalling) {
-      tools = [
-        ...tools,
-        {
-          name: 'continue_message',
-          description: 'Use this tool to continue your response in a new message chunk. This is useful when you have more to say but want to break it up, or if you want to perform a chain of thought before the next response.',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              reason: { type: 'string', description: 'Brief reason why you are continuing' },
-            },
-            required: ['reason'],
-          },
-        },
-      ];
-    }
+    // Use toolRegistry to get all tools (MCP + built-in)
+    const tools = getAllTools({
+      mcpTools,
+      enableGoogleSearchTool: store.enableGoogleSearchTool,
+      googleSearchApiKey: store.googleSearchApiKey,
+      supportsFunctionCalling,
+      isGemini,
+    });
 
     const chatOptions = {
       enableGoogleSearch:

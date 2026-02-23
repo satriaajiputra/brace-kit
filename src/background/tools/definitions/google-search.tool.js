@@ -1,0 +1,19 @@
+/**
+ * Google Search Tool Definition
+ * Uses Gemini's grounding feature to search the web
+ */
+export const GOOGLE_SEARCH_TOOL = {
+  name: 'google_search',
+  description:
+    'Search the web using Google. Use this to find current information, news, facts, or any topic that requires up-to-date web search results.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'The search query to look up on the web',
+      },
+    },
+    required: ['query'],
+  },
+};
