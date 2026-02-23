@@ -12,7 +12,7 @@ if (!existsSync(outDir)) {
 
 // Build the React app
 const result = await build({
-  entrypoints: ['./src/index.tsx', './src/content.ts', './src/onboarding.tsx', './background.js'],
+  entrypoints: ['./src/index.tsx', './src/content.ts', './src/onboarding.tsx', './src/background/index.js'],
   outdir: outDir,
   format: 'esm',
   target: 'browser',
@@ -114,6 +114,15 @@ if (result.success) {
         console.log(`Flattened: ${from} -> ${to}`);
       }
     }
+  }
+
+  // Flatten background script from dist/background/index.js to dist/background.js
+  const bgSrcDir = join(outDir, 'background');
+  const bgFrom = join(bgSrcDir, 'index.js');
+  const bgTo = join(outDir, 'background.js');
+  if (existsSync(bgFrom)) {
+    renameSync(bgFrom, bgTo);
+    console.log(`Flattened: ${bgFrom} -> ${bgTo}`);
   }
 
   console.log('\nBuild complete! Load the extension from the dist/ folder.');
