@@ -1,5 +1,5 @@
 import { build } from 'bun';
-import { existsSync, mkdirSync, copyFileSync, renameSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, renameSync, rmdirSync } from 'fs';
 import { join } from 'path';
 import tailwindPlugin from 'bun-plugin-tailwind';
 
@@ -102,6 +102,12 @@ if (result.success) {
         console.log(`Flattened: ${from} -> ${to}`);
       }
     }
+    // Clean up empty src directory
+    try {
+      rmdirSync(srcOutDir);
+    } catch {
+      // Directory not empty or doesn't exist, ignore
+    }
   }
 
   // Flatten background script from dist/background/index.js to dist/background.js
@@ -111,6 +117,12 @@ if (result.success) {
   if (existsSync(bgFrom)) {
     renameSync(bgFrom, bgTo);
     console.log(`Flattened: ${bgFrom} -> ${bgTo}`);
+    // Clean up empty background directory
+    try {
+      rmdirSync(bgSrcDir);
+    } catch {
+      // Directory not empty or doesn't exist, ignore
+    }
   }
 
   console.log('\nBuild complete! Load the extension from the dist/ folder.');
