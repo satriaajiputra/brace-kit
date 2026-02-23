@@ -486,6 +486,12 @@ async function handleMCPToolCall(message, sendResponse) {
       return;
     }
 
+    // Intercept continue_message tool - handled locally
+    if (name === 'continue_message') {
+      sendResponse({ content: [{ text: 'Chain message initiated. You may continue your response now.' }] });
+      return;
+    }
+
     const found = await mcpManager.callTool(name);
     if (!found) {
       sendResponse({ error: `Tool "${name}" not found` });

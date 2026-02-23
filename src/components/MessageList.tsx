@@ -94,7 +94,7 @@ export function MessageList() {
           />
         );
       })}
-      {isStreaming && messages.length > 0 && messages[messages.length - 1].role !== 'tool' && (
+      {isStreaming && messages.length > 0 && (
         <MessageBubble message={{ role: 'assistant', content: streamingContent }} isStreaming />
       )}
       <div ref={messagesEndRef} style={{ height: '20px' }} />

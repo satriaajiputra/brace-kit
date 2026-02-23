@@ -349,6 +349,23 @@ Output ONLY the title string.`;
     const isGeminiImageModel = store.providerConfig.providerId === 'gemini' && GEMINI_IMAGE_MODELS.includes(currentModel);
     const supportsFunctionCalling = !isGemini || (!GEMINI_NO_TOOLS_MODELS.includes(currentModel) && !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel));
 
+    if (supportsFunctionCalling) {
+      tools = [
+        ...tools,
+        {
+          name: 'continue_message',
+          description: 'Use this tool to continue your response in a new message chunk. This is useful when you have more to say but want to break it up, or if you want to perform a chain of thought before the next response.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              reason: { type: 'string', description: 'Brief reason why you are continuing' },
+            },
+            required: ['reason'],
+          },
+        },
+      ];
+    }
+
     const chatOptions: { enableGoogleSearch: boolean; aspectRatio?: string; enableReasoning?: boolean } = {
       enableGoogleSearch: store.enableGoogleSearch && isGemini && !GEMINI_NO_TOOLS_MODELS.includes(currentModel),
       enableReasoning: opts?.enableReasoning ?? store.enableReasoning,

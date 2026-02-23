@@ -400,7 +400,8 @@ export function useStreaming() {
       images?: GeneratedImage[];
       error?: string;
     }) => {
-      const currentRequestId = store.currentRequestId;
+      // OLD WE USE: const currentRequestId = store.currentRequestId;
+      const currentRequestId = useStore.getState().currentRequestId;
       if (message.requestId !== currentRequestId) return;
 
       switch (message.type) {
