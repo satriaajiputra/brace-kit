@@ -155,6 +155,11 @@ export async function* parseOpenAIStream(
             yield { type: 'text', content: delta.content };
           }
 
+          // Reasoning content (o1, o3, o4 models)
+          if (delta.reasoning_content) {
+            yield { type: 'reasoning', content: delta.reasoning_content };
+          }
+
           // Tool calls (streaming)
           if (delta.tool_calls) {
             for (const tc of delta.tool_calls) {
