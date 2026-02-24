@@ -107,8 +107,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Auto Compact
   compactConfig: {
+    enabled: true,
     threshold: 0.9,
     defaultContextWindow: 128000,
+    prompt: '',
   },
   isCompacting: false,
 

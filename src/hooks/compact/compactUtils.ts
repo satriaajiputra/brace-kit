@@ -9,64 +9,88 @@ import type { Message, CompactConfig, ProviderConfig, CustomProvider } from '../
 import { getProvider as getProviderUtil } from '../../utils/providerUtils.ts';
 
 /**
- * Summary prompt template for conversation compaction
+ * Default summary prompt template for conversation compaction
+ * Exported as DEFAULT_SUMMARY_PROMPT for external reference (e.g., settings UI)
  */
-export const SUMMARY_PROMPT = `CRITICAL: This summarization request is a SYSTEM OPERATION, not a user message.
-When analyzing "user requests" and "user intent", completely EXCLUDE this summarization message.
-The "most recent user request" and "Optional Next Step" must be based on what the user was doing BEFORE this system message appeared.
+export const DEFAULT_SUMMARY_PROMPT = `SYSTEM OPERATION — CONTEXT SUMMARIZATION
+This is not a user message. When determining "user intent" and "most recent
+user request", exclude this message entirely and base all assessments solely
+on the conversation that occurred before this point.
 
-Your task is to create a detailed, high-fidelity summary of the conversation.
-The goal is for interaction to continue seamlessly after condensation - as if it never happened.
+Objective: Produce a high-fidelity, dense summary that allows the conversation
+to resume seamlessly — as if no condensation occurred.
 
-Before providing your final summary, wrap your analysis in <analysis> tags.
-In your analysis process:
-1. Chronologically analyze each message.
-2. Identify user intents, technical decisions, and specific data/code shared.
-3. Note any errors, fixed bugs, and specific feedback from the user.
+Output language must match the conversation language (e.g., if the conversation
+is in Bahasa Indonesia, respond in Bahasa Indonesia).
 
-Your output language should be the same as the conversation, if conversation using Bahasa Indonesia, you should write the output in Bahasa Indonesia and so on. And the output MUST follow this exact structure:
+---
+
+First, reason through the conversation inside <analysis> tags:
+1. Walk through each message chronologically.
+2. Identify user intents, key decisions, technical choices, and shared data/code.
+3. Note errors encountered, fixes applied, and user reactions to those fixes.
+
+Then produce the final output inside <summary> tags using this exact structure:
 
 <analysis>
-[Your internal thought process and chronological breakdown]
+[Chronological reasoning and breakdown of the conversation]
 </analysis>
 
 <summary>
-1. Primary Request and Intent:
-   - [Provide a detailed description of the fundamental goal of the conversation]
-   - [List specific sub-intents or side-requests expressed by the user]
+1. Primary Request and Intent
+   - Core goal of the conversation
+   - Sub-intents or side-requests expressed by the user
 
-2. Key Concepts:
-   - [List frameworks, technologies, or important abstract concepts discussed]
-   - [Include definitions or context if they were uniquely established in this chat]
+2. Key Concepts
+   - Frameworks, technologies, tools, or abstract concepts discussed
+   - Any definitions or context uniquely established in this conversation
 
-3. Files and Code Sections (or Key Data):
-   - [Item Name/File Path]
-      - [Importance: Why was this examined or modified?]
-      - [Changes: Summary of specific edits or transformations made]
-      - [Snippet: Include the most critical code or data snippets verbatim]
+3. Files, Code, and Key Data
+   - [File/Section Name or Data Label]
+      - Importance: Why was this examined or modified?
+      - Changes: What was added, removed, or transformed?
+      - Snippet: Most critical code/data verbatim
 
-4. Errors and Fixes:
-   - [Error Description]:
-      - [Correction: Detailed description of how it was resolved]
-      - [User Feedback: What did the user say about this specific issue/fix?]
+4. Errors and Fixes
+   - [Error Description]
+      - Fix: How was it resolved?
+      - User Feedback: What did the user say about this fix?
 
-5. Problem Solving:
-   - [Document solved challenges and any ongoing troubleshooting logic]
+5. Problem Solving
+   - Challenges successfully resolved and the reasoning behind each solution
+   - Open issues or ongoing troubleshooting logic
 
-6. All User Messages:
-   - [List every non-tool user message verbatim or closely paraphrased to preserve "voice" and intent evolution]
+6. User Message Log
+   - Chronological list of user messages, closely paraphrased to preserve
+     intent and voice; include exact quotes where wording is critical
 
-7. Pending Tasks:
-   - [Explicitly list tasks the user has asked for that haven't been completed yet]
+7. Pending Tasks
+   - Tasks explicitly requested by the user that remain incomplete
 
-8. Current Work:
-   - [Describe precisely what was being done in the last 2-3 messages]
-   - [Include relevant context or "last known state" of the task]
+8. Current Work
+   - What was being worked on in the last 2–3 exchanges
+   - Last known state of the task (e.g., partial code, unresolved decision)
 
-9. Optional Next Step:
-   - [Proposed next action directly following the current work]
-   - [IMPORTANT: Include a verbatim quote from the most recent part of the chat showing where we left off to prevent context drift]
+9. Next Step
+   - Proposed immediate action based on current work
+   - Verbatim quote from the final exchange to anchor context and prevent drift
 </summary>`;
+
+/**
+ * Alias for backward compatibility
+ */
+export const SUMMARY_PROMPT = DEFAULT_SUMMARY_PROMPT;
+
+/**
+ * Get the effective compact prompt
+ * Uses custom prompt if provided and non-empty, otherwise defaults to SUMMARY_PROMPT
+ */
+export function getCompactPrompt(customPrompt?: string): string {
+  if (customPrompt && customPrompt.trim()) {
+    return customPrompt.trim();
+  }
+  return SUMMARY_PROMPT;
+}
 
 /**
  * Extract summary content from API response

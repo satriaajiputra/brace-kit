@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 import { useStore } from '../../store/index.ts';
 import { useMessageBuilder } from '../chat/useMessageBuilder.ts';
 import {
-  SUMMARY_PROMPT,
+  getCompactPrompt,
   extractSummaryFromResponse,
   getContextWindow,
   createCondenseId,
@@ -38,7 +38,8 @@ export function useAutoCompact() {
 
     // Build API messages and add summary prompt
     const apiMessages = buildAPIMessages();
-    apiMessages.push({ role: 'user', content: SUMMARY_PROMPT });
+    const effectivePrompt = getCompactPrompt(currentState.compactConfig.prompt);
+    apiMessages.push({ role: 'user', content: effectivePrompt });
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -85,6 +86,11 @@ export function useAutoCompact() {
    */
   const checkAndAutoCompact = useCallback(async () => {
     const currentState = useStore.getState();
+
+    // Skip if auto-compact is disabled
+    if (!currentState.compactConfig.enabled) {
+      return false;
+    }
 
     // Calculate context window for current provider
     const contextWindow = getContextWindow(

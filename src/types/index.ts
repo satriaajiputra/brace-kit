@@ -147,8 +147,10 @@ export interface ProviderConfig {
 }
 
 export interface CompactConfig {
+  enabled: boolean; // Auto-compact toggle (default true)
   threshold: number; // 0.0 to 1.0 (default 0.9)
   defaultContextWindow: number; // default 128000
+  prompt: string; // Custom compact prompt (empty = use default)
 }
 
 export interface ProviderKeys {
