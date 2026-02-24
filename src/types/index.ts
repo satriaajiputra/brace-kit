@@ -52,6 +52,8 @@ export interface Message {
   generatedImages?: GeneratedImage[];
   isCompacted?: boolean;
   summary?: string;
+  condenseId?: string;
+  condenseParent?: string;
   isCachedResult?: boolean;
   // Reasoning/thinking content
   reasoningContent?: string;

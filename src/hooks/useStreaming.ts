@@ -2,7 +2,7 @@
  * useStreaming Hook (Simplified)
  *
  * Handles streaming responses using extracted sub-hooks.
- * Uses useMessageBuilder, useTools, and useStreamProcessor.
+ * Uses useMessageBuilder, useTools, useStreamProcessor, and useAutoCompact.
  */
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -12,6 +12,7 @@ import { GEMINI_NO_TOOLS_MODELS, XAI_IMAGE_MODELS } from '../providers/presets.t
 import { useMemory } from './useMemory.ts';
 import { useMessageBuilder } from './chat/useMessageBuilder.ts';
 import { useTools } from './tools/useTools.ts';
+import { useAutoCompact } from './compact/index.ts';
 import { useStreamProcessor } from './streaming/useStreamProcessor.ts';
 
 export function useStreaming() {
@@ -19,6 +20,7 @@ export function useStreaming() {
   const { extractMemories } = useMemory();
   const { buildAPIMessages } = useMessageBuilder();
   const { getAllTools, supportsFunctionCalling, getChatOptions } = useTools();
+  const { checkAndAutoCompact } = useAutoCompact();
   const streamProcessor = useStreamProcessor();
 
   // Track processed request IDs to prevent double processing
@@ -108,6 +110,9 @@ export function useStreaming() {
         updateToolMessage(tc.id, `Error: ${(e as Error).message}`);
       }
     }
+
+    // Auto compact check
+    await checkAndAutoCompact();
 
     // Build follow-up request
     const msgs = buildAPIMessages(useStore.getState().messages);
