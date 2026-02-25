@@ -79,17 +79,32 @@ export function formatGemini(
       }
     } else if (msg.role === 'tool') {
       // Tool results → functionResponse in user message
-      contents.push({
-        role: 'user',
-        parts: [
-          {
-            functionResponse: {
-              name: msg.name || 'unknown',
-              response: typeof msg.content === 'string' ? { result: msg.content } : msg.content,
-            },
-          },
-        ],
-      });
+      // IMPORTANT: For parallel function calls (multiple functionCall parts in one model turn),
+      // all functionResponse parts MUST be grouped in a SINGLE user turn.
+      // Ref: https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/function-calling/parallel_function_calling.ipynb
+      const functionResponsePart: GeminiPart = {
+        functionResponse: {
+          name: msg.name || 'unknown',
+          response: typeof msg.content === 'string' ? { content: msg.content } : msg.content,
+        },
+      };
+
+      const lastContent = contents[contents.length - 1];
+      if (
+        lastContent &&
+        lastContent.role === 'user' &&
+        lastContent.parts.length > 0 &&
+        lastContent.parts.every((p) => p.functionResponse !== undefined)
+      ) {
+        // Append to existing function-response user turn (parallel function calls)
+        lastContent.parts.push(functionResponsePart);
+      } else {
+        // Create new user turn for this tool result
+        contents.push({
+          role: 'user',
+          parts: [functionResponsePart],
+        });
+      }
     } else if (msg.role === 'user' && Array.isArray(msg.content)) {
       // Multimodal content (text + images)
       const parts: GeminiPart[] = [];

@@ -96,6 +96,76 @@ describe('Gemini Format', () => {
       expect(body.contents[0].role).toBe('user');
       expect(body.contents[0].parts[0].functionResponse).toBeDefined();
       expect(body.contents[0].parts[0].functionResponse.name).toBe('search');
+      expect(body.contents[0].parts[0].functionResponse.response).toEqual({ content: 'Search result' });
+    });
+
+    it('should group parallel tool results into a single user turn', () => {
+      // When Gemini calls multiple tools in one model turn (parallel function calling),
+      // all tool results must be in ONE user turn, not separate user turns.
+      const messages: Message[] = [
+        { role: 'user', content: 'Search for solar panels and wind energy' },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [
+            { id: 'tc1', name: 'search', arguments: '{"query":"solar panels"}' },
+            { id: 'tc2', name: 'search', arguments: '{"query":"wind energy"}' },
+          ],
+        },
+        { role: 'tool', content: 'Solar panel result', toolCallId: 'tc1', name: 'search' },
+        { role: 'tool', content: 'Wind energy result', toolCallId: 'tc2', name: 'search' },
+      ];
+
+      const config = formatGemini(provider, messages, [], {});
+      const body = JSON.parse(config.options.body as string);
+
+      // Should be: user → model → user (with both functionResponses in ONE turn)
+      expect(body.contents).toHaveLength(3);
+      expect(body.contents[0].role).toBe('user');
+      expect(body.contents[1].role).toBe('model');
+      expect(body.contents[2].role).toBe('user');
+
+      // Both function responses must be in the SAME user turn
+      expect(body.contents[2].parts).toHaveLength(2);
+      expect(body.contents[2].parts[0].functionResponse.name).toBe('search');
+      expect(body.contents[2].parts[0].functionResponse.response).toEqual({ content: 'Solar panel result' });
+      expect(body.contents[2].parts[1].functionResponse.name).toBe('search');
+      expect(body.contents[2].parts[1].functionResponse.response).toEqual({ content: 'Wind energy result' });
+    });
+
+    it('should keep sequential tool results in separate user turns', () => {
+      // For sequential/chained tool calls (model calls one tool at a time),
+      // each tool result should be in its own user turn (alternating with model turns).
+      const messages: Message[] = [
+        { role: 'user', content: 'Search step by step' },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'tc1', name: 'search', arguments: '{"query":"first"}' }],
+        },
+        { role: 'tool', content: 'First result', toolCallId: 'tc1', name: 'search' },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'tc2', name: 'search', arguments: '{"query":"second"}' }],
+        },
+        { role: 'tool', content: 'Second result', toolCallId: 'tc2', name: 'search' },
+      ];
+
+      const config = formatGemini(provider, messages, [], {});
+      const body = JSON.parse(config.options.body as string);
+
+      // Should alternate: user → model → user → model → user
+      expect(body.contents).toHaveLength(5);
+      expect(body.contents[0].role).toBe('user');   // Original user message
+      expect(body.contents[1].role).toBe('model');  // First tool call
+      expect(body.contents[2].role).toBe('user');   // First tool result
+      expect(body.contents[3].role).toBe('model');  // Second tool call
+      expect(body.contents[4].role).toBe('user');   // Second tool result
+
+      // Each user turn has exactly one functionResponse
+      expect(body.contents[2].parts).toHaveLength(1);
+      expect(body.contents[4].parts).toHaveLength(1);
     });
 
     it('should handle multimodal content', () => {
