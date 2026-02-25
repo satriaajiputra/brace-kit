@@ -1,6 +1,13 @@
 import { getAllImages, clearAllImages, importImages } from './imageDB.ts';
-import { clearAllConversationMessages, saveConversationMessages, _getAllConversationData } from './conversationDB.ts';
-import type { StoredImageRecord, Message } from '../types';
+import {
+  clearAllConversationMessages,
+  saveConversationMessages,
+  _getAllConversationData,
+  getAllConversationMetadata,
+  clearAllConversationMetadata,
+  saveConversationMetadata,
+} from './conversationDB.ts';
+import type { StoredImageRecord, Message, Conversation } from '../types';
 
 export interface BackupData {
   version: number;
@@ -8,6 +15,7 @@ export interface BackupData {
   storage: Record<string, any>;
   images: StoredImageRecord[];
   conversations?: { id: string; messages: Message[] }[];
+  conversationMetadata?: Conversation[];
 }
 
 export interface BackupPayload {
@@ -24,13 +32,15 @@ export async function exportData(password?: string): Promise<void> {
   
   // Get all conversations from IndexedDB
   const conversations = await _getAllConversationData();
+  const conversationMetadata = await getAllConversationMetadata();
 
   const backup: BackupData = {
     version: 1,
     timestamp: Date.now(),
     storage,
     images,
-    conversations
+    conversations,
+    conversationMetadata,
   };
 
   const jsonString = JSON.stringify(backup);
@@ -113,11 +123,32 @@ export async function importData(file: File, password?: string): Promise<void> {
           await importImages(backupData.images);
         }
         
-        // 3. Restore conversations to IndexedDB
+        // 3. Restore conversation messages to IndexedDB
         if (backupData.conversations && Array.isArray(backupData.conversations)) {
           await clearAllConversationMessages();
           for (const conv of backupData.conversations) {
             await saveConversationMessages(conv.id, conv.messages);
+          }
+        }
+
+        // 4. Restore conversation metadata to IndexedDB
+        await clearAllConversationMetadata();
+        if (backupData.conversationMetadata && Array.isArray(backupData.conversationMetadata)) {
+          // New format: metadata is explicitly backed up
+          for (const meta of backupData.conversationMetadata) {
+            await saveConversationMetadata(meta);
+          }
+        } else if (backupData.conversations && Array.isArray(backupData.conversations)) {
+          // Old format fallback: reconstruct metadata from messages
+          for (const conv of backupData.conversations) {
+            const firstUserMsg = conv.messages.find((m) => m.role === 'user');
+            const rawTitle = firstUserMsg
+              ? (firstUserMsg.displayContent || firstUserMsg.content || '')
+              : '';
+            const title = rawTitle.slice(0, 50) || 'Imported Chat';
+            const now = Date.now();
+            const meta: Conversation = { id: conv.id, title, createdAt: now, updatedAt: now };
+            await saveConversationMetadata(meta);
           }
         }
 

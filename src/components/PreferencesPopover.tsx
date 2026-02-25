@@ -28,7 +28,7 @@ export function PreferencesPopover({ isOpen, onClose }: PreferencesPopoverProps)
   ];
 
   return (
-    <div className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="absolute bottom-full left-3 right-3 mb-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="bg-card/95 backdrop-blur-md border border-border rounded-md shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
@@ -52,11 +52,10 @@ export function PreferencesPopover({ isOpen, onClose }: PreferencesPopoverProps)
               return (
                 <button
                   key={mode.value}
-                  className={`flex items-start gap-2.5 px-2.5 py-2 rounded-md border transition-all text-left ${
-                    isActive
+                  className={`flex items-start gap-2.5 px-2.5 py-2 rounded-md border transition-all text-left ${isActive
                       ? 'bg-primary/10 border-primary/30 text-primary'
                       : 'bg-muted/20 border-transparent hover:bg-muted/40 hover:text-foreground text-muted-foreground'
-                  }`}
+                    }`}
                   onClick={() => {
                     setPreferences({ toolMessageDisplay: mode.value });
                     onClose();

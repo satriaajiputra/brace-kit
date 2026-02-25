@@ -258,7 +258,7 @@ export function InputArea() {
 
         {/* Slash Commands Popover */}
         {filteredCommands.length > 0 && (
-          <div className="absolute bottom-full left-0 right-0 bg-popover border border-border rounded-xl shadow-xl mb-2 overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-md">
+          <div className="absolute bottom-full left-3 right-3 bg-popover border border-border rounded-lg shadow-xl mb-2 overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-md">
             {filteredCommands.map(({ cmd, desc }) => (
               <div
                 key={cmd}
@@ -365,7 +365,7 @@ export function InputArea() {
           {/* Page context - pill with label */}
           <button
             type="button"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 shrink-0 ${store.pageContext
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 shrink-0 ${store.pageContext
               ? 'bg-primary/15 text-primary border-primary/40'
               : 'bg-transparent text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground'
               }`}
@@ -379,7 +379,7 @@ export function InputArea() {
           {/* Attach - pill with label */}
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-transparent text-muted-foreground transition-all duration-200 shrink-0 hover:bg-muted/40 hover:text-foreground"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border bg-transparent text-muted-foreground transition-all duration-200 shrink-0 hover:bg-muted/40 hover:text-foreground"
             title="Attach file (image, txt, csv, pdf)"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -390,7 +390,7 @@ export function InputArea() {
           {/* System Prompt - icon only */}
           <button
             type="button"
-            className={`flex items-center justify-center w-7 h-7 rounded-lg border transition-all duration-200 shrink-0 ${store.showSystemPromptEditor
+            className={`flex items-center justify-center w-7 h-7 rounded-full border transition-all duration-200 shrink-0 ${store.showSystemPromptEditor
               ? 'bg-primary/15 text-primary border-primary/40'
               : 'text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground'
               }`}
@@ -403,7 +403,7 @@ export function InputArea() {
           {/* Reasoning - icon only */}
           <button
             type="button"
-            className={`flex items-center justify-center w-7 h-7 rounded-lg border transition-all duration-200 shrink-0 ${enableReasoning
+            className={`flex items-center justify-center w-7 h-7 rounded-full border transition-all duration-200 shrink-0 ${enableReasoning
               ? 'bg-primary/15 text-primary border-primary/40'
               : 'text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground'
               }`}
@@ -416,7 +416,7 @@ export function InputArea() {
           {/* Settings - icon only */}
           <button
             type="button"
-            className={`flex items-center justify-center w-7 h-7 rounded-lg border transition-all duration-200 shrink-0 ${preferences.toolMessageDisplay === 'compact'
+            className={`flex items-center justify-center w-7 h-7 rounded-full border transition-all duration-200 shrink-0 ${preferences.toolMessageDisplay === 'compact'
               ? 'bg-primary/15 text-primary border-primary/40'
               : 'text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground'
               }`}
@@ -433,7 +433,7 @@ export function InputArea() {
           {store.isStreaming ? (
             <button
               type="button"
-              className="flex items-center justify-center w-9 h-9 rounded-lg bg-destructive/80 text-destructive-foreground cursor-pointer transition-all duration-200 shrink-0 hover:bg-destructive active:scale-95"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-destructive/80 text-destructive-foreground cursor-pointer transition-all duration-200 shrink-0 hover:bg-destructive active:scale-95"
               onClick={stopStreaming}
               title="Stop generating"
             >
@@ -444,7 +444,7 @@ export function InputArea() {
           ) : (
             <button
               type="button"
-              className="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer transition-all duration-200 shrink-0 bg-primary text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed disabled:scale-100"
+              className="flex items-center justify-center w-9 h-9 rounded-full cursor-pointer transition-all duration-200 shrink-0 bg-primary text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed disabled:scale-100"
               onClick={handleSend}
               disabled={(!text.trim() && store.attachments.length === 0) || isProcessingCommand}
               title="Send message"

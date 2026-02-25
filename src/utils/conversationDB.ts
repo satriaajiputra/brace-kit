@@ -25,7 +25,13 @@ function openDB(): Promise<IDBDatabase> {
     };
 
     request.onsuccess = (event) => {
-      resolve((event.target as IDBOpenDBRequest).result);
+      const db = (event.target as IDBOpenDBRequest).result;
+      // Close stale connection if another context tries to upgrade the DB version
+      db.onversionchange = () => {
+        db.close();
+        dbPromise = null;
+      };
+      resolve(db);
     };
 
     request.onerror = (event) => {
@@ -33,6 +39,13 @@ function openDB(): Promise<IDBDatabase> {
       console.error('[ConversationDB] Failed to open database:', err);
       dbPromise = null;
       reject(err);
+    };
+
+    // Fires if another open connection blocks our version upgrade
+    request.onblocked = () => {
+      console.warn('[ConversationDB] Database upgrade blocked by an open connection.');
+      dbPromise = null;
+      reject(new Error('[ConversationDB] Database upgrade blocked'));
     };
   });
 

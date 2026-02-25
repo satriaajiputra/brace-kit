@@ -88,7 +88,7 @@ export function ProviderPopover({ isOpen, onClose }: ProviderPopoverProps) {
   const displayProviders = [...builtInProviders, ...customProviders];
 
   return (
-    <div className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="absolute bottom-full left-3 right-3 mb-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="bg-card/95 backdrop-blur-md border border-border rounded-md shadow-2xl overflow-hidden flex flex-col max-h-[420px]">
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
