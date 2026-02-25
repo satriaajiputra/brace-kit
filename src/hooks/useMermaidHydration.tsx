@@ -2,6 +2,10 @@ import { useEffect, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MermaidDiagram } from '../components/message/display/MermaidDiagram';
 
+interface UseMermaidHydrationOptions {
+  isStreaming?: boolean;
+}
+
 /**
  * Hook to hydrate mermaid placeholders with interactive React components.
  *
@@ -11,7 +15,11 @@ import { MermaidDiagram } from '../components/message/display/MermaidDiagram';
  * Pattern: Since renderMarkdown returns HTML string (not React elements),
  * we use placeholders in the HTML and hydrate them after render.
  */
-export function useMermaidHydration(containerRef: React.RefObject<HTMLElement | null>) {
+export function useMermaidHydration(
+  containerRef: React.RefObject<HTMLElement | null>,
+  options: UseMermaidHydrationOptions = {}
+) {
+  const { isStreaming } = options;
   const rootsRef = useRef<Map<HTMLElement, Root>>(new Map());
 
   useEffect(() => {
@@ -36,7 +44,7 @@ export function useMermaidHydration(containerRef: React.RefObject<HTMLElement | 
       }
 
       // Render the MermaidDiagram component
-      root.render(<MermaidDiagram code={code} diagramId={diagramId} />);
+      root.render(<MermaidDiagram code={code} diagramId={diagramId} isStreaming={isStreaming} />);
     });
 
     // Cleanup function

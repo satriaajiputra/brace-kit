@@ -490,8 +490,8 @@ export function MessageBubble({
     return () => el.removeEventListener('click', handleClick);
   }, [activeConversationId, toggleFavorite]);
 
-  // Hydrate mermaid diagrams after content renders
-  useMermaidHydration(bubbleRef);
+  // Hydrate mermaid diagrams after content renders (only when not streaming)
+  useMermaidHydration(bubbleRef, { isStreaming });
 
   // Sync markdown image favorite indicators
   useEffect(() => {

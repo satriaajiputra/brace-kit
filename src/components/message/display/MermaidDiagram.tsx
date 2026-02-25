@@ -14,6 +14,7 @@ import { Btn } from '../../ui/Btn';
 interface MermaidDiagramProps {
   code: string;
   diagramId: string;
+  isStreaming?: boolean;
 }
 
 type Theme = 'dark' | 'light';
@@ -55,7 +56,7 @@ function MermaidControls() {
   );
 }
 
-export function MermaidDiagram({ code, diagramId }: MermaidDiagramProps) {
+export function MermaidDiagram({ code, diagramId, isStreaming }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -84,11 +85,17 @@ export function MermaidDiagram({ code, diagramId }: MermaidDiagramProps) {
     return () => observer.disconnect();
   }, []);
 
-  // Re-render diagram when theme changes
+  // Re-render diagram when theme changes or streaming completes
   useEffect(() => {
     let isMounted = true;
 
     const renderDiagram = async () => {
+      // Skip rendering during streaming - wait for complete diagram code
+      if (isStreaming) {
+        setIsLoading(true);
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError('');
@@ -186,7 +193,7 @@ export function MermaidDiagram({ code, diagramId }: MermaidDiagramProps) {
     return () => {
       isMounted = false;
     };
-  }, [code, diagramId, theme]);
+  }, [code, diagramId, theme, isStreaming]);
 
   // Handle escape key to exit fullscreen
   useEffect(() => {
