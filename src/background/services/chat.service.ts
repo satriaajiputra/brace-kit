@@ -206,7 +206,6 @@ export function createChatService(): ChatService {
       )) {
         // Check if request was aborted
         if (activeRequest.aborted) {
-          console.log('[ChatService] Request aborted during streaming');
           return;
         }
 
@@ -291,13 +290,11 @@ export function createChatService(): ChatService {
     abortRequest(requestId: string): boolean {
       const activeRequest = activeRequests.get(requestId);
       if (activeRequest) {
-        console.log('[ChatService] Stopping stream for requestId:', requestId);
         activeRequest.aborted = true;
         activeRequest.abortController?.abort();
         activeRequests.delete(requestId);
         return true;
       }
-      console.log('[ChatService] No active request found for requestId:', requestId);
       return false;
     },
 

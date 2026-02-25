@@ -52,7 +52,6 @@ export async function handleMCPConnect(
   message: MCPConnectMessage,
   sendResponse: SendResponse
 ): Promise<void> {
-  console.log('[MCPHandler] MCP_CONNECT received:', message.config);
   try {
     const result = await mcpManager.addServer(message.config);
     sendResponse(result as MCPResponse);
@@ -81,12 +80,6 @@ export function handleMCPDisconnect(
 export function handleMCPListTools(sendResponse: SendResponse): void {
   try {
     const allTools = mcpManager.getAllTools();
-    console.log(
-      '[MCPHandler] MCP_LIST_TOOLS - clients:',
-      mcpManager.getClientCount(),
-      'tools:',
-      allTools
-    );
     sendResponse({ tools: allTools } as MCPResponse);
   } catch (e) {
     sendResponse({ tools: [], error: (e as Error).message } as MCPResponse);
@@ -135,14 +128,12 @@ export async function handleMCPToolCall(
 export async function restoreMCPServers(): Promise<void> {
   const { mcpServers } = await chrome.storage.local.get('mcpServers');
   if (mcpServers && Array.isArray(mcpServers) && mcpServers.length > 0) {
-    console.log('[MCPHandler] Restoring MCP servers:', mcpServers.length);
     for (const server of mcpServers) {
       if (server.enabled !== false) {
         try {
           await mcpManager.addServer(server);
-          console.log('[MCPHandler] Restored:', server.name);
         } catch (e) {
-          console.log('[MCPHandler] Failed to restore:', server.name, e);
+          console.warn('[MCPHandler] Failed to restore:', server.name, e);
         }
       }
     }

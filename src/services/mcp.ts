@@ -75,7 +75,7 @@ export class MCPClient {
       if (result.success) return result;
     } catch (e) {
       const error = e as Error;
-      console.log('Streamable HTTP failed:', error.message);
+      console.warn('Streamable HTTP failed:', error.message);
     }
 
     // Strategy 2: SSE transport
@@ -84,7 +84,7 @@ export class MCPClient {
       if (result.success) return result;
     } catch (e) {
       const error = e as Error;
-      console.log('SSE transport failed:', error.message);
+      console.warn('SSE transport failed:', error.message);
     }
 
     return { success: false, error: 'Could not connect to MCP server' };
@@ -372,22 +372,14 @@ export class MCPManager {
   }
 
   async addServer(config: MCPServer): Promise<ConnectResult> {
-    console.log('[MCPManager] addServer called:', config.id, config.name);
     const client = new MCPClient(config.url, config.headers || {});
     const result = await client.connect();
-    console.log(
-      '[MCPManager] connect result:',
-      result.success,
-      'tools:',
-      result.tools?.length
-    );
     if (result.success) {
       this.clients.set(config.id, {
         client,
         config,
         tools: result.tools || [],
       });
-      console.log('[MCPManager] Server added, total clients:', this.clients.size);
     }
     return result;
   }
@@ -401,14 +393,8 @@ export class MCPManager {
   }
 
   getAllTools(): MCPToolInternal[] {
-    console.log('[MCPManager] getAllTools called, clients:', this.clients.size);
     const tools: MCPToolInternal[] = [];
     for (const [serverId, entry] of this.clients) {
-      console.log(
-        `[MCPManager] Server ${serverId}:`,
-        entry.tools?.length || 0,
-        'tools'
-      );
       for (const tool of entry.tools || []) {
         tools.push({
           ...tool,
@@ -417,7 +403,6 @@ export class MCPManager {
         });
       }
     }
-    console.log('[MCPManager] Total tools:', tools.length);
     return tools;
   }
 

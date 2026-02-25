@@ -33,7 +33,6 @@ export function useStreaming() {
     // Check if already processed
     const toolCallKey = toolCalls.map((tc) => tc.id).sort().join(',');
     if (streamProcessor.isToolCallProcessed(toolCallKey)) {
-      console.log('[useStreaming] Tool calls already processed, skipping:', toolCallKey);
       return;
     }
     streamProcessor.markToolCallsProcessed(toolCallKey);
@@ -42,7 +41,6 @@ export function useStreaming() {
 
     for (const tc of toolCalls) {
       if (!useStore.getState().isStreaming) {
-        console.log('[useStreaming] Streaming cancelled during tool calls, aborting');
         return;
       }
       if (!tc.name) continue;
@@ -67,7 +65,6 @@ export function useStreaming() {
       );
 
       if (previousSuccessful) {
-        console.log('[useStreaming] Duplicate tool call, reusing cached result:', tc.name);
         store.addMessage({
           role: 'tool',
           toolCallId: tc.id,
@@ -291,7 +288,6 @@ export function useStreaming() {
         case 'CHAT_STREAM_DONE':
           // Guard: prevent processing the same request twice
           if (message.requestId && processedDoneRequestsRef.current.has(message.requestId)) {
-            console.log('[useStreaming] CHAT_STREAM_DONE already processed for', message.requestId);
             return;
           }
           if (message.requestId) {
@@ -308,7 +304,6 @@ export function useStreaming() {
 
           // Update token usage in store for auto-compact
           if (message.usage) {
-            console.log('[useStreaming] Token usage:', message.usage);
             store.setTokenUsage(message.usage);
           }
 
