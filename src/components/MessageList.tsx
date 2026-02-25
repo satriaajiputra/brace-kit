@@ -75,7 +75,7 @@ export function MessageList() {
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-2 scrollbar-thin"
+      className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-2 scrollbar-thin not-dark:bg-muted"
       ref={containerRef}
       onScroll={handleScroll}
     >

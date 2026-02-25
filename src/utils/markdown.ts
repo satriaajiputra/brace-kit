@@ -150,9 +150,8 @@ function replaceBlockquotePlaceholders(html: string, isStreaming?: boolean): str
     } else {
       // Callout blockquote
       const config = data.config!;
-      const animationClass = isStreaming ? '' : 'animate-in fade-in duration-300';
       blockquoteHtml = `
-      <div class="border-l-4 ${config.borderColor} bg-muted/30 rounded-r-md my-4 p-4 shadow-sm ${animationClass}">
+      <div class="border-l-4 ${config.borderColor} bg-muted/30 rounded-r-md my-4 p-4 shadow-2xs border border-border/50">
         <div class="flex items-center gap-2 mb-2">
           <div class="shrink-0 ${config.iconBg}">
             ${config.icon}
@@ -440,7 +439,7 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
       return `
         <span class="md-image-wrapper group relative inline-block my-2 overflow-hidden rounded-md border border-border/50" data-src="${encodedSrc}">
           <img${before}src="${src}"${after} class="max-w-full h-auto cursor-zoom-in transition-transform duration-300 group-hover:scale-105 my-0!">
-          <span class="md-image-fav-indicator absolute top-2.5 left-2.5 p-1 bg-amber-500 rounded-sm shadow-sm z-10 hidden ${isStreaming ? '' : 'animate-in zoom-in-50 duration-300'}">
+          <span class="md-image-fav-indicator absolute top-2.5 left-2.5 p-1 bg-amber-500 rounded-sm shadow-sm z-10 hidden">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
@@ -507,11 +506,9 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
 
       // Encode table HTML for data attributes
       const encodedTable = encodeURIComponent(match);
-      
-      const animationClass = isStreaming ? '' : 'animate-in fade-in duration-500';
-      
+            
       return `
-        <div class="table-wrapper not-prose group relative my-6 rounded-lg border border-border/80 overflow-hidden bg-card/40 flex flex-col ${animationClass}">
+        <div class="table-wrapper not-prose group relative my-6 rounded-lg border border-border/80 overflow-hidden bg-card/40 flex flex-col">
           <div class="table-container overflow-x-auto max-h-[500px]">
             ${tableHtml}
           </div>

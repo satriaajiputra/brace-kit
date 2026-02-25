@@ -660,10 +660,10 @@ export function MessageBubble({
   // Normal mode render
   const bubbleBgClass =
     message.role === 'user'
-      ? 'bg-muted/40 border border-border rounded-lg rounded-br-sm'
+      ? 'dark:bg-muted/40 bg-background border border-border rounded-lg rounded-br-sm'
       : message.role === 'error'
         ? 'bg-destructive/10 border border-destructive/20 text-destructive rounded-lg rounded-bl-sm'
-        : 'bg-muted/40 border border-border rounded-lg rounded-bl-sm';
+        : 'dark:bg-muted/40 bg-background border border-border rounded-lg rounded-bl-sm'; // bg for ai message
 
   const { favId, isFavorited } = getLightboxFavData();
 
