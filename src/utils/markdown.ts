@@ -137,7 +137,7 @@ function processBlockquotes(markdown: string): string {
 }
 
 // Replace placeholders with actual blockquote HTML after markdown parsing
-function replaceBlockquotePlaceholders(html: string, isStreaming?: boolean): string {
+function replaceBlockquotePlaceholders(html: string, _isStreaming?: boolean): string {
   blockquotePlaceholders.forEach((data, placeholder) => {
     // Parse the markdown content inside the blockquote
     const parsedContent = marked.parse(data.content, { async: false }) as string;

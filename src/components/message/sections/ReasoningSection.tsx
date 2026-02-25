@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckIcon, ChevronRightIcon, RefreshCwIcon, BrainIcon } from 'lucide-react';
+import { ChevronRightIcon, RefreshCwIcon, BrainIcon } from 'lucide-react';
 import type { ReasoningSectionProps } from '../MessageBubble.types';
 import { cn } from '../../../utils/cn';
 
@@ -32,7 +32,7 @@ export function ReasoningSection({ content, isStreaming }: ReasoningSectionProps
 
         {isExpanded && (
           <div className="mt-2">
-            <div className="text-xs my-0! font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto scrollbar-thin text-muted-foreground leading-relaxed">
+            <div className="text-xs my-0! font-mono whitespace-pre-wrap wrap-break-word max-h-60 overflow-y-auto scrollbar-thin text-muted-foreground leading-relaxed">
               {content}
             </div>
           </div>
