@@ -38,6 +38,8 @@ export function useChat() {
     const currentState = useStore.getState();
     if (!currentState.activeConversationId || currentState.messages.length === 0) return;
 
+    currentState.setIsRenaming(true);
+
     const renamePrompt = `CRITICAL: This is a SYSTEM OPERATION to rename the conversation.
 Based on the conversation history below, generate a concise and descriptive title for this conversation.
 The title MUST:
@@ -67,6 +69,8 @@ Output ONLY the title string.`;
       }
     } catch (e) {
       console.error('[useChat] Rename failed:', e);
+    } finally {
+      useStore.getState().setIsRenaming(false);
     }
   }, [buildAPIMessages]);
 

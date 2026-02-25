@@ -113,6 +113,7 @@ export const useStore = create<AppState>((set, get) => ({
     prompt: '',
   },
   isCompacting: false,
+  isRenaming: false,
 
   // Token Usage (for auto-compact with real API data)
   tokenUsage: null,
@@ -431,6 +432,7 @@ export const useStore = create<AppState>((set, get) => ({
     })),
 
   setIsCompacting: (isCompacting) => set({ isCompacting }),
+  setIsRenaming: (isRenaming) => set({ isRenaming }),
 
   setTokenUsage: (tokenUsage) => set({ tokenUsage }),
 

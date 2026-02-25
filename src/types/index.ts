@@ -285,6 +285,7 @@ export interface AppState {
   // Auto Compact
   compactConfig: CompactConfig;
   isCompacting: boolean;
+  isRenaming: boolean;
 
   // Token Usage (for auto-compact)
   tokenUsage: TokenUsageType | null;
@@ -372,6 +373,7 @@ export interface AppState {
   // Auto Compact Actions
   setCompactConfig: (config: Partial<CompactConfig>) => void;
   setIsCompacting: (isCompacting: boolean) => void;
+  setIsRenaming: (isRenaming: boolean) => void;
   compactConversation: (id: string) => Promise<void>;
 
   // Token Usage Actions
