@@ -256,12 +256,16 @@ export const useStore = create<AppState>((set, get) => ({
       }
     }
 
+    // Create static timestamp for metadata (for prompt caching)
+    const metadataTimestamp = new Date().toISOString();
+
     const conv: Conversation = {
       id,
       title: opts?.title ?? 'New Chat',
       createdAt: now,
       updatedAt: now,
       selectedMemoryIds,
+      metadataTimestamp,
       ...(opts?.branchedFromId ? { branchedFromId: opts.branchedFromId } : {}),
     };
     set((s) => ({

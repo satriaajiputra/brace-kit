@@ -92,11 +92,13 @@ export function useMessageBuilder() {
 
   /**
    * Build metadata block for system prompt
-   * Contains current timestamp for AI context awareness
+   * Uses static timestamp from conversation for prompt caching efficiency
    */
   const buildMetadataBlock = useCallback(() => {
-    return `\n\n<metadata>{"currentTime": "${new Date().toISOString()}"}</metadata>`;
-  }, []);
+    const activeConv = store.conversations.find((c) => c.id === store.activeConversationId);
+    const timestamp = activeConv?.metadataTimestamp || new Date().toISOString();
+    return `\n\n<metadata>{"currentTime": "${timestamp}"}</metadata>`;
+  }, [store.activeConversationId, store.conversations]);
 
   /**
    * Build API messages from a message list

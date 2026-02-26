@@ -209,6 +209,8 @@ export interface Conversation {
   markdownImages?: string[];
   /** IDs of memories selected for this conversation (persisted per-conversation) */
   selectedMemoryIds?: string[];
+  /** Static timestamp for metadata block (for prompt caching) */
+  metadataTimestamp?: string;
 }
 
 // ==================== File Attachment Types ====================
