@@ -95,13 +95,13 @@ export function useStreaming() {
     streamProcessor.markToolCallsProcessed(toolCallKey);
 
     store.setIsStreaming(true);
-
+    console.log('Handling tool calls:', toolCalls);
     for (const tc of toolCalls) {
       if (!useStore.getState().isStreaming) {
         return;
       }
       if (!tc.name) continue;
-
+      
       let args = {};
       try {
         args = JSON.parse(tc.arguments || '{}');
