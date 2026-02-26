@@ -67,6 +67,28 @@ export function ChatSettings() {
         )}
 
         {/* ---------------------------------------------------------------------------
+            Streaming Options
+            --------------------------------------------------------------------------- */}
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40 border border-border/50 hover:bg-secondary/60 transition-colors">
+          <div className="flex flex-col gap-0.5 pr-2">
+            <span className="text-sm font-medium text-foreground">Enable Streaming</span>
+            <span className="text-xs text-muted-foreground leading-tight">Stream responses word by word</span>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={store.enableStreaming}
+              onChange={(e) => {
+                store.setEnableStreaming(e.target.checked);
+                store.saveToStorage();
+              }}
+            />
+            <div className="w-8 h-4.5 bg-muted rounded-full peer peer-checked:bg-primary transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-3.5"></div>
+          </label>
+        </div>
+
+        {/* ---------------------------------------------------------------------------
             Non-Gemini Options: Google Search Tool
             --------------------------------------------------------------------------- */}
         {!isGemini && (

@@ -49,7 +49,6 @@ export function formatOpenAI(
           },
         })),
       };
-      console.log(['formatOpenAI - processing tool call message', { msg, result }]);
       // Required by DeepSeek thinking models (and similar OpenAI-compatible reasoning APIs)
       // for conversation history replay when the assistant turn included reasoning.
       if (msg.reasoningContent) {

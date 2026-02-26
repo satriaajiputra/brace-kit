@@ -8,7 +8,7 @@
 
 import { useCallback, useRef } from 'react';
 import { useStore } from '../store/index.ts';
-import type { Message, Attachment, APIMessage, PageContext, SelectedText } from '../types/index.ts';
+import type { Message, Attachment, APIMessage, PageContext, SelectedText, ToolCall } from '../types/index.ts';
 import { saveConversationMessages } from '../utils/conversationDB.ts';
 import { getProvider as getProviderUtil, isCustomProvider as isCustomProviderUtil } from '../utils/providerUtils.ts';
 import { useMessageBuilder } from './chat/useMessageBuilder.ts';
@@ -120,7 +120,33 @@ Output ONLY the title string.`;
         if (activeConvId) currentState.setConversationStreaming(activeConvId, null);
         currentState.addMessage({ role: 'error', content: response.error });
         currentState.setIsStreaming(false);
+      } else if (response?.content !== undefined || response?.toolCalls?.length) {
+        // Handle non-streaming response (content returned directly)
+        const toolCalls: ToolCall[] = response.toolCalls || [];
+        const assistantMsg: Message = {
+          role: 'assistant',
+          content: response.content || '',
+          ...(response.reasoning_content && { reasoningContent: response.reasoning_content }),
+          ...(toolCalls.length && { toolCalls }),
+        };
+        currentState.addMessage(assistantMsg);
+
+        // Handle tool calls for non-streaming (if any)
+        if (toolCalls.length > 0) {
+          // Keep isStreaming true while handling tool calls
+          await handleToolCallsNonStreaming(toolCalls, activeConvId);
+        } else {
+          // No tool calls, we're done
+          currentState.setIsStreaming(false);
+          currentState.setCurrentRequestId(null);
+          if (activeConvId) {
+            currentState.setConversationStreaming(activeConvId, null);
+            currentState.updateConversationTimestamp();
+          }
+          currentState.saveActiveConversation();
+        }
       }
+      // For streaming: CHAT_STREAM_CHUNK and CHAT_STREAM_DONE are handled by useStreaming.ts
     } catch (e) {
       if (activeConvId) currentState.setConversationStreaming(activeConvId, null);
       currentState.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
@@ -339,6 +365,122 @@ Output ONLY the title string.`;
     await dispatchChatRequest(apiMessages);
   }, [buildAPIMessages, dispatchChatRequest, checkAndAutoCompact]);
 
+  /**
+   * Handle tool calls for non-streaming mode
+   */
+  const handleToolCallsNonStreaming = useCallback(async (
+    toolCalls: ToolCall[],
+    activeConvId: string | null
+  ) => {
+    for (const tc of toolCalls) {
+      if (!tc.name) continue;
+
+      let args = {};
+      try {
+        args = JSON.parse(tc.arguments || '{}');
+      } catch {
+        args = {};
+      }
+
+      // Add "calling" status
+      store.addMessage({
+        role: 'tool',
+        toolCallId: tc.id,
+        name: tc.name,
+        content: '⏳ Calling...',
+        toolArguments: args as Record<string, unknown>,
+      });
+
+      // Execute tool
+      try {
+        let resultText = '';
+        if (tc.name === 'continue_message') {
+          resultText = 'Chain message initiated. You may continue your response now.';
+        } else {
+          const result = await chrome.runtime.sendMessage({
+            type: 'MCP_CALL_TOOL',
+            name: tc.name,
+            arguments: args,
+          });
+          resultText =
+            result?.content?.map((c: { text?: string }) => c.text || JSON.stringify(c)).join('\n') ||
+            JSON.stringify(result);
+        }
+
+        // Update message with result
+        updateToolMessage(tc.id, resultText);
+      } catch (e) {
+        updateToolMessage(tc.id, `Error: ${(e as Error).message}`);
+      }
+    }
+
+    // Auto compact check
+    await checkAndAutoCompact();
+
+    // Build follow-up request
+    const msgs = buildAPIMessages(useStore.getState().messages);
+
+    // Get tools using unified hook
+    const tools = await getAllTools();
+
+    const requestId = `req_${Date.now()}`;
+    store.setIsStreaming(true);
+    store.setCurrentRequestId(requestId);
+    store.setStreamingContent('');
+    store.setStreamingReasoningContent('');
+    if (activeConvId) {
+      useStore.getState().setConversationStreaming(activeConvId, { requestId });
+    }
+
+    const chatOptions = getChatOptions();
+    const currentModel = store.providerConfig.model || '';
+    const canUseFunctionCalling = supportsFunctionCalling(currentModel);
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'CHAT_REQUEST',
+        messages: msgs,
+        providerConfig: store.providerConfig,
+        tools: canUseFunctionCalling ? tools : [],
+        options: chatOptions,
+        requestId,
+        conversationId: activeConvId,
+      });
+
+      if (response?.error) {
+        if (activeConvId) useStore.getState().setConversationStreaming(activeConvId, null);
+        store.addMessage({ role: 'error', content: response.error });
+        store.setIsStreaming(false);
+      } else if (response?.content !== undefined || response?.toolCalls?.length) {
+        // Handle non-streaming follow-up response
+        const followUpToolCalls: ToolCall[] = response.toolCalls || [];
+        const assistantMsg: Message = {
+          role: 'assistant',
+          content: response.content || '',
+          ...(response.reasoning_content && { reasoningContent: response.reasoning_content }),
+          ...(followUpToolCalls.length && { toolCalls: followUpToolCalls }),
+        };
+        store.addMessage(assistantMsg);
+        store.setIsStreaming(false);
+        store.setCurrentRequestId(null);
+        if (activeConvId) {
+          useStore.getState().setConversationStreaming(activeConvId, null);
+          useStore.getState().updateConversationTimestamp();
+        }
+        useStore.getState().saveActiveConversation();
+
+        // Recursively handle tool calls if any
+        if (followUpToolCalls.length > 0) {
+          await handleToolCallsNonStreaming(followUpToolCalls, activeConvId);
+        }
+      }
+    } catch (e) {
+      if (activeConvId) useStore.getState().setConversationStreaming(activeConvId, null);
+      store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
+      store.setIsStreaming(false);
+    }
+  }, [store, buildAPIMessages, getAllTools, supportsFunctionCalling, getChatOptions, checkAndAutoCompact]);
+
   return {
     sendMessage,
     stopStreaming,
@@ -354,4 +496,27 @@ Output ONLY the title string.`;
     estimateTokenCount,
     checkAndAutoCompact,
   };
+}
+
+/**
+ * Helper function to update tool message content
+ */
+function updateToolMessage(toolCallId: string, content: string) {
+  const store = useStore.getState();
+  const freshMessages = store.messages;
+  const callingIdx = [...freshMessages]
+    .reverse()
+    .findIndex(
+      (m) =>
+        m.role === 'tool' &&
+        String(m.toolCallId) === String(toolCallId) &&
+        String(m.content).includes('Calling...')
+    );
+
+  if (callingIdx !== -1) {
+    const actualIdx = freshMessages.length - 1 - callingIdx;
+    const updated = [...freshMessages];
+    updated[actualIdx] = { ...updated[actualIdx], content };
+    store.setMessages(updated);
+  }
 }

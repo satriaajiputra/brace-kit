@@ -69,6 +69,7 @@ export interface ChatServiceResponse {
   started?: boolean;
   content?: string;
   reasoning_content?: string;
+  toolCalls?: ToolCall[];
 }
 
 export interface ChatService {
@@ -152,7 +153,19 @@ export function createChatService(): ChatService {
         if (options?.stream === false) {
           const data = (await response.json()) as Record<string, unknown>;
           const result = streamingService.buildNonStreamingResponse(data, provider);
-          sendResponse(result);
+
+          // Convert tool_calls to ToolCall format if present
+          const toolCalls = result.tool_calls?.map((tc) => ({
+            id: tc.id || `tc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: tc.name || 'unknown',
+            arguments: tc.arguments || '{}',
+          }));
+
+          sendResponse({
+            content: result.content,
+            reasoning_content: result.reasoning_content,
+            toolCalls: toolCalls?.length ? toolCalls : undefined,
+          });
           return;
         }
 

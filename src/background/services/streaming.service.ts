@@ -27,7 +27,7 @@ export interface StreamingService {
   buildNonStreamingResponse: (
     data: Record<string, unknown>,
     provider: ProviderWithConfig
-  ) => { content: string; reasoning_content: string };
+  ) => { content: string; reasoning_content: string; tool_calls?: ToolCallFragment[] };
 }
 
 /**
@@ -87,39 +87,88 @@ export function createStreamingService(): StreamingService {
      * Build response object from non-streaming API response
      * @param data - Parsed JSON response
      * @param provider - Provider configuration
-     * @returns Response with content and reasoning_content
+     * @returns Response with content, reasoning_content, and tool_calls
      */
     buildNonStreamingResponse(
       data: Record<string, unknown>,
       provider: ProviderWithConfig
-    ): { content: string; reasoning_content: string } {
+    ): { content: string; reasoning_content: string; tool_calls?: ToolCallFragment[] } {
       let text = '';
       let reasoning = '';
+      let toolCalls: ToolCallFragment[] | undefined;
 
       if (provider.format === 'openai') {
         const choices = data.choices as Array<Record<string, unknown>> | undefined;
         const message = choices?.[0]?.message as Record<string, unknown> | undefined;
         text = (message?.content as string) || '';
         reasoning = (message?.reasoning_content as string) || '';
+
+        // Extract tool calls from OpenAI format
+        const rawToolCalls = message?.tool_calls as Array<{
+          id?: string;
+          type?: string;
+          function?: { name?: string; arguments?: string };
+        }> | undefined;
+
+        if (rawToolCalls && rawToolCalls.length > 0) {
+          toolCalls = rawToolCalls.map((tc, index) => ({
+            id: tc.id,
+            index,
+            name: tc.function?.name,
+            arguments: tc.function?.arguments,
+          }));
+        }
       } else if (provider.format === 'anthropic') {
-        const content = data.content as Array<Record<string, unknown>> | undefined;
-        text =
-          content
-            ?.map((c) => c.text as string | undefined)
-            .filter(Boolean)
-            .join('') || '';
+        const content = data.content as Array<{
+          type?: string;
+          text?: string;
+          id?: string;
+          name?: string;
+          input?: Record<string, unknown>;
+        }> | undefined;
+
+        // Anthropic content blocks: filter text blocks (backward compatible with test data that lacks 'type')
+        const textBlocks = content?.filter((c) => !c.type || c.type === 'text');
+        text = textBlocks?.map((c) => c.text).filter(Boolean).join('') || '';
+
+        // Extract tool calls from Anthropic format (tool_use blocks)
+        const toolUseBlocks = content?.filter((c) => c.type === 'tool_use');
+        if (toolUseBlocks && toolUseBlocks.length > 0) {
+          toolCalls = toolUseBlocks.map((tc, index) => ({
+            id: tc.id,
+            index,
+            name: tc.name,
+            arguments: tc.input ? JSON.stringify(tc.input) : '{}',
+          }));
+        }
       } else if (provider.format === 'gemini') {
         const candidates = data.candidates as Array<Record<string, unknown>> | undefined;
         const parts = candidates?.[0]?.content as Record<string, unknown> | undefined;
-        const partsArray = parts?.parts as Array<Record<string, unknown>> | undefined;
+        const partsArray = parts?.parts as Array<{
+          text?: string;
+          functionCall?: { name?: string; args?: Record<string, unknown> };
+        }> | undefined;
+
         text =
           partsArray
-            ?.map((p) => p.text as string | undefined)
+            ?.filter((p) => p.text)
+            ?.map((p) => p.text)
             .filter(Boolean)
             .join('') || '';
+
+        // Extract tool calls from Gemini format (functionCall)
+        const functionCalls = partsArray?.filter((p) => p.functionCall);
+        if (functionCalls && functionCalls.length > 0) {
+          toolCalls = functionCalls.map((fc, index) => ({
+            id: `fc_${index}_${Date.now()}`,
+            index,
+            name: fc.functionCall?.name,
+            arguments: fc.functionCall?.args ? JSON.stringify(fc.functionCall.args) : '{}',
+          }));
+        }
       }
 
-      return { content: text, reasoning_content: reasoning };
+      return { content: text, reasoning_content: reasoning, tool_calls: toolCalls };
     },
   };
 }

@@ -9,7 +9,6 @@ export function MessageList() {
   const messages = useStore((state) => state.messages);
   const isStreaming = useStore((state) => state.isStreaming);
   const streamingContent = useStore((state) => state.streamingContent);
-  const streamingReasoningContent = useStore((state) => state.streamingReasoningContent);
   const preferences = useStore((state) => state.preferences);
   const { branchFrom, regenerateFrom, editMessage } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -204,7 +203,7 @@ export function MessageList() {
 
         return null;
       })}
-      {isStreaming && (streamingContent || streamingReasoningContent) && (
+      {isStreaming && (
         <MessageBubble message={{ role: 'assistant', content: streamingContent }} isStreaming />
       )}
       <div ref={messagesEndRef} style={{ height: '20px' }} />

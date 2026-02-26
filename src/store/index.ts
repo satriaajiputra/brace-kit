@@ -43,6 +43,7 @@ interface StorageData {
   enableReasoning?: boolean;
   enableGoogleSearchTool?: boolean;
   googleSearchApiKey?: string;
+  enableStreaming?: boolean;
   security?: SecuritySettings;
   compactConfig?: CompactConfig;
   theme?: 'light' | 'dark';
@@ -103,6 +104,9 @@ export const useStore = create<AppState>((set, get) => ({
   // Google Search Tool (for non-Gemini providers)
   enableGoogleSearchTool: false,
   googleSearchApiKey: '',
+
+  // Streaming options (default: true for backward compatibility)
+  enableStreaming: true,
 
   // File attachments
   attachments: [],
@@ -501,6 +505,10 @@ export const useStore = create<AppState>((set, get) => ({
     set({ googleSearchApiKey });
     get().saveToStorage();
   },
+  setEnableStreaming: (enableStreaming) => {
+    set({ enableStreaming });
+    get().saveToStorage();
+  },
 
   addAttachment: (attachment) =>
     set((state) => ({
@@ -607,6 +615,7 @@ export const useStore = create<AppState>((set, get) => ({
         'enableReasoning',
         'enableGoogleSearchTool',
         'googleSearchApiKey',
+        'enableStreaming',
         'security',
         'compactConfig',
         'theme',
@@ -644,6 +653,9 @@ export const useStore = create<AppState>((set, get) => ({
       }
       if (data.googleSearchApiKey !== undefined) {
         updates.googleSearchApiKey = data.googleSearchApiKey;
+      }
+      if (data.enableStreaming !== undefined) {
+        updates.enableStreaming = data.enableStreaming;
       }
       if (data.security) {
         updates.security = data.security;
@@ -753,6 +765,7 @@ export const useStore = create<AppState>((set, get) => ({
         enableReasoning: state.enableReasoning,
         enableGoogleSearchTool: state.enableGoogleSearchTool,
         googleSearchApiKey: state.googleSearchApiKey,
+        enableStreaming: state.enableStreaming,
         // Jika aktif kosong, simpan null agar saat reload tidak coba load conversation ini
         activeConversationId: activeIsEmpty ? null : state.activeConversationId,
         memories: state.memories,

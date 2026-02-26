@@ -95,7 +95,6 @@ export function useStreaming() {
     streamProcessor.markToolCallsProcessed(toolCallKey);
 
     store.setIsStreaming(true);
-    console.log('Handling tool calls:', toolCalls);
     for (const tc of toolCalls) {
       if (!useStore.getState().isStreaming) {
         return;

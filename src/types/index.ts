@@ -297,6 +297,9 @@ export interface AppState {
   enableGoogleSearchTool: boolean;
   googleSearchApiKey: string;
 
+  // Streaming options
+  enableStreaming: boolean;
+
   // File attachments
   attachments: FileAttachment[];
 
@@ -371,6 +374,7 @@ export interface AppState {
   setEnableReasoning: (enabled: boolean) => void;
   setEnableGoogleSearchTool: (enabled: boolean) => void;
   setGoogleSearchApiKey: (key: string) => void;
+  setEnableStreaming: (enabled: boolean) => void;
 
   addAttachment: (attachment: FileAttachment) => void;
   removeAttachment: (id: string) => void;
