@@ -244,6 +244,13 @@ export interface Preferences {
   toolMessageDisplay: 'detailed' | 'compact';
 }
 
+// ==================== Streaming State ====================
+
+export interface ConversationStreamingState {
+  requestId: string;
+  streamingContent?: string; // snapshot saat user switch away dari conv ini
+}
+
 // ==================== App State ====================
 
 export interface AppState {
@@ -253,6 +260,7 @@ export interface AppState {
   currentRequestId: string | null;
   streamingContent: string;
   streamingReasoningContent: string;
+  streamingConversations: Record<string, ConversationStreamingState>;
 
   // Context
   pageContext: PageContext | null;
@@ -323,6 +331,7 @@ export interface AppState {
   setCurrentRequestId: (requestId: string | null) => void;
   setStreamingContent: (content: string) => void;
   setStreamingReasoningContent: (content: string) => void;
+  setConversationStreaming: (convId: string, state: ConversationStreamingState | null) => void;
 
   setPageContext: (context: PageContext | null) => void;
   setSelectedText: (text: SelectedText | null) => void;

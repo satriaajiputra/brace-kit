@@ -29,6 +29,7 @@ export interface ChatRequestMessage {
   tools?: MCPTool[];
   options?: ChatOptions;
   requestId?: string;
+  conversationId?: string;
 }
 
 interface StreamingResponseMessage extends ChatRequestMessage {
@@ -45,6 +46,7 @@ interface StreamDoneMessage {
   images?: Array<{ mimeType: string; data: string }>;
   usage?: TokenUsage;
   requestId?: string;
+  conversationId?: string;
 }
 
 interface StreamChunkMessage {
@@ -52,12 +54,14 @@ interface StreamChunkMessage {
   content: string;
   chunkType?: string;
   requestId?: string;
+  conversationId?: string;
 }
 
 interface StreamErrorMessage {
   type: 'CHAT_STREAM_ERROR';
   error: string;
   requestId?: string;
+  conversationId?: string;
 }
 
 export interface ChatServiceResponse {
@@ -170,6 +174,7 @@ export function createChatService(): ChatService {
             type: 'CHAT_STREAM_ERROR',
             error: error.message,
             requestId: message.requestId,
+            conversationId: message.conversationId,
           } as StreamErrorMessage);
         }
       } finally {
@@ -217,6 +222,7 @@ export function createChatService(): ChatService {
             type: 'CHAT_STREAM_CHUNK',
             content: chunk.content,
             requestId: message.requestId,
+            conversationId: message.conversationId,
           } as StreamChunkMessage);
         } else if (chunk.type === 'reasoning') {
           reasoningChunks.push(chunk.content || '');
@@ -225,6 +231,7 @@ export function createChatService(): ChatService {
             chunkType: 'reasoning',
             content: chunk.content,
             requestId: message.requestId,
+            conversationId: message.conversationId,
           } as StreamChunkMessage);
         } else if (chunk.type === 'reasoning_signature') {
           reasoningSignatureChunks.push(chunk.content || '');
@@ -237,6 +244,7 @@ export function createChatService(): ChatService {
             type: 'CHAT_STREAM_CHUNK',
             content: errorContent,
             requestId: message.requestId,
+            conversationId: message.conversationId,
           } as StreamChunkMessage);
         } else if (chunk.type === 'tool_call' || chunk.type === 'tool_call_start') {
           if (chunk.type === 'tool_call_start') {
@@ -283,6 +291,7 @@ export function createChatService(): ChatService {
         images: images.length > 0 ? images : undefined,
         usage: tokenUsage,
         requestId: message.requestId,
+        conversationId: message.conversationId,
       } as StreamDoneMessage);
 
       sendResponse({ started: true });

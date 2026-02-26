@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useStore } from '../store/index.ts';
-import { useChat } from '../hooks';
-import { ConfirmDialog } from './ui/ConfirmDialog.tsx';
 import fuzzysort from 'fuzzysort';
 import type { Message, Conversation } from '../types/index.ts';
 import { getConversationMessages } from '../utils/conversationDB.ts';
@@ -69,28 +67,11 @@ export function HistoryDrawer() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
-  const { stopStreaming } = useChat();
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [pendingConvId, setPendingConvId] = useState<string | null>(null);
 
   const handleSwitchConversation = (id: string) => {
     if (id === store.activeConversationId) return;
-
-    if (store.isStreaming) {
-      setPendingConvId(id);
-      setShowConfirm(true);
-    } else {
-      store.switchConversation(id);
-    }
-  };
-
-  const confirmSwitch = () => {
-    if (pendingConvId) {
-      stopStreaming();
-      store.switchConversation(pendingConvId);
-      setPendingConvId(null);
-    }
-    setShowConfirm(false);
+    // Switch directly – active streams continue running in background
+    store.switchConversation(id);
   };
 
   const branchRelations = useMemo(() => {
@@ -265,6 +246,7 @@ export function HistoryDrawer() {
     const isHighlighted = highlightedIds.has(conv.id);
     const isActive = conv.id === store.activeConversationId;
     const isRenaming = renamingId === conv.id;
+    const isStreamingConv = !!store.streamingConversations[conv.id];
 
     return (
       <div
@@ -276,7 +258,7 @@ export function HistoryDrawer() {
         onClick={() => !isRenaming && handleSwitchConversation(conv.id)}
         onDoubleClick={() => !isRenaming && startRename(conv)}
       >
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="w-full min-w-0 overflow-hidden">
           {isRenaming ? (
             <input
               ref={renameInputRef}
@@ -292,12 +274,18 @@ export function HistoryDrawer() {
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               {isBranched && (
                 <GitBranchIcon size={12} className="text-muted-foreground/50 shrink-0" />
               )}
+              {isStreamingConv && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0"
+                  title="Generating response…"
+                />
+              )}
               <span
-                className={`text-sm truncate ${isActive ? 'text-primary font-semibold' : 'text-foreground'}`}
+                className={`text-sm truncate w-full ${isActive ? 'text-primary font-semibold' : 'text-foreground'}`}
                 dangerouslySetInnerHTML={{
                   __html: searchQuery ? highlightMatch(conv.title, searchQuery) : conv.title,
                 }}
@@ -306,7 +294,7 @@ export function HistoryDrawer() {
           )}
         </div>
 
-        <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+        <div className="absolute -right-px top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-all duration-200 bg-gradient-to-l from-card via-card/95 to-transparent from-0% via-60% to-100% pl-10 pr-3 py-1">
           <Btn
             variant="ghost"
             size="icon-sm"
@@ -361,23 +349,12 @@ export function HistoryDrawer() {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
-      <ConfirmDialog
-        isOpen={showConfirm}
-        title="Switch Chat?"
-        message="The current request will be automatically stopped if you switch to another conversation."
-        confirmLabel="Yes, Switch"
-        onConfirm={confirmSwitch}
-        onCancel={() => {
-          setShowConfirm(false);
-          setPendingConvId(null);
-        }}
-      />
       <div
         className={`absolute inset-0 bg-background/60 backdrop-blur-sm transition-all duration-300 ${isVisible ? 'animate-in fade-in' : 'animate-out fade-out opacity-0'}`}
         onClick={() => store.setHistoryDrawerOpen(false)}
       />
 
-      <div className={`relative w-10/12 h-full bg-card/95 backdrop-blur-2xl border-l border-border/50 shadow-2xl flex flex-col transition-all duration-300 
+      <div className={`relative w-2xs h-full bg-card/95 backdrop-blur-2xl border-l border-border/50 shadow-2xl flex flex-col transition-all duration-300 
         ${isVisible ? 'animate-in slide-in-from-right-full' : 'animate-out slide-out-to-right-full'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
           <div className="flex items-center gap-2 font-semibold text-foreground">

@@ -85,6 +85,12 @@ Output ONLY the title string.`;
     const requestId = `req_${Date.now()}`;
     currentState.setCurrentRequestId(requestId);
 
+    // Track per-conversation streaming state
+    const activeConvId = currentState.activeConversationId;
+    if (activeConvId) {
+      currentState.setConversationStreaming(activeConvId, { requestId });
+    }
+
     const currentModel = currentState.providerConfig.model || '';
     const isXAIImg = isXAIImageModel(currentModel);
     const isGeminiImg = isGeminiImageModel(currentModel);
@@ -107,13 +113,16 @@ Output ONLY the title string.`;
         tools: (canUseFunctionCalling && !(isXAIImg && !opts?.aspectRatio)) ? tools : [],
         options: chatOptions,
         requestId,
+        conversationId: activeConvId,
       });
 
       if (response?.error) {
+        if (activeConvId) currentState.setConversationStreaming(activeConvId, null);
         currentState.addMessage({ role: 'error', content: response.error });
         currentState.setIsStreaming(false);
       }
     } catch (e) {
+      if (activeConvId) currentState.setConversationStreaming(activeConvId, null);
       currentState.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
       currentState.setIsStreaming(false);
     }
@@ -121,7 +130,9 @@ Output ONLY the title string.`;
 
   const sendMessage = useCallback(async (text: string, sendOptions?: { aspectRatio?: string; enableReasoning?: boolean }) => {
     const currentState = useStore.getState();
-    if (currentState.isStreaming || currentState.isCompacting) return;
+    const convId = currentState.activeConversationId;
+    const isConvStreaming = convId ? !!currentState.streamingConversations[convId] : false;
+    if (currentState.isStreaming || isConvStreaming || currentState.isCompacting) return;
 
     const validAttachments = currentState.attachments.filter((a) => a.type !== 'error');
     if (!text && validAttachments.length === 0) return;
@@ -221,6 +232,8 @@ Output ONLY the title string.`;
     if (requestId) {
       chrome.runtime.sendMessage({ type: 'STOP_STREAM', requestId });
     }
+    const activeConvId = store.activeConversationId;
+    if (activeConvId) store.setConversationStreaming(activeConvId, null);
     store.setIsStreaming(false);
     store.setCurrentRequestId(null);
     store.setStreamingContent('');
@@ -228,6 +241,8 @@ Output ONLY the title string.`;
 
   const newChat = useCallback(() => {
     store.saveActiveConversation();
+    const activeConvId = store.activeConversationId;
+    if (activeConvId) store.setConversationStreaming(activeConvId, null);
     store.setIsStreaming(false);
     store.setCurrentRequestId(null);
     store.setStreamingContent('');

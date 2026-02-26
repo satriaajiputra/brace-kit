@@ -7,13 +7,18 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/index.ts';
-import type { ToolCall, GroundingMetadata, GeneratedImage, TokenUsage } from '../types/index.ts';
+import type { ToolCall, GroundingMetadata, GeneratedImage, TokenUsage, Message } from '../types/index.ts';
 import { GEMINI_NO_TOOLS_MODELS, XAI_IMAGE_MODELS } from '../providers/presets.ts';
 import { useMemory } from './useMemory.ts';
 import { useMessageBuilder } from './chat/useMessageBuilder.ts';
 import { useTools } from './tools/useTools.ts';
 import { useAutoCompact } from './compact/index.ts';
 import { useStreamProcessor } from './streaming/useStreamProcessor.ts';
+import {
+  getConversationMessages,
+  saveConversationMessages,
+  saveConversationMetadata,
+} from '../utils/conversationDB.ts';
 
 export function useStreaming() {
   const store = useStore();
@@ -25,6 +30,58 @@ export function useStreaming() {
 
   // Track processed request IDs to prevent double processing
   const processedDoneRequestsRef = useRef<Set<string>>(new Set());
+
+  /**
+   * Save completed background stream to IndexedDB
+   */
+  const handleBackgroundStreamDone = useCallback(async (
+    convId: string,
+    message: {
+      fullContent?: string;
+      reasoningContent?: string;
+      reasoningSignature?: string;
+      toolCalls?: ToolCall[];
+    }
+  ) => {
+    try {
+      const existingMsgs = await getConversationMessages(convId) || [];
+
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: message.fullContent || '',
+        ...(message.toolCalls?.length && { toolCalls: message.toolCalls }),
+        ...(message.reasoningContent && { reasoningContent: message.reasoningContent }),
+        ...(message.reasoningSignature && { reasoningSignature: message.reasoningSignature }),
+      };
+
+      await saveConversationMessages(convId, [...existingMsgs, assistantMsg]);
+
+      // Update conversation timestamp in store and IDB
+      const freshState = useStore.getState();
+      const convMeta = freshState.conversations.find(c => c.id === convId);
+      if (convMeta) {
+        const updatedConv = { ...convMeta, updatedAt: Date.now() };
+        saveConversationMetadata(updatedConv).catch(e =>
+          console.warn('[useStreaming] Failed to update bg conv timestamp:', e)
+        );
+        useStore.setState(s => ({
+          conversations: s.conversations.map(c => c.id === convId ? updatedConv : c),
+        }));
+      }
+
+      freshState.setConversationStreaming(convId, null);
+    } catch (e) {
+      console.warn('[useStreaming] handleBackgroundStreamDone failed:', e);
+      useStore.getState().setConversationStreaming(convId, null);
+    }
+  }, []);
+
+  /**
+   * Clear streaming state for a background conversation on error
+   */
+  const handleBackgroundStreamError = useCallback((convId: string) => {
+    useStore.getState().setConversationStreaming(convId, null);
+  }, []);
 
   /**
    * Handle tool calls from stream
@@ -120,9 +177,13 @@ export function useStreaming() {
     const tools = await getAllTools();
 
     const requestId = `req_${Date.now()}`;
+    const activeConvId = useStore.getState().activeConversationId;
     store.setCurrentRequestId(requestId);
     store.setStreamingContent('');
     store.setStreamingReasoningContent('');
+    if (activeConvId) {
+      useStore.getState().setConversationStreaming(activeConvId, { requestId });
+    }
 
     const chatOptions = getChatOptions();
     const currentModel = store.providerConfig.model || '';
@@ -136,13 +197,16 @@ export function useStreaming() {
         tools: canUseFunctionCalling ? tools : [],
         options: chatOptions,
         requestId,
+        conversationId: activeConvId,
       });
 
       if (response?.error) {
+        if (activeConvId) useStore.getState().setConversationStreaming(activeConvId, null);
         store.addMessage({ role: 'error', content: response.error });
         store.setIsStreaming(false);
       }
     } catch (e) {
+      if (activeConvId) useStore.getState().setConversationStreaming(activeConvId, null);
       store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
       store.setIsStreaming(false);
     }
@@ -190,6 +254,11 @@ export function useStreaming() {
       store.setStreamingContent('');
       store.setStreamingReasoningContent('');
       streamProcessor.reset();
+      // Clear per-conversation streaming state (handleToolCalls will re-set it if needed)
+      if (!toolCalls || toolCalls.length === 0) {
+        const activeConvId = useStore.getState().activeConversationId;
+        if (activeConvId) store.setConversationStreaming(activeConvId, null);
+      }
       store.setIsStreaming(false);
       store.setCurrentRequestId(null);
       store.saveActiveConversation();
@@ -254,6 +323,8 @@ export function useStreaming() {
    * Handle stream error
    */
   const handleStreamError = useCallback((error: string) => {
+    const activeConvId = useStore.getState().activeConversationId;
+    if (activeConvId) store.setConversationStreaming(activeConvId, null);
     store.addMessage({ role: 'error', content: error });
     store.setIsStreaming(false);
     store.setCurrentRequestId(null);
@@ -266,6 +337,7 @@ export function useStreaming() {
     const listener = (message: {
       type: string;
       requestId?: string;
+      conversationId?: string;
       content?: string;
       fullContent?: string;
       reasoningContent?: string;
@@ -277,9 +349,55 @@ export function useStreaming() {
       usage?: TokenUsage;
       error?: string;
     }) => {
-      const currentRequestId = useStore.getState().currentRequestId;
-      if (message.requestId !== currentRequestId) return;
+      const state = useStore.getState();
+      const isActiveConv = message.requestId === state.currentRequestId;
+      const bgConvId = message.conversationId;
+      const isBackgroundConv = !!(
+        bgConvId &&
+        bgConvId !== state.activeConversationId &&
+        state.streamingConversations[bgConvId]?.requestId === message.requestId
+      );
 
+      if (!isActiveConv && !isBackgroundConv) return;
+
+      // Route messages for background conversations (not active)
+      if (isBackgroundConv && bgConvId) {
+        if (message.type === 'CHAT_STREAM_CHUNK') {
+          // Akumulasikan chunk ke streamingConversations agar saat user switch kembali,
+          // konten yang sudah diterima tidak hilang
+          if (message.content) {
+            useStore.setState(s => {
+              const current = s.streamingConversations[bgConvId];
+              if (!current) return s;
+              return {
+                streamingConversations: {
+                  ...s.streamingConversations,
+                  [bgConvId]: {
+                    ...current,
+                    streamingContent: (current.streamingContent || '') + message.content,
+                  },
+                },
+              };
+            });
+          }
+        } else if (message.type === 'CHAT_STREAM_DONE') {
+          if (message.requestId && processedDoneRequestsRef.current.has(message.requestId)) return;
+          if (message.requestId) {
+            processedDoneRequestsRef.current.add(message.requestId);
+            if (processedDoneRequestsRef.current.size > 100) {
+              const iterator = processedDoneRequestsRef.current.values();
+              const first = iterator.next();
+              if (!first.done) processedDoneRequestsRef.current.delete(first.value);
+            }
+          }
+          handleBackgroundStreamDone(bgConvId, message);
+        } else if (message.type === 'CHAT_STREAM_ERROR') {
+          handleBackgroundStreamError(bgConvId);
+        }
+        return;
+      }
+
+      // Active conversation handling
       switch (message.type) {
         case 'CHAT_STREAM_CHUNK':
           if (message.chunkType === 'reasoning' && message.content) {
@@ -336,7 +454,7 @@ export function useStreaming() {
     return () => {
       chrome.runtime.onMessage.removeListener(listener);
     };
-  }, [finishStream, handleStreamError, streamProcessor, store]);
+  }, [finishStream, handleStreamError, handleBackgroundStreamDone, handleBackgroundStreamError, streamProcessor, store]);
 
   return {
     handleToolCalls,

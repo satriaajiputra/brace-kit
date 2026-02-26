@@ -11,6 +11,7 @@ import type {
   SecuritySettings,
   CompactConfig,
   Preferences,
+  ConversationStreamingState,
 } from '../types/index.ts';
 import {
   saveImagesForConversation,
@@ -68,6 +69,7 @@ export const useStore = create<AppState>((set, get) => ({
   currentRequestId: null,
   streamingContent: '',
   streamingReasoningContent: '',
+  streamingConversations: {} as Record<string, ConversationStreamingState>,
 
   // Context
   pageContext: null,
@@ -156,6 +158,19 @@ export const useStore = create<AppState>((set, get) => ({
   setCurrentRequestId: (currentRequestId) => set({ currentRequestId }),
   setStreamingContent: (streamingContent) => set({ streamingContent }),
   setStreamingReasoningContent: (streamingReasoningContent) => set({ streamingReasoningContent }),
+  setConversationStreaming: (convId, state) => {
+    if (state === null) {
+      set((s) => {
+        const newStreamingConversations = { ...s.streamingConversations };
+        delete newStreamingConversations[convId];
+        return { streamingConversations: newStreamingConversations };
+      });
+    } else {
+      set((s) => ({
+        streamingConversations: { ...s.streamingConversations, [convId]: state },
+      }));
+    }
+  },
 
   setPageContext: (pageContext) => set({ pageContext }),
   setSelectedText: (selectedText) => set({ selectedText }),
@@ -277,8 +292,34 @@ export const useStore = create<AppState>((set, get) => ({
       await state.saveActiveConversation();
     }
 
-    // Load target conversation
-    set({ activeConversationId: id, showSystemPromptEditor: false });
+    // Snapshot streamingContent untuk conv yang sedang streaming sebelum switch away
+    const currentConvId = state.activeConversationId;
+    if (currentConvId && get().streamingConversations[currentConvId]) {
+      set((s) => ({
+        streamingConversations: {
+          ...s.streamingConversations,
+          [currentConvId]: {
+            ...s.streamingConversations[currentConvId]!,
+            streamingContent: s.streamingContent,
+          },
+        },
+      }));
+    }
+
+    // Load target conversation – update isStreaming to reflect the target conv's streaming state
+    const targetConvStreaming = get().streamingConversations[id];
+    set({
+      activeConversationId: id,
+      // Reset messages segera agar saveActiveConversation yang berjalan paralel
+      // tidak menyimpan messages conversation lama ke conversation ini
+      messages: [],
+      showSystemPromptEditor: false,
+      isStreaming: !!targetConvStreaming,
+      currentRequestId: targetConvStreaming?.requestId || null,
+      // Restore snapshot jika conv tujuan masih streaming, atau kosongkan jika tidak
+      streamingContent: targetConvStreaming?.streamingContent || '',
+      streamingReasoningContent: '',
+    });
     try {
       let messagesOrNull = await getConversationMessages(id);
       let messages: Message[] = [];
@@ -301,6 +342,9 @@ export const useStore = create<AppState>((set, get) => ({
       } catch (e) {
         console.warn('[Store] Failed to hydrate images:', e);
       }
+
+      // Guard: user mungkin sudah switch ke conversation lain selama async load/hydrate
+      if (get().activeConversationId !== id) return;
 
       set({ messages });
 
