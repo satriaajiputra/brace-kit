@@ -1,6 +1,8 @@
+import { HelpCircleIcon } from 'lucide-react';
 import { useStore } from '../../store/index.ts';
 import { SUPPORTED_PARAMETERS } from '../../types/index.ts';
 import type { ModelParameters } from '../../types/index.ts';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/index.ts';
 
 // ==================== Helpers ====================
 
@@ -10,6 +12,7 @@ function SliderRow({
   step,
   value,
   placeholder,
+  description,
   onChange,
 }: {
   label: string;
@@ -17,6 +20,7 @@ function SliderRow({
   step: number;
   value: number | undefined;
   placeholder: string;
+  description?: string;
   onChange: (value: number | undefined) => void;
 }) {
   const displayValue = value !== undefined ? value.toFixed(2).replace(/\.?0+$/, '') : placeholder;
@@ -29,6 +33,21 @@ function SliderRow({
       <div className="flex items-center justify-between">
         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
           {label}
+          {description && (
+            <Tooltip>
+              <TooltipTrigger>
+                <button>
+                  <HelpCircleIcon
+                    size={16}
+                    className="inline-block ml-1 text-muted-foreground/60 cursor-pointer"
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs text-muted-foreground/80">{description}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </label>
         <span className={`text-xs tabular-nums ${value !== undefined ? 'text-muted-foreground' : 'text-muted-foreground/40'}`}>
           {displayValue}
@@ -68,7 +87,21 @@ function NumberRow({
   return (
     <div className="flex flex-col gap-1.5 px-0.5">
       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
-        {label}
+        {label} {description && (
+          <Tooltip>
+            <TooltipTrigger>
+              <button>
+                <HelpCircleIcon
+                  size={16}
+                  className="inline-block ml-1 text-muted-foreground/60 cursor-pointer"
+                />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs text-muted-foreground/80">{description}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </label>
       <input
         type="number"
@@ -78,9 +111,6 @@ function NumberRow({
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
       />
-      {description && (
-        <p className="text-[10px] text-muted-foreground/70">{description}</p>
-      )}
     </div>
   );
 }
@@ -108,7 +138,7 @@ export function ModelParameterSettings() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 px-0.5">
+      <div className="flex items-center gap-2 px-0.5 py-4">
         <div className="h-px bg-border/40 flex-1" />
         <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/40">Model Parameters</span>
         <div className="h-px bg-border/40 flex-1" />
@@ -123,6 +153,7 @@ export function ModelParameterSettings() {
             step={0.01}
             value={params.temperature}
             placeholder="default"
+            description="Controls how creative the response is. Low = more consistent, high = more varied."
             onChange={(v) => update('temperature', v)}
           />
         </div>
@@ -137,6 +168,7 @@ export function ModelParameterSettings() {
             step={0.01}
             value={params.topP}
             placeholder="default"
+            description="Controls how broad the word choices are. Lower = more focused."
             onChange={(v) => update('topP', v)}
           />
         </div>
@@ -149,6 +181,7 @@ export function ModelParameterSettings() {
           placeholder="Provider default"
           value={params.maxTokens}
           min={1}
+          description="Sets the maximum length of the response. Longer responses consume more tokens and may cost more."
           onChange={(v) => { update('maxTokens', v); save(); }}
         />
       )}
@@ -160,6 +193,7 @@ export function ModelParameterSettings() {
           placeholder="Provider default"
           value={params.topK}
           min={1}
+          description="Top-k picks k most likely words; larger k wider choices."
           onChange={(v) => { update('topK', v); save(); }}
         />
       )}

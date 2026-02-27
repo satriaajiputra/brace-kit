@@ -1,6 +1,6 @@
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
 
-interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   title?: string;
   size?: 'sm' | 'md';

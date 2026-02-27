@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { AlertTriangleIcon } from 'lucide-react';
 
-interface ConfirmDialogProps {
+export interface ConfirmDialogProps {
     isOpen: boolean;
     title: string;
     message: string;

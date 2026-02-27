@@ -53,7 +53,7 @@ interface StorageData {
   chatHistory?: Message[];
 }
 
-const DEFAULT_SYSTEM_PROMPT = 'You are a helpful AI assistant. When the user shares page content or selected text, help them understand and work with it. Be concise and helpful.';
+const DEFAULT_SYSTEM_PROMPT = 'You are BraceKit, a helpful AI assistant. When the user shares page content or selected text, help them understand and work with it. Be concise and helpful.';
 
 const initialProviderConfig: ProviderConfig = {
   providerId: 'openai',
@@ -556,7 +556,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   toggleHistoryDrawer: () =>
     set((state) => ({ historyDrawerOpen: !state.historyDrawerOpen })),
-  
+
   setShowSystemPromptEditor: (showSystemPromptEditor) => set({ showSystemPromptEditor }),
 
   // Security Actions
@@ -707,7 +707,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (metadataArray && metadataArray.length > 0) {
           updates.conversations = metadataArray;
         } else if (data.conversations) { // fallback
-           updates.conversations = data.conversations;
+          updates.conversations = data.conversations;
         }
       } catch (e) {
         if (data.conversations) updates.conversations = data.conversations;

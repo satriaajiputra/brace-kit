@@ -204,7 +204,7 @@ export function InputArea() {
   }, [store.pageContext, store]);
 
   return (
-    <div id="input-area" className="p-0 bg-background">
+    <div id="input-area" className="p-3 border-t bg-background">
       {/* Slash Command Processing Indicator */}
       {isProcessingCommand && (
         <div className="flex items-center gap-2 px-2 py-1.5 mb-2 rounded-lg bg-primary/10 border border-primary/20 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -365,26 +365,24 @@ export function InputArea() {
           {/* Page context - pill with label */}
           <button
             type="button"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 shrink-0 ${store.pageContext
+            className={`flex items-center justify-center w-7 h-7 rounded-full border transition-all duration-200 shrink-0 ${store.pageContext
               ? 'bg-primary/15 text-primary border-primary/40'
-              : 'bg-transparent text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground'
+              : 'text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground'
               }`}
             title="Add current page to context"
             onClick={handleAttachClick}
           >
             <GlobeIcon size={12} />
-            <span>Page</span>
           </button>
 
           {/* Attach - pill with label */}
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border bg-transparent text-muted-foreground transition-all duration-200 shrink-0 hover:bg-muted/40 hover:text-foreground"
+            className="flex items-center justify-center w-7 h-7 rounded-full border transition-all duration-200 shrink-0 text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground"
             title="Attach file (image, txt, csv, pdf)"
             onClick={() => fileInputRef.current?.click()}
           >
             <PaperclipIcon size={12} />
-            <span>Attach</span>
           </button>
 
           {/* System Prompt - icon only */}
