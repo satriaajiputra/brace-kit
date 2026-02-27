@@ -54,7 +54,8 @@ export function createResultPopover(
     position,
     isEditable,
     viewState: { type: 'loading' },
-    copyButtonText: '📋 Copy',
+    copyButtonText: 'Copy',
+    isCopied: false,
   };
 
   // Store current content
@@ -83,11 +84,11 @@ export function createResultPopover(
 
     onCopy: async () => {
       await onCopy();
-      // Update button text temporarily
-      state = { ...state, copyButtonText: '✅ Copied!' };
+      // Update button state temporarily
+      state = { ...state, copyButtonText: 'Copied', isCopied: true };
       renderPopover();
       setTimeout(() => {
-        state = { ...state, copyButtonText: '📋 Copy' };
+        state = { ...state, copyButtonText: 'Copy', isCopied: false };
         renderPopover();
       }, 2000);
     },
@@ -139,6 +140,8 @@ export function createResultPopover(
       state = {
         ...state,
         viewState: { type: 'content', content },
+        isCopied: false,
+        copyButtonText: 'Copy',
       };
       renderPopover();
     },
@@ -149,6 +152,8 @@ export function createResultPopover(
         state = {
           ...state,
           viewState: { type: 'loading' },
+          isCopied: false,
+          copyButtonText: 'Copy',
         };
       }
       // When setting loading to false without content, keep previous state
@@ -160,23 +165,11 @@ export function createResultPopover(
       state = {
         ...state,
         viewState: { type: 'error', message: error },
+        isCopied: false,
+        copyButtonText: 'Copy',
       };
       renderPopover();
     },
     destroy,
   };
-}
-
-/**
- * Remove result popover from shadow DOM
- */
-export function removeResultPopover(shadow: ShadowRoot): void {
-  const overlay = shadow.querySelector('.bk-popover-overlay-container');
-  const popover = shadow.querySelector('.bk-popover-container');
-  if (overlay) {
-    overlay.remove();
-  }
-  if (popover) {
-    popover.remove();
-  }
 }

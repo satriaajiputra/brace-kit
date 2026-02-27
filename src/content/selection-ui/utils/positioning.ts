@@ -203,45 +203,6 @@ export function calculatePopoverPositionFromRect(
 }
 
 /**
- * Calculate optimal position for result popover from a live Selection.
- * Delegates to calculatePopoverPositionFromRect after extracting the rect.
- *
- * @param selection - The current text selection
- * @param containerElement - The container element (used to compute relative offsets)
- * @param triggerRect - Optional rect to use for vertical positioning
- */
-export function calculatePopoverPosition(
-  selection: Selection,
-  containerElement?: HTMLElement,
-  triggerRect?: DOMRect
-): SelectionPosition | null {
-  const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  return calculatePopoverPositionFromRect(rect, containerElement, triggerRect);
-}
-
-/**
- * Check if an element is editable (input, textarea, contentEditable)
- */
-export function isEditableElement(element: Element | null): boolean {
-  if (!element) return false;
-
-  // Check for input/textarea
-  const tagName = element.tagName.toLowerCase();
-  if (tagName === 'input' || tagName === 'textarea') {
-    return !(element as HTMLInputElement).readOnly && !(element as HTMLInputElement).disabled;
-  }
-
-  // Check for contenteditable
-  const isContentEditable = element.closest('[contenteditable="true"]') !== null;
-  if (isContentEditable) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
  * Get the editable element containing the selection
  */
 export function getEditableElement(selection: Selection): Element | null {

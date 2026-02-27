@@ -28,54 +28,6 @@ export function isExtensionContextInvalidated(error: unknown): boolean {
 }
 
 /**
- * Safely execute a Chrome API call with context invalidation handling
- *
- * @param fn - The Chrome API function to call
- * @param onInvalidated - Optional callback when context is invalidated
- * @returns The result of the function, or null if context was invalidated
- */
-export function safeChromeAPICall<T>(
-  fn: () => T,
-  onInvalidated?: () => void
-): T | null {
-  try {
-    return fn();
-  } catch (error) {
-    if (isExtensionContextInvalidated(error)) {
-      logger.warn('Extension context invalidated - extension may have been reloaded');
-      onInvalidated?.();
-      return null;
-    }
-    // Re-throw non-context errors
-    throw error;
-  }
-}
-
-/**
- * Safely execute an async Chrome API call with context invalidation handling
- *
- * @param fn - The async Chrome API function to call
- * @param onInvalidated - Optional callback when context is invalidated
- * @returns The result of the function, or null if context was invalidated
- */
-export async function safeChromeAPICallAsync<T>(
-  fn: () => Promise<T>,
-  onInvalidated?: () => void
-): Promise<T | null> {
-  try {
-    return await fn();
-  } catch (error) {
-    if (isExtensionContextInvalidated(error)) {
-      logger.warn('Extension context invalidated - extension may have been reloaded');
-      onInvalidated?.();
-      return null;
-    }
-    // Re-throw non-context errors
-    throw error;
-  }
-}
-
-/**
  * Check if Chrome runtime is available (extension context is valid)
  */
 export function isChromeRuntimeAvailable(): boolean {

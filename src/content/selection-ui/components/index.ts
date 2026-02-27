@@ -11,7 +11,6 @@ export {
 
 export {
   createResultPopover,
-  removeResultPopover,
   type ResultPopoverConfig,
   type ResultPopoverAPI,
 } from './ResultPopover.ts';

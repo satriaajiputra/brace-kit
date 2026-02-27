@@ -3,7 +3,7 @@
  */
 
 // Shared components
-export { logoSvgTemplate, loadingSpinnerTemplate, errorTemplate, overlayTemplate } from './shared.ts';
+export { logoSvgTemplate, loadingSpinnerTemplate, errorTemplate, overlayTemplate, icons } from './shared.ts';
 
 // Toolbar templates
 export {

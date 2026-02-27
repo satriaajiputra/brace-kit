@@ -1,6 +1,7 @@
 /**
  * Floating Toolbar component for selection-ui
  * Creates and manages the floating toolbar using lit-html
+ * Supports scalable actions with dropdown menu
  */
 
 import { render } from 'lit-html';
@@ -43,6 +44,7 @@ export function createFloatingToolbar(
     isTranslateMode: false,
     selectedLang: 'English',
     position,
+    menuState: { isOpen: false, selectedCategory: null },
   };
 
   // Track initial click target to avoid race condition with setTimeout
@@ -61,6 +63,8 @@ export function createFloatingToolbar(
 
     onActionClick: (e: Event, actionId: QuickAction['id']) => {
       e.stopPropagation();
+      // Close menu if open
+      state = { ...state, menuState: { isOpen: false, selectedCategory: null } };
       onActionClick(actionId);
     },
 
@@ -85,6 +89,26 @@ export function createFloatingToolbar(
       e.stopPropagation();
       onActionClick('translate', state.selectedLang);
     },
+
+    onMenuToggle: (e: Event) => {
+      e.stopPropagation();
+      state = {
+        ...state,
+        menuState: {
+          ...state.menuState,
+          isOpen: !state.menuState.isOpen,
+        },
+      };
+      renderToolbar();
+    },
+
+    onMenuClose: () => {
+      state = {
+        ...state,
+        menuState: { isOpen: false, selectedCategory: null },
+      };
+      renderToolbar();
+    },
   };
 
   // Render function
@@ -106,6 +130,13 @@ export function createFloatingToolbar(
     // Don't dismiss if interacting with select dropdown (select, option elements)
     const target = e.target as HTMLElement;
     if (target.tagName === 'SELECT' || target.tagName === 'OPTION') return;
+
+    // If menu is open, close it first
+    if (state.menuState.isOpen) {
+      state = { ...state, menuState: { isOpen: false, selectedCategory: null } };
+      renderToolbar();
+      return;
+    }
 
     // If in translate mode, go back to normal mode first
     if (state.isTranslateMode) {
@@ -131,6 +162,13 @@ export function createFloatingToolbar(
   // Escape key handler
   const handleEscape = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
+      // If menu is open, close it first
+      if (state.menuState.isOpen) {
+        state = { ...state, menuState: { isOpen: false, selectedCategory: null } };
+        renderToolbar();
+        return;
+      }
+
       if (state.isTranslateMode) {
         state = { ...state, isTranslateMode: false };
         renderToolbar();

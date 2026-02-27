@@ -65,60 +65,91 @@ export function detectPageTheme(): ThemeDetectionResult {
   return { isDark: false, themeSource: 'default' };
 }
 
+// Track if font has been loaded to prevent duplicate loading
+let fontLoaded = false;
+
+/**
+ * Load the DM Sans font into the main document (once)
+ * This prevents multiple network requests when multiple shadow DOMs are created
+ */
+export function ensureFontLoaded(): void {
+  if (fontLoaded) return;
+
+  // Check if font is already in the document
+  if (document.querySelector('link[data-bk-font]')) {
+    fontLoaded = true;
+    return;
+  }
+
+  // Create link element for Google Fonts
+  const link = document.createElement('link');
+  link.setAttribute('data-bk-font', 'true');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap';
+
+  // Insert at the beginning of head to ensure proper cascade
+  document.head.insertBefore(link, document.head.firstChild);
+  fontLoaded = true;
+}
+
 /**
  * Generate CSS variables for the given theme
+ * Uses refined professional color palette
+ * Note: Font is loaded separately via ensureFontLoaded()
  */
 export function generateThemeVariables(isDark: boolean): string {
   if (isDark) {
+    // Dark theme: Deep blue-gray tones with violet accent
     return `
-      --bk-background: oklch(0.145 0.01 265.8);
-      --bk-foreground: oklch(0.985 0 0);
-      --bk-card: oklch(0.185 0.012 265.8);
-      --bk-card-foreground: oklch(0.985 0 0);
-      --bk-popover: oklch(0.185 0.012 265.8);
-      --bk-popover-foreground: oklch(0.985 0 0);
-      --bk-primary: oklch(0.696 0.175 265.8);
-      --bk-primary-foreground: oklch(0.145 0 0);
-      --bk-secondary: oklch(0.28 0.02 265.8);
-      --bk-secondary-foreground: oklch(0.985 0 0);
-      --bk-muted: oklch(0.28 0.015 265.8);
-      --bk-muted-foreground: oklch(0.708 0 0);
-      --bk-accent: oklch(0.30 0.03 265.8);
-      --bk-accent-foreground: oklch(0.985 0 0);
-      --bk-destructive: oklch(0.396 0.141 25.723);
-      --bk-destructive-foreground: oklch(0.985 0 0);
-      --bk-border: oklch(0.35 0.02 265.8);
-      --bk-input: oklch(0.35 0.02 265.8);
-      --bk-ring: oklch(0.696 0.175 265.8);
-      --bk-success: oklch(0.548 0.145 163.2);
-      --bk-success-foreground: oklch(0.145 0 0);
-      --bk-radius: 0.5rem;
+      --bk-background: oklch(0.13 0.015 265);
+      --bk-foreground: oklch(0.95 0.005 265);
+      --bk-card: oklch(0.17 0.018 265);
+      --bk-card-foreground: oklch(0.95 0.005 265);
+      --bk-popover: oklch(0.165 0.02 265);
+      --bk-popover-foreground: oklch(0.95 0.005 265);
+      --bk-primary: oklch(0.68 0.19 280);
+      --bk-primary-foreground: oklch(0.98 0 0);
+      --bk-secondary: oklch(0.25 0.025 265);
+      --bk-secondary-foreground: oklch(0.92 0.005 265);
+      --bk-muted: oklch(0.26 0.02 265);
+      --bk-muted-foreground: oklch(0.65 0.01 265);
+      --bk-accent: oklch(0.28 0.035 280);
+      --bk-accent-foreground: oklch(0.95 0.005 265);
+      --bk-destructive: oklch(0.55 0.22 25);
+      --bk-destructive-foreground: oklch(0.98 0 0);
+      --bk-border: oklch(0.32 0.025 265);
+      --bk-input: oklch(0.32 0.025 265);
+      --bk-ring: oklch(0.68 0.19 280);
+      --bk-success: oklch(0.6 0.15 160);
+      --bk-success-foreground: oklch(0.13 0.01 265);
+      --bk-radius: 0.625rem;
     `;
   }
 
+  // Light theme: Clean white with subtle violet accent
   return `
-    --bk-background: oklch(0.985 0 0);
-    --bk-foreground: oklch(0.145 0 0);
+    --bk-background: oklch(0.985 0.002 265);
+    --bk-foreground: oklch(0.18 0.02 265);
     --bk-card: oklch(1 0 0);
-    --bk-card-foreground: oklch(0.145 0 0);
+    --bk-card-foreground: oklch(0.18 0.02 265);
     --bk-popover: oklch(1 0 0);
-    --bk-popover-foreground: oklch(0.145 0 0);
-    --bk-primary: oklch(0.508 0.182 265.8);
-    --bk-primary-foreground: oklch(0.985 0 0);
-    --bk-secondary: oklch(0.97 0.011 265.8);
-    --bk-secondary-foreground: oklch(0.205 0 0);
-    --bk-muted: oklch(0.97 0 0);
-    --bk-muted-foreground: oklch(0.556 0 0);
-    --bk-accent: oklch(0.97 0.011 265.8);
-    --bk-accent-foreground: oklch(0.205 0 0);
-    --bk-destructive: oklch(0.577 0.245 27.325);
-    --bk-destructive-foreground: oklch(0.985 0 0);
-    --bk-border: oklch(0.9 0.01 265.8);
-    --bk-input: oklch(0.9 0.01 265.8);
-    --bk-ring: oklch(0.508 0.182 265.8);
-    --bk-success: oklch(0.596 0.145 163.2);
-    --bk-success-foreground: oklch(0.985 0 0);
-    --bk-radius: 0.5rem;
+    --bk-popover-foreground: oklch(0.18 0.02 265);
+    --bk-primary: oklch(0.55 0.22 280);
+    --bk-primary-foreground: oklch(0.98 0 0);
+    --bk-secondary: oklch(0.965 0.008 265);
+    --bk-secondary-foreground: oklch(0.22 0.015 265);
+    --bk-muted: oklch(0.965 0.005 265);
+    --bk-muted-foreground: oklch(0.5 0.015 265);
+    --bk-accent: oklch(0.94 0.02 280);
+    --bk-accent-foreground: oklch(0.22 0.02 265);
+    --bk-destructive: oklch(0.58 0.24 25);
+    --bk-destructive-foreground: oklch(0.98 0 0);
+    --bk-border: oklch(0.91 0.008 265);
+    --bk-input: oklch(0.91 0.008 265);
+    --bk-ring: oklch(0.55 0.22 280);
+    --bk-success: oklch(0.55 0.16 160);
+    --bk-success-foreground: oklch(0.98 0 0);
+    --bk-radius: 0.625rem;
   `;
 }
 

@@ -3,7 +3,7 @@
  * Provides complete style isolation from the host page
  */
 
-import { detectPageTheme, generateThemeVariables } from './themeDetector.ts';
+import { detectPageTheme, generateThemeVariables, ensureFontLoaded } from './themeDetector.ts';
 import type { ThemeDetectionResult } from '../types.ts';
 
 // Import CSS as string using Bun's text loader
@@ -24,6 +24,9 @@ export interface ShadowContainer {
 export function createShadowContainer(): ShadowContainer | null {
   // Remove existing container if any
   removeShadowContainer();
+
+  // Ensure font is loaded once in main document (not in shadow DOM)
+  ensureFontLoaded();
 
   try {
     // Create container element

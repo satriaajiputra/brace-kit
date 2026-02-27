@@ -3,7 +3,7 @@
  */
 
 export { logger } from './logger.ts';
-export { detectPageTheme, generateThemeVariables } from './themeDetector.ts';
+export { detectPageTheme, generateThemeVariables, ensureFontLoaded } from './themeDetector.ts';
 export {
   createShadowContainer,
   removeShadowContainer,
@@ -17,16 +17,12 @@ export {
   calculateToolbarPosition,
   calculateToolbarPositionFromElement,
   calculatePopoverPositionFromRect,
-  calculatePopoverPosition,
-  isEditableElement,
   getEditableElement,
   applyTextToEditable,
   isExcludedElement,
 } from './positioning.ts';
 export {
   isExtensionContextInvalidated,
-  safeChromeAPICall,
-  safeChromeAPICallAsync,
   isChromeRuntimeAvailable,
   onContextInvalidated,
 } from './chromeErrorHandler.ts';
