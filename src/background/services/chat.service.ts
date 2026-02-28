@@ -11,6 +11,7 @@ import {
   type TokenUsage,
 } from '../../providers';
 import type { Message, MCPTool, ProviderConfig, ToolCall } from '../../types';
+import { isOllamaLocalhost } from '../../utils/providerUtils.ts';
 import { getFriendlyErrorMessage } from '../utils/errors';
 import {
   createStreamingService,
@@ -129,11 +130,7 @@ export function createChatService(): ChatService {
 
         if (!provider.apiKey) {
           // Skip API key validation for Ollama localhost
-          const isOllamaLocalhost = provider.id === 'ollama' && (
-            provider.apiUrl?.includes('localhost') ||
-            provider.apiUrl?.includes('127.0.0.1')
-          );
-          if (!isOllamaLocalhost) {
+          if (!isOllamaLocalhost(provider.format, provider.apiUrl)) {
             sendResponse({ error: 'API key is required. Configure it in Settings.' });
             return;
           }

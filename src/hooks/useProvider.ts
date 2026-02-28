@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useStore } from '../store/index.ts';
 import { PROVIDER_PRESETS, fetchModels } from '../providers';
 import type { ProviderPreset, CustomProvider, ProviderFormat } from '../types/index.ts';
-import { getProvider as getProviderUtil, isCustomProvider as isCustomProviderUtil } from '../utils/providerUtils.ts';
+import { getProvider as getProviderUtil, isCustomProvider as isCustomProviderUtil, isOllamaLocalhost } from '../utils/providerUtils.ts';
 
 export function useProvider() {
   const store = useStore();
@@ -55,11 +55,9 @@ export function useProvider() {
 
     // Fetch models for the new provider if supported
     // Ollama localhost doesn't require API key, others do
-    const isOllamaLocalhost = provider.format === 'ollama' && (
-      provider.apiUrl.includes('localhost') || provider.apiUrl.includes('127.0.0.1')
-    );
+    const isLocalhost = isOllamaLocalhost(provider.format, provider.apiUrl);
     const hasApiKey = saved.apiKey || store.providerConfig.apiKey;
-    if ((provider as ProviderPreset).supportsModelFetch && (hasApiKey || isOllamaLocalhost)) {
+    if ((provider as ProviderPreset).supportsModelFetch && (hasApiKey || isLocalhost)) {
       fetchAndCacheModels(newId);
     }
   }, [store, getProvider, isCustomProvider]);
@@ -107,12 +105,10 @@ export function useProvider() {
 
     // Get provider to check if it's Ollama localhost (doesn't require API key)
     const provider = getProvider(providerId);
-    const isOllamaLocalhost = provider?.format === 'ollama' && (
-      provider.apiUrl.includes('localhost') || provider.apiUrl.includes('127.0.0.1')
-    );
+    const isLocalhost = isOllamaLocalhost(provider?.format, provider?.apiUrl);
 
     // Skip if no API key and not Ollama localhost
-    if (!apiKey && !isOllamaLocalhost) return;
+    if (!apiKey && !isLocalhost) return;
 
     store.setFetchingModels(true);
 

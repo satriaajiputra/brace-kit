@@ -57,6 +57,7 @@ export {
 
 // Utilities
 export { cleanSchema, convertToGeminiSchema } from './utils/schema.ts';
+export { isOllamaLocalhost } from '../utils/providerUtils.ts';
 
 // OpenAI format (also used by xAI chat, DeepSeek, and custom OpenAI-compatible endpoints)
 export { formatOpenAI, parseOpenAIStream, fetchOpenAIModels } from './formats/openai.ts';
@@ -78,6 +79,7 @@ export { formatOllama, parseOllamaStream, fetchOllamaModels } from './formats/ol
 import type { ProviderPreset, MCPTool, Message } from '../types/index.ts';
 import type { ChatOptions, RequestConfig, StreamChunk, ModelFetchResult } from './types.ts';
 import { PROVIDER_PRESETS, XAI_IMAGE_MODELS } from './presets.ts';
+import { isOllamaLocalhost } from '../utils/providerUtils.ts';
 import { formatOpenAI } from './formats/openai.ts';
 import { formatAnthropic } from './formats/anthropic.ts';
 import { formatGemini } from './formats/gemini.ts';
@@ -190,11 +192,7 @@ export async function fetchModels(
   const { format, apiUrl, apiKey } = provider;
 
   // Ollama localhost doesn't require API key
-  const isOllamaLocalhost = format === 'ollama' && (
-    apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')
-  );
-
-  if (!apiKey && !isOllamaLocalhost) {
+  if (!apiKey && !isOllamaLocalhost(format, apiUrl)) {
     return { error: 'API key required' };
   }
 

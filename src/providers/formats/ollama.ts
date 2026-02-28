@@ -104,8 +104,12 @@ export function formatOllama(
   if (p?.topK !== undefined) ollamaOptions.top_k = p.topK;
   if (p?.maxTokens !== undefined) ollamaOptions.num_predict = p.maxTokens;
 
-  // Ollama-specific: context window size
-  if (options.num_ctx !== undefined) {
+  // Ollama-specific parameters from modelParameters
+  if (p?.minP !== undefined) ollamaOptions.min_p = p.minP;
+  if (p?.numCtx !== undefined) ollamaOptions.num_ctx = p.numCtx;
+
+  // Legacy support: also check ChatOptions for backward compatibility
+  if (options.num_ctx !== undefined && p?.numCtx === undefined) {
     ollamaOptions.num_ctx = options.num_ctx;
   }
 
@@ -115,8 +119,10 @@ export function formatOllama(
   }
 
   // Ollama-specific: keep_alive (model memory management)
-  if (options.keep_alive !== undefined) {
-    body.keep_alive = options.keep_alive;
+  // Prefer modelParameters.keepAlive, fallback to options.keep_alive
+  const keepAliveValue = p?.keepAlive ?? options.keep_alive;
+  if (keepAliveValue !== undefined) {
+    body.keep_alive = keepAliveValue;
   }
 
   // Ollama-specific: thinking/reasoning mode
@@ -261,6 +267,12 @@ export async function* parseOllamaStream(
               totalTokenCount: (json.prompt_eval_count ?? 0) + (json.eval_count ?? 0),
             };
             yield { type: 'usage', usage };
+          }
+
+          // Ollama signals stream completion with done: true
+          // Must exit the generator to stop streaming
+          if (json.done) {
+            return;
           }
         } catch {
           // Skip malformed JSON lines

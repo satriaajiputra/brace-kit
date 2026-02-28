@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useProvider } from '../../hooks/useProvider.ts';
 import { PROVIDER_PRESETS } from '../../providers';
+import { isOllamaLocalhost } from '../../utils/providerUtils.ts';
 import type { ProviderFormat, ProviderPreset } from '../../types/index.ts';
 import { PlusIcon, XIcon } from 'lucide-react';
 import { ConfirmDialog } from '../ui/ConfirmDialog.tsx';
@@ -36,7 +37,6 @@ export function ProviderSettings() {
   const [providerToDelete, setProviderToDelete] = useState<{ id: string, name: string } | null>(null);
 
   const currentProvider = getProvider(providerConfig.providerId) as ProviderPreset;
-  const isBuiltIn = !!PROVIDER_PRESETS[providerConfig.providerId];
   const isCustom = isCustomProvider(providerConfig.providerId);
 
   useEffect(() => {
@@ -47,10 +47,8 @@ export function ProviderSettings() {
   useEffect(() => {
     // Fetch models if supported
     // Ollama localhost doesn't require API key
-    const isOllamaLocalhost = currentProvider?.format === 'ollama' && (
-      providerConfig.apiUrl.includes('localhost') || providerConfig.apiUrl.includes('127.0.0.1')
-    );
-    if (currentProvider?.supportsModelFetch && (providerConfig.apiKey || isOllamaLocalhost)) {
+    const isLocalhost = isOllamaLocalhost(currentProvider?.format, providerConfig.apiUrl);
+    if (currentProvider?.supportsModelFetch && (providerConfig.apiKey || isLocalhost)) {
       fetchAndCacheModels(providerConfig.providerId);
     }
   }, [providerConfig.providerId, providerConfig.apiKey, providerConfig.apiUrl, currentProvider?.supportsModelFetch, currentProvider?.format, fetchAndCacheModels]);
@@ -164,6 +162,7 @@ export function ProviderSettings() {
                 <option value="openai">OpenAI Format</option>
                 <option value="anthropic">Anthropic Format</option>
                 <option value="gemini">Gemini Format</option>
+                <option value="ollama">Ollama Format</option>
               </select>
             </div>
             <input
@@ -219,8 +218,8 @@ export function ProviderSettings() {
               </div>
             </div>
 
-            {/* Base URL (only for non-built-in providers) */}
-            {!isBuiltIn && (
+            {/* Base URL - for custom providers and Ollama (can point to remote server) */}
+            {(isCustom || currentProvider?.format === 'ollama') && (
               <div className="flex flex-col gap-1.5 px-0.5 animate-in fade-in slide-in-from-top-1">
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Base URL</label>
                 <input
@@ -297,6 +296,7 @@ export function ProviderSettings() {
                     <option value="openai">OpenAI</option>
                     <option value="anthropic">Anthropic</option>
                     <option value="gemini">Gemini</option>
+                    <option value="ollama">Ollama</option>
                   </select>
                 </div>
               )}

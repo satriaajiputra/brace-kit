@@ -153,13 +153,19 @@ export interface ModelParameters {
   maxTokens?: number;
   /** Nucleus sampling 0.0–1.0. Supported: all providers. */
   topP?: number;
-  /** Top-K sampling. Supported: Anthropic, Gemini only. */
+  /** Top-K sampling. Supported: Anthropic, Gemini, Ollama. */
   topK?: number;
   /**
    * Thinking budget in tokens. Only applied when reasoning is enabled.
    * Anthropic default: 4096. Gemini default: 24576.
    */
   thinkingBudget?: number;
+  /** Minimum probability threshold for token selection. Supported: Ollama only. */
+  minP?: number;
+  /** Context window size (number of tokens). Supported: Ollama only. */
+  numCtx?: number;
+  /** Model keep-alive duration, e.g. "5m", "24h". Supported: Ollama only. */
+  keepAlive?: string;
 }
 
 /**
@@ -170,7 +176,7 @@ export const SUPPORTED_PARAMETERS: Record<ProviderFormat, (keyof ModelParameters
   openai:    ['temperature', 'maxTokens', 'topP'],
   anthropic: ['temperature', 'maxTokens', 'topP', 'topK', 'thinkingBudget'],
   gemini:    ['temperature', 'maxTokens', 'topP', 'topK', 'thinkingBudget'],
-  ollama:    ['temperature', 'maxTokens', 'topP', 'topK'],
+  ollama:    ['temperature', 'maxTokens', 'topP', 'topK', 'minP', 'numCtx', 'keepAlive'],
 };
 
 export interface ProviderConfig {
