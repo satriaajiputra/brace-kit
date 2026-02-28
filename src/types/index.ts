@@ -173,10 +173,10 @@ export interface ModelParameters {
  * Used by UI to conditionally render controls.
  */
 export const SUPPORTED_PARAMETERS: Record<ProviderFormat, (keyof ModelParameters)[]> = {
-  openai:    ['temperature', 'maxTokens', 'topP'],
+  openai: ['temperature', 'maxTokens', 'topP'],
   anthropic: ['temperature', 'maxTokens', 'topP', 'topK', 'thinkingBudget'],
-  gemini:    ['temperature', 'maxTokens', 'topP', 'topK', 'thinkingBudget'],
-  ollama:    ['temperature', 'maxTokens', 'topP', 'topK', 'minP', 'numCtx', 'keepAlive'],
+  gemini: ['temperature', 'maxTokens', 'topP', 'topK', 'thinkingBudget'],
+  ollama: ['temperature', 'maxTokens', 'topP', 'topK', 'minP', 'numCtx', 'keepAlive'],
 };
 
 export interface ProviderConfig {
@@ -493,6 +493,19 @@ export const ALLOWED_FILE_TYPES: Record<string, 'image' | 'text' | 'pdf'> = {
   'text/csv': 'text',
   'application/pdf': 'pdf',
 };
+
+// ==================== Title Generation Constants ====================
+
+/** System prompt for conversation title generation (used by auto-rename and /rename command) */
+export const TITLE_GENERATION_SYSTEM_PROMPT = `CRITICAL: This is a SYSTEM OPERATION to rename the conversation.
+Based on the conversation history below, generate a concise and descriptive title for this conversation.
+The title MUST:
+1. Be as descriptive as possible about the main topic.
+2. Be in the same language as the conversation (e.g., if the user speaks Indonesian, the title should be in Indonesian).
+3. Be NO MORE than 6 words.
+4. NOT include any punctuation or quotes.
+
+Output ONLY the title string.`;
 
 // ==================== Token Usage Types ====================
 
