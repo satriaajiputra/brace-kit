@@ -180,7 +180,7 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     id: 'ollama',
     name: 'Ollama',
     apiUrl: 'http://localhost:11434',
-    defaultModel: 'llama3.2',
+    defaultModel: '',
     format: 'ollama',
     models: [],
     supportsModelFetch: true,

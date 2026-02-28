@@ -135,7 +135,7 @@ export function useProvider() {
     const provider = getProvider(providerId) as ProviderPreset;
     const cached = store.fetchedModels[providerId];
 
-    if (cached?.models?.length && cached.models.length > 0) {
+    if (cached?.models && cached.models.length > 0) {
       return cached.models;
     } else if (provider?.staticModels?.length && provider.staticModels.length > 0) {
       return provider.staticModels;
