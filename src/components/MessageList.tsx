@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useStore } from '../store/index.ts';
 import { MessageBubble } from './MessageBubble.tsx';
+import { StreamingBubble } from './message/StreamingBubble.tsx';
 import { ToolMessage, ToolMessageGroup, ToolMessageData } from './ToolMessage.tsx';
 import { useChat } from '../hooks';
 import type { Message } from '../types/index.ts';
@@ -8,14 +9,16 @@ import type { Message } from '../types/index.ts';
 export function MessageList() {
   const messages = useStore((state) => state.messages);
   const isStreaming = useStore((state) => state.isStreaming);
-  const streamingContent = useStore((state) => state.streamingContent);
   const preferences = useStore((state) => state.preferences);
   const { branchFrom, regenerateFrom, editMessage } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isUserScrollingRef = useRef(false);
-  const rafRef = useRef<number | undefined>(undefined);
+  const scrollRafRef = useRef<number | undefined>(undefined);
   const isProgrammaticScrollRef = useRef(false);
+  // Ref for throttled scroll during streaming
+  const lastScrollTimeRef = useRef(0);
+  const pendingScrollRef = useRef(false);
 
   const isNearBottom = useCallback(() => {
     if (!containerRef.current) return true;
@@ -37,15 +40,58 @@ export function MessageList() {
     }
   }, [isNearBottom]);
 
-  const scrollToBottom = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
+  // Smooth scroll to bottom with throttling to prevent jitter
+  const scrollToBottom = useCallback((immediate = false) => {
+    // For immediate scrolls (new messages), skip throttling
+    if (immediate) {
+      if (scrollRafRef.current) {
+        cancelAnimationFrame(scrollRafRef.current);
+      }
+      scrollRafRef.current = requestAnimationFrame(() => {
+        if (containerRef.current) {
+          isProgrammaticScrollRef.current = true;
+          containerRef.current.scrollTop = containerRef.current.scrollHeight;
+          requestAnimationFrame(() => {
+            isProgrammaticScrollRef.current = false;
+          });
+        }
+      });
+      return;
     }
-    rafRef.current = requestAnimationFrame(() => {
-      if (containerRef.current) {
+
+    // For streaming scrolls, use throttling to prevent jitter
+    const now = performance.now();
+    const timeSinceLastScroll = now - lastScrollTimeRef.current;
+    const MIN_SCROLL_INTERVAL = 16; // ~60fps max
+
+    if (timeSinceLastScroll < MIN_SCROLL_INTERVAL) {
+      // Throttle: schedule a scroll if not already pending
+      if (!pendingScrollRef.current) {
+        pendingScrollRef.current = true;
+        setTimeout(() => {
+          pendingScrollRef.current = false;
+          if (!isUserScrollingRef.current && containerRef.current) {
+            lastScrollTimeRef.current = performance.now();
+            isProgrammaticScrollRef.current = true;
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+            requestAnimationFrame(() => {
+              isProgrammaticScrollRef.current = false;
+            });
+          }
+        }, MIN_SCROLL_INTERVAL - timeSinceLastScroll);
+      }
+      return;
+    }
+
+    // Enough time has passed, scroll immediately
+    lastScrollTimeRef.current = now;
+    if (scrollRafRef.current) {
+      cancelAnimationFrame(scrollRafRef.current);
+    }
+    scrollRafRef.current = requestAnimationFrame(() => {
+      if (containerRef.current && !isUserScrollingRef.current) {
         isProgrammaticScrollRef.current = true;
         containerRef.current.scrollTop = containerRef.current.scrollHeight;
-        // Double-rAF: reset flag setelah browser selesai memproses scroll event
         requestAnimationFrame(() => {
           isProgrammaticScrollRef.current = false;
         });
@@ -53,11 +99,32 @@ export function MessageList() {
     });
   }, []);
 
+  // Use MutationObserver instead of ResizeObserver for streaming
+  // It's more efficient and triggers less frequently
   useEffect(() => {
-    if (!isUserScrollingRef.current) {
-      scrollToBottom();
-    }
-  }, [streamingContent, isStreaming, scrollToBottom]);
+    if (!isStreaming) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    // MutationObserver to detect content changes in streaming bubble
+    const mutationObserver = new MutationObserver(() => {
+      if (!isUserScrollingRef.current) {
+        scrollToBottom();
+      }
+    });
+
+    // Observe the container for child list changes (streaming bubble content)
+    mutationObserver.observe(container, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => {
+      mutationObserver.disconnect();
+    };
+  }, [isStreaming, scrollToBottom]);
 
   useEffect(() => {
     // Pesan baru masuk (user kirim pesan / AI selesai) → selalu reset dan scroll ke bawah,
@@ -68,8 +135,8 @@ export function MessageList() {
 
   useEffect(() => {
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+      if (scrollRafRef.current) {
+        cancelAnimationFrame(scrollRafRef.current);
       }
     };
   }, []);
@@ -203,9 +270,7 @@ export function MessageList() {
 
         return null;
       })}
-      {isStreaming && (
-        <MessageBubble message={{ role: 'assistant', content: streamingContent }} isStreaming />
-      )}
+      {isStreaming && <StreamingBubble />}
       <div ref={messagesEndRef} style={{ height: '20px' }} />
     </div>
   );
