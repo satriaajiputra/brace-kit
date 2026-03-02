@@ -1,59 +1,14 @@
-import { memo, useRef, useCallback, useState, useEffect, useMemo } from 'react';
-import TurndownService from 'turndown';
-import { RefreshCwIcon, QuoteIcon } from 'lucide-react';
+import { memo, useRef } from 'react';
+import { QuoteIcon } from 'lucide-react';
 import { useStore } from '../../store';
 import { renderMarkdown } from '../../utils/markdown';
 import { useMermaidHydration } from '../../hooks/useMermaidHydration';
+import { useImageGenerationCheck, useQuoteSelection } from '../../hooks';
 import { ReasoningSection } from './sections/ReasoningSection';
-import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from '../../providers';
 
-const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  bulletListMarker: '-',
-  codeBlockStyle: 'fenced',
-});
-
-// Remove citation superscripts from converted markdown
-turndownService.addRule('citations', {
-  filter: (node) => {
-    return node.nodeName === 'SUP' && node.querySelector('a.citation-link') !== null;
-  },
-  replacement: () => '',
-});
-
-/**
- * Custom hook for streaming content with optimized store subscriptions.
- * Only re-renders when streaming-related state changes.
- */
-function useStreamingContent() {
-  // Individual selectors for optimal memoization
-  const streamingContent = useStore((state) => state.streamingContent);
-  const streamingReasoningContent = useStore((state) => state.streamingReasoningContent);
-  const currentModel = useStore((state) => state.providerConfig.model || '');
-  const currentProviderId = useStore((state) => state.providerConfig.providerId || '');
-
-  // Memoize the image generation model check
-  const isImageGenerationModel = useMemo(
-    () =>
-      GEMINI_NO_TOOLS_MODELS.includes(currentModel) ||
-      GEMINI_SEARCH_ONLY_MODELS.includes(currentModel) ||
-      (currentProviderId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel)),
-    [currentModel, currentProviderId]
-  );
-
-  return {
-    streamingContent,
-    streamingReasoningContent,
-    isImageGenerationModel,
-  };
-}
-
-interface QuotePopupState {
-  visible: boolean;
-  x: number;
-  y: number;
-  text: string;
-}
+// Import shared UI components
+import { LoadingDots } from '../ui/LoadingDots';
+import { ImageGenerationIndicator } from '../ui/ImageGenerationIndicator';
 
 /**
  * StreamingBubble - Optimized component for displaying streaming AI responses.
@@ -62,87 +17,26 @@ interface QuotePopupState {
  * re-renders in parent components (MessageList) and sibling MessageBubble instances.
  *
  * Features:
- * - Isolated store subscriptions via useStreamingContent hook
+ * - Isolated store subscriptions
  * - Quote selection support
  * - Reasoning content display
  * - Image generation loading indicator
  */
 function StreamingBubbleInternal() {
   const bubbleRef = useRef<HTMLDivElement>(null);
-  const [quotePopup, setQuotePopup] = useState<QuotePopupState>({
-    visible: false,
-    x: 0,
-    y: 0,
-    text: '',
-  });
 
-  // Use custom hook for streaming state - isolated subscriptions
-  const { streamingContent, streamingReasoningContent, isImageGenerationModel } = useStreamingContent();
+  // Streaming state - isolated subscriptions
+  const streamingContent = useStore((state) => state.streamingContent);
+  const streamingReasoningContent = useStore((state) => state.streamingReasoningContent);
 
-  // Quote text setter from store (stable selector)
-  const setQuotedText = useStore((state) => state.setQuotedText);
+  // Use extracted hooks
+  const isImageGenerationModel = useImageGenerationCheck();
+  const { quotePopup, handleMouseUp, handleQuoteClick } = useQuoteSelection(bubbleRef);
 
   // Use mermaid hydration (disabled during streaming)
   useMermaidHydration(bubbleRef, { isStreaming: true });
 
   const hasContent = streamingContent.length > 0;
-
-  // Quote handling
-  const handleMouseUp = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) {
-      setQuotePopup((p) => ({ ...p, visible: false }));
-      return;
-    }
-
-    const selectedText = selection.toString().trim();
-    if (!selectedText) {
-      setQuotePopup((p) => ({ ...p, visible: false }));
-      return;
-    }
-
-    const ref = bubbleRef.current;
-    if (!ref) return;
-    const range = selection.getRangeAt(0);
-    if (!ref.contains(range.commonAncestorContainer)) {
-      setQuotePopup((p) => ({ ...p, visible: false }));
-      return;
-    }
-
-    const container = document.createElement('div');
-    container.appendChild(range.cloneContents());
-    const markdown = turndownService.turndown(container.innerHTML).trim();
-
-    const rect = range.getBoundingClientRect();
-    const bubbleRect = ref.getBoundingClientRect();
-
-    setQuotePopup({
-      visible: true,
-      x: rect.left + rect.width / 2 - bubbleRect.left,
-      y: rect.top - bubbleRect.top - 4,
-      text: markdown,
-    });
-  }, []);
-
-  const handleQuoteClick = useCallback(() => {
-    if (quotePopup.text) {
-      setQuotedText(quotePopup.text);
-      window.getSelection()?.removeAllRanges();
-      setQuotePopup((p) => ({ ...p, visible: false }));
-    }
-  }, [quotePopup.text, setQuotedText]);
-
-  // Global mousedown handler for quote popup
-  useEffect(() => {
-    const handleGlobalMouseDown = (e: MouseEvent) => {
-      const ref = bubbleRef.current;
-      if (ref && !ref.contains(e.target as Node)) {
-        setQuotePopup((p) => ({ ...p, visible: false }));
-      }
-    };
-    document.addEventListener('mousedown', handleGlobalMouseDown);
-    return () => document.removeEventListener('mousedown', handleGlobalMouseDown);
-  }, []);
 
   return (
     <div className="group flex flex-col gap-1 max-w-[92%] self-start" data-streaming-bubble="true">
@@ -168,23 +62,11 @@ function StreamingBubbleInternal() {
             }}
           />
         ) : (
-          <div className="flex gap-1 py-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" />
-          </div>
+          <LoadingDots />
         )}
 
         {/* Image generation indicator */}
-        {isImageGenerationModel && (
-          <div className="mt-2 h-40 w-full rounded-md bg-muted/30 animate-pulse flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-            <div className="text-xs font-medium text-muted-foreground flex flex-col items-center gap-2">
-              <RefreshCwIcon size={16} className="animate-spin text-primary/60" />
-              Generating image...
-            </div>
-          </div>
-        )}
+        {isImageGenerationModel && <ImageGenerationIndicator />}
 
         {/* Quote popup */}
         {quotePopup.visible && (

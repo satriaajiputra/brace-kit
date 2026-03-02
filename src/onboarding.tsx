@@ -11,7 +11,8 @@ import {
     Layers,
     Cpu,
     Zap,
-    GitBranchIcon
+    GitBranchIcon,
+    Heart
 } from 'lucide-react';
 import { Logo } from './components/ui/Logo.tsx';
 
@@ -238,8 +239,32 @@ const Onboarding = () => {
                     </button>
                 </footer>
 
-                <div className="mt-16 text-[10px] text-white/20 uppercase tracking-[0.4em] font-medium text-center">
-                    BraceKit OS // v{chrome.runtime.getManifest().version} // Secure Local Runtime
+                {/* Donation Button */}
+                <motion.a
+                    href="https://saweria.co/satriaajiputra"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-12 group relative overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-rose-500/30 via-pink-500/30 to-orange-500/30 rounded-full blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
+                    <div className="relative flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-rose-500/20 via-pink-500/20 to-orange-500/20 border border-rose-500/30 group-hover:border-rose-400/50 group-hover:from-rose-500/30 group-hover:via-pink-500/30 group-hover:to-orange-500/30 transition-all backdrop-blur-sm overflow-hidden">
+                        <Heart size={18} className="text-rose-400 group-hover:text-rose-300 group-hover:scale-110 transition-all" />
+                        <span className="text-sm font-semibold tracking-wide text-rose-200 group-hover:text-rose-100">
+                            Support Development
+                        </span>
+                        <motion.div
+                            className="absolute inset-0 rounded-full bg-gradient-to-r from-rose-400/0 via-rose-400/10 to-rose-400/0 -translate-x-full"
+                            animate={{ x: ['100%', '-100%'] }}
+                            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                        />
+                    </div>
+                </motion.a>
+
+                <div className="mt-8 text-[10px] text-white/20 uppercase tracking-[0.4em] font-medium text-center">
+                    BraceKit // v{chrome.runtime.getManifest().version} // Part of Nexifle Labs
                 </div>
             </main>
         </div>

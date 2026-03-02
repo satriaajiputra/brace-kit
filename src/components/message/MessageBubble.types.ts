@@ -19,12 +19,7 @@ export interface MessageBubbleProps {
   onEdit?: (index: number, data: EditedMessageData) => void;
 }
 
-export interface QuotePopupState {
-  visible: boolean;
-  x: number;
-  y: number;
-  text: string;
-}
+// QuotePopupState is now exported from hooks/useQuoteSelection.ts
 
 export interface TextFileViewerState {
   isOpen: boolean;

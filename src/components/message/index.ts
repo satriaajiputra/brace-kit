@@ -8,7 +8,6 @@ export { StreamingBubble } from './StreamingBubble';
 export type {
   MessageBubbleProps,
   EditedMessageData,
-  QuotePopupState,
   TextFileViewerState,
   ImageLightboxProps,
   ReasoningSectionProps,

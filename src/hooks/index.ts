@@ -36,3 +36,6 @@ export { useProvider } from './useProvider.ts';
 export { usePageContext } from './usePageContext.ts';
 export { useFileAttachments } from './useFileAttachments.ts';
 export { useMermaidHydration } from './useMermaidHydration.tsx';
+export { useImageGenerationCheck } from './useImageGenerationCheck.ts';
+export { useQuoteSelection } from './useQuoteSelection.ts';
+export type { QuotePopupState } from './useQuoteSelection.ts';
