@@ -42,13 +42,6 @@ chrome.declarativeNetRequest.updateDynamicRules({
     },
     condition: {
       requestDomains: [
-        'api.anthropic.com',
-        'api.openai.com',
-        'generativelanguage.googleapis.com',
-        'api.x.ai',
-        'api.deepseek.com',
-        'openrouter.ai',
-        'api.openrouter.ai',
         'api.kimi.com',
       ],
       resourceTypes: [

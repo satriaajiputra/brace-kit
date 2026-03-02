@@ -24,6 +24,7 @@ GUIDELINES:
 - Output 1-3 short paragraphs maximum
 - Do NOT use phrases like "This text discusses..." or "The summary is..."
 - Do NOT include any meta-commentary or explanation
+- Do NOT include any markdown formatting
 
 Return ONLY the final summary text, nothing else.
 
@@ -48,6 +49,7 @@ GUIDELINES:
 - Keep explanations concise and practical
 - Do NOT start with phrases like "This is about..." or "Let me explain..."
 - Do NOT add concluding remarks or summaries
+- Do NOT include any markdown formatting
 
 Return ONLY the explanation itself, nothing else.
 
@@ -72,6 +74,7 @@ GUIDELINES:
 - Keep proper nouns in their original form unless they have standard translations
 - Do NOT add translator notes, footnotes, or explanations
 - Do NOT transliterate unless absolutely necessary
+- Do NOT include any markdown formatting
 
 Return ONLY the translated text, nothing else.
 
@@ -96,6 +99,7 @@ GUIDELINES:
 - Use active voice where appropriate
 - Do NOT add examples, elaborations, or new ideas
 - Do NOT use phrases like "Here is the rephrased version..."
+- Do NOT include any markdown formatting
 
 Return ONLY the rephrased text, nothing else.
 
@@ -119,6 +123,7 @@ GUIDELINES:
 - Remove jargon and technical terms (or explain them simply)
 - Keep the same meaning and key points
 - Make it readable for a general audience
+- Do NOT include any markdown formatting
 
 Return ONLY the simplified text, nothing else.
 
@@ -140,6 +145,7 @@ GUIDELINES:
 - Elaborate on key points with additional details
 - Maintain the original tone and style
 - Don't add unrelated information
+- Do NOT include any markdown formatting
 
 Return ONLY the expanded text, nothing else.
 
@@ -162,6 +168,7 @@ GUIDELINES:
 - Remove slang, colloquialisms, and casual language
 - Maintain the original meaning
 - Keep appropriate level of formality (not overly stiff)
+- Do NOT include any markdown formatting
 
 Return ONLY the formal version, nothing else.
 
@@ -184,6 +191,7 @@ GUIDELINES:
 - Add personality where appropriate
 - Keep the core message intact
 - Don't use excessive slang
+- Do NOT include any markdown formatting
 
 Return ONLY the casual version, nothing else.
 
@@ -206,6 +214,7 @@ GUIDELINES:
 - Don't change the meaning or style
 - Keep the original tone
 - Only fix errors, don't rewrite good content
+- Do NOT include any markdown formatting
 
 Return ONLY the corrected text, nothing else.
 
