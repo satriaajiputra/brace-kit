@@ -17,7 +17,10 @@ import { useTools } from './tools/useTools.ts';
 import { useAutoCompact } from './compact/index.ts';
 
 export function useChat() {
-  const store = useStore();
+  // Use selective selectors to avoid re-rendering on every store change
+  // Only subscribe to state that is actually used in the component's render phase
+  const customProviders = useStore((state) => state.customProviders);
+
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Use extracted hooks
@@ -26,13 +29,13 @@ export function useChat() {
   const { compactConversation, checkAndAutoCompact } = useAutoCompact();
 
   const getProvider = useCallback(
-    (providerId: string) => getProviderUtil(providerId, store.customProviders),
-    [store.customProviders]
+    (providerId: string) => getProviderUtil(providerId, customProviders),
+    [customProviders]
   );
 
   const isCustomProvider = useCallback(
-    (providerId: string) => isCustomProviderUtil(providerId, store.customProviders),
-    [store.customProviders]
+    (providerId: string) => isCustomProviderUtil(providerId, customProviders),
+    [customProviders]
   );
 
   const renameConversation = useCallback(async () => {
@@ -294,60 +297,63 @@ export function useChat() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    const requestId = store.currentRequestId;
+    const currentState = useStore.getState();
+    const requestId = currentState.currentRequestId;
     if (requestId) {
       chrome.runtime.sendMessage({ type: 'STOP_STREAM', requestId });
     }
-    const activeConvId = store.activeConversationId;
-    if (activeConvId) store.setConversationStreaming(activeConvId, null);
-    store.setIsStreaming(false);
-    store.setCurrentRequestId(null);
-    store.setStreamingContent('');
-  }, [store]);
+    const activeConvId = currentState.activeConversationId;
+    if (activeConvId) currentState.setConversationStreaming(activeConvId, null);
+    currentState.setIsStreaming(false);
+    currentState.setCurrentRequestId(null);
+    currentState.setStreamingContent('');
+  }, []);
 
   const newChat = useCallback(() => {
-    store.saveActiveConversation();
-    const activeConvId = store.activeConversationId;
-    if (activeConvId) store.setConversationStreaming(activeConvId, null);
-    store.setIsStreaming(false);
-    store.setCurrentRequestId(null);
-    store.setStreamingContent('');
-    store.setPageContext(null);
-    store.setSelectedText(null);
-    store.clearAttachments();
-    store.createConversation();
-    store.setView('chat');
-    store.setHistoryDrawerOpen(false);
-  }, [store]);
+    const currentState = useStore.getState();
+    currentState.saveActiveConversation();
+    const activeConvId = currentState.activeConversationId;
+    if (activeConvId) currentState.setConversationStreaming(activeConvId, null);
+    currentState.setIsStreaming(false);
+    currentState.setCurrentRequestId(null);
+    currentState.setStreamingContent('');
+    currentState.setPageContext(null);
+    currentState.setSelectedText(null);
+    currentState.clearAttachments();
+    currentState.createConversation();
+    currentState.setView('chat');
+    currentState.setHistoryDrawerOpen(false);
+  }, []);
 
   const branchFrom = useCallback(async (messageIndex: number) => {
+    const currentState = useStore.getState();
     // Copy messages up to the index, but reset compaction state and remove summaries for the new branch
-    const messagesToCopy = store.messages
+    const messagesToCopy = currentState.messages
       .slice(0, messageIndex + 1)
       .filter(m => !m.summary)
       .map(m => ({ ...m, isCompacted: false }));
 
-    const parentId = store.activeConversationId;
-    const parentConv = store.conversations.find((c) => c.id === parentId);
+    const parentId = currentState.activeConversationId;
+    const parentConv = currentState.conversations.find((c) => c.id === parentId);
     const branchTitle = parentConv?.title ?? 'New Chat';
     const branchSystemPrompt = parentConv?.systemPrompt;
-    await store.saveActiveConversation();
-    const newConv = store.createConversation({
+    await currentState.saveActiveConversation();
+    const newConv = currentState.createConversation({
       title: branchTitle,
       branchedFromId: parentId ?? undefined,
       parentConvId: parentId ?? undefined
     });
 
     if (branchSystemPrompt) {
-      store.updateConversationSystemPrompt(newConv.id, branchSystemPrompt);
+      currentState.updateConversationSystemPrompt(newConv.id, branchSystemPrompt);
     }
 
-    store.setMessages(messagesToCopy);
+    currentState.setMessages(messagesToCopy);
     await saveConversationMessages(newConv.id, messagesToCopy);
-    await store.saveToStorage();
-    store.setView('chat');
-    store.setHistoryDrawerOpen(false);
-  }, [store]);
+    await currentState.saveToStorage();
+    currentState.setView('chat');
+    currentState.setHistoryDrawerOpen(false);
+  }, []);
 
   const regenerateFrom = useCallback(async (messageIndex: number) => {
     const currentState = useStore.getState();
@@ -364,8 +370,9 @@ export function useChat() {
   }, [buildAPIMessages, dispatchChatRequest, checkAndAutoCompact]);
 
   const editMessage = useCallback(async (messageIndex: number, editData: { text: string; pageContext?: PageContext | null; selectedText?: SelectedText | null; attachments?: Attachment[] }) => {
-    if (store.isStreaming) return;
-    const messageToEdit = store.messages[messageIndex];
+    const currentState = useStore.getState();
+    if (currentState.isStreaming) return;
+    const messageToEdit = currentState.messages[messageIndex];
     if (!messageToEdit || messageToEdit.role !== 'user') return;
 
     const { text: newText, pageContext: newPageContext, selectedText: newSelectedText, attachments: newAttachments } = editData;
@@ -412,6 +419,7 @@ export function useChat() {
     toolCalls: ToolCall[],
     activeConvId: string | null
   ) => {
+    const currentState = useStore.getState();
     for (const tc of toolCalls) {
       if (!tc.name) continue;
 
@@ -423,7 +431,7 @@ export function useChat() {
       }
 
       // Add "calling" status
-      store.addMessage({
+      currentState.addMessage({
         role: 'tool',
         toolCallId: tc.id,
         name: tc.name,
@@ -458,29 +466,30 @@ export function useChat() {
     await checkAndAutoCompact();
 
     // Build follow-up request
-    const msgs = buildAPIMessages(useStore.getState().messages);
+    const freshState = useStore.getState();
+    const msgs = buildAPIMessages(freshState.messages);
 
     // Get tools using unified hook
     const tools = await getAllTools();
 
     const requestId = `req_${Date.now()}`;
-    store.setIsStreaming(true);
-    store.setCurrentRequestId(requestId);
-    store.setStreamingContent('');
-    store.setStreamingReasoningContent('');
+    freshState.setIsStreaming(true);
+    freshState.setCurrentRequestId(requestId);
+    freshState.setStreamingContent('');
+    freshState.setStreamingReasoningContent('');
     if (activeConvId) {
-      useStore.getState().setConversationStreaming(activeConvId, { requestId });
+      freshState.setConversationStreaming(activeConvId, { requestId });
     }
 
     const chatOptions = getChatOptions();
-    const currentModel = store.providerConfig.model || '';
+    const currentModel = freshState.providerConfig.model || '';
     const canUseFunctionCalling = supportsFunctionCalling(currentModel);
 
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'CHAT_REQUEST',
         messages: msgs,
-        providerConfig: store.providerConfig,
+        providerConfig: freshState.providerConfig,
         tools: canUseFunctionCalling ? tools : [],
         options: chatOptions,
         requestId,
@@ -489,8 +498,8 @@ export function useChat() {
 
       if (response?.error) {
         if (activeConvId) useStore.getState().setConversationStreaming(activeConvId, null);
-        store.addMessage({ role: 'error', content: response.error });
-        store.setIsStreaming(false);
+        useStore.getState().addMessage({ role: 'error', content: response.error });
+        useStore.getState().setIsStreaming(false);
       } else if (response?.content !== undefined || response?.toolCalls?.length) {
         // Handle non-streaming follow-up response
         const followUpToolCalls: ToolCall[] = response.toolCalls || [];
@@ -500,14 +509,15 @@ export function useChat() {
           ...(response.reasoning_content && { reasoningContent: response.reasoning_content }),
           ...(followUpToolCalls.length && { toolCalls: followUpToolCalls }),
         };
-        store.addMessage(assistantMsg);
-        store.setIsStreaming(false);
-        store.setCurrentRequestId(null);
+        const finalState = useStore.getState();
+        finalState.addMessage(assistantMsg);
+        finalState.setIsStreaming(false);
+        finalState.setCurrentRequestId(null);
         if (activeConvId) {
-          useStore.getState().setConversationStreaming(activeConvId, null);
-          useStore.getState().updateConversationTimestamp();
+          finalState.setConversationStreaming(activeConvId, null);
+          finalState.updateConversationTimestamp();
         }
-        useStore.getState().saveActiveConversation();
+        finalState.saveActiveConversation();
 
         // Recursively handle tool calls if any
         if (followUpToolCalls.length > 0) {
@@ -516,10 +526,10 @@ export function useChat() {
       }
     } catch (e) {
       if (activeConvId) useStore.getState().setConversationStreaming(activeConvId, null);
-      store.addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
-      store.setIsStreaming(false);
+      useStore.getState().addMessage({ role: 'error', content: `Request failed: ${(e as Error).message}` });
+      useStore.getState().setIsStreaming(false);
     }
-  }, [store, buildAPIMessages, getAllTools, supportsFunctionCalling, getChatOptions, checkAndAutoCompact]);
+  }, [buildAPIMessages, getAllTools, supportsFunctionCalling, getChatOptions, checkAndAutoCompact]);
 
   return {
     sendMessage,

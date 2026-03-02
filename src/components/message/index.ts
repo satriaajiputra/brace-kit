@@ -1,11 +1,13 @@
 // Main component
 export { MessageBubble } from './MessageBubble';
 
+// Streaming component (optimized for streaming re-renders)
+export { StreamingBubble } from './StreamingBubble';
+
 // Types
 export type {
   MessageBubbleProps,
   EditedMessageData,
-  QuotePopupState,
   TextFileViewerState,
   ImageLightboxProps,
   ReasoningSectionProps,

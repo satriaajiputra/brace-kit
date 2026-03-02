@@ -1,11 +1,9 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
-import TurndownService from 'turndown';
 import { renderMarkdown } from '../../utils/markdown';
 import { useStore } from '../../store';
-import { useMermaidHydration } from '../../hooks/useMermaidHydration';
+import { useMermaidHydration, useImageGenerationCheck, useQuoteSelection } from '../../hooks';
 import { TextFileViewer } from '../TextFileViewer';
-import { GEMINI_NO_TOOLS_MODELS, GEMINI_SEARCH_ONLY_MODELS, XAI_IMAGE_MODELS } from '../../providers';
-import { RefreshCwIcon, QuoteIcon } from 'lucide-react';
+import { QuoteIcon } from 'lucide-react';
 
 // Import decomposed components
 import { ReasoningSection } from './sections/ReasoningSection';
@@ -20,11 +18,14 @@ import { SummarySection } from './display/SummarySection';
 import { AttachmentsDisplay } from './display/AttachmentsDisplay';
 import { EditMode } from './edit/EditMode';
 
+// Import shared UI components
+import { LoadingDots } from '../ui/LoadingDots';
+import { ImageGenerationIndicator } from '../ui/ImageGenerationIndicator';
+
 // Import types
 import type {
   MessageBubbleProps,
   EditedMessageData,
-  QuotePopupState,
   TextFileViewerState,
 } from './MessageBubble.types';
 
@@ -41,20 +42,6 @@ import { copyImageToClipboard } from './utils/imageProcessing';
 
 const FAVORITES_STORAGE_KEY = 'gallery_favorites';
 
-const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  bulletListMarker: '-',
-  codeBlockStyle: 'fenced',
-});
-
-// Remove citation superscripts from the converted markdown
-turndownService.addRule('citations', {
-  filter: (node) => {
-    return node.nodeName === 'SUP' && node.querySelector('a.citation-link') !== null;
-  },
-  replacement: () => '',
-});
-
 export function MessageBubble({
   message,
   isStreaming,
@@ -64,7 +51,6 @@ export function MessageBubble({
   onEdit,
 }: MessageBubbleProps) {
   const bubbleRef = useRef<HTMLDivElement>(null);
-  const [quotePopup, setQuotePopup] = useState<QuotePopupState>({ visible: false, x: 0, y: 0, text: '' });
   const [textFileViewer, setTextFileViewer] = useState<TextFileViewerState>({
     isOpen: false,
     name: '',
@@ -75,14 +61,11 @@ export function MessageBubble({
   const [showSummaryContent, setShowSummaryContent] = useState(false);
 
   const messages = useStore((state) => state.messages);
-  const setQuotedText = useStore((state) => state.setQuotedText);
-  const currentModel = useStore((state) => state.providerConfig.model || '');
-  const currentProviderId = useStore((state) => state.providerConfig.providerId || '');
   const streamingReasoningContent = useStore((state) => state.streamingReasoningContent);
-  const isImageGenerationModel =
-    GEMINI_NO_TOOLS_MODELS.includes(currentModel) ||
-    GEMINI_SEARCH_ONLY_MODELS.includes(currentModel) ||
-    (currentProviderId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel));
+
+  // Use extracted hooks
+  const isImageGenerationModel = useImageGenerationCheck();
+  const { quotePopup, handleMouseUp, handleQuoteClick } = useQuoteSelection(bubbleRef);
 
   const hasAfterMessages = messageIndex !== undefined && messageIndex < messages.length - 1;
 
@@ -308,50 +291,6 @@ export function MessageBubble({
     }
   }, []);
 
-  const handleMouseUp = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) {
-      setQuotePopup((p) => ({ ...p, visible: false }));
-      return;
-    }
-
-    const selectedText = selection.toString().trim();
-    if (!selectedText) {
-      setQuotePopup((p) => ({ ...p, visible: false }));
-      return;
-    }
-
-    const ref = bubbleRef.current;
-    if (!ref) return;
-    const range = selection.getRangeAt(0);
-    if (!ref.contains(range.commonAncestorContainer)) {
-      setQuotePopup((p) => ({ ...p, visible: false }));
-      return;
-    }
-
-    const container = document.createElement('div');
-    container.appendChild(range.cloneContents());
-    const markdown = turndownService.turndown(container.innerHTML).trim();
-
-    const rect = range.getBoundingClientRect();
-    const bubbleRect = ref.getBoundingClientRect();
-
-    setQuotePopup({
-      visible: true,
-      x: rect.left + rect.width / 2 - bubbleRect.left,
-      y: rect.top - bubbleRect.top - 4,
-      text: markdown,
-    });
-  }, []);
-
-  const handleQuoteClick = useCallback(() => {
-    if (quotePopup.text) {
-      setQuotedText(quotePopup.text);
-      window.getSelection()?.removeAllRanges();
-      setQuotePopup((p) => ({ ...p, visible: false }));
-    }
-  }, [quotePopup.text, setQuotedText]);
-
   const handleLinkClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const link = target.closest('a');
@@ -413,18 +352,6 @@ export function MessageBubble({
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [lightboxSrc]);
-
-  // Global mousedown handler
-  useEffect(() => {
-    const handleGlobalMouseDown = (e: MouseEvent) => {
-      const ref = bubbleRef.current;
-      if (ref && !ref.contains(e.target as Node)) {
-        setQuotePopup((p) => ({ ...p, visible: false }));
-      }
-    };
-    document.addEventListener('mousedown', handleGlobalMouseDown);
-    return () => document.removeEventListener('mousedown', handleGlobalMouseDown);
-  }, []);
 
   // Handle markdown image favorite clicks via event delegation
   useEffect(() => {
@@ -623,21 +550,9 @@ export function MessageBubble({
               dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content, isStreaming) }}
             />
           ) : (
-            <div className="flex gap-1 py-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce"></span>
-            </div>
+            <LoadingDots />
           )}
-          {isImageGenerationModel && (
-            <div className="mt-2 h-40 w-full rounded-md bg-muted/30 animate-pulse flex items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-              <div className="text-xs font-medium text-muted-foreground flex flex-col items-center gap-2">
-                <RefreshCwIcon size={16} className="animate-spin text-primary/60" />
-                Generating image...
-              </div>
-            </div>
-          )}
+          {isImageGenerationModel && <ImageGenerationIndicator />}
 
           {quotePopup.visible && (
             <div

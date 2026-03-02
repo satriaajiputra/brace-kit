@@ -31,17 +31,19 @@ export interface GetAllToolsOptions {
  * Unified tool fetching and injection
  */
 export function useTools() {
-  const store = useStore();
+  // Use selective selectors - only subscribe to state needed for rendering decisions
+  // Most operations use useStore.getState() inside callbacks to avoid subscriptions
 
   /**
    * Fetch MCP tools from enabled servers
    */
   const fetchMCPTools = useCallback(async (): Promise<MCPTool[]> => {
     try {
+      const state = useStore.getState();
       const mcpRes = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
       if (mcpRes?.tools) {
         const enabledServerIds = new Set(
-          store.mcpServers.filter((s) => s.enabled !== false).map((s) => s.id)
+          state.mcpServers.filter((s) => s.enabled !== false).map((s) => s.id)
         );
         return mcpRes.tools.filter((tool: MCPTool & { _serverId?: string }) =>
           enabledServerIds.has(tool._serverId || '')
@@ -51,17 +53,18 @@ export function useTools() {
       console.warn('[useTools] Failed to fetch MCP tools:', error);
     }
     return [];
-  }, [store.mcpServers]);
+  }, []);
 
   /**
    * Check if current model supports function calling
    */
   const supportsFunctionCalling = useCallback(
     (model?: string): boolean => {
-      const currentModel = model ?? store.providerConfig.model ?? '';
+      const state = useStore.getState();
+      const currentModel = model ?? state.providerConfig.model ?? '';
       const isGemini =
-        store.providerConfig.providerId === 'gemini' ||
-        store.providerConfig.format === 'gemini';
+        state.providerConfig.providerId === 'gemini' ||
+        state.providerConfig.format === 'gemini';
 
       return (
         !isGemini ||
@@ -69,30 +72,32 @@ export function useTools() {
           !GEMINI_SEARCH_ONLY_MODELS.includes(currentModel))
       );
     },
-    [store.providerConfig]
+    []
   );
 
   /**
    * Check if current provider is Gemini
    */
   const isGeminiProvider = useCallback((): boolean => {
+    const state = useStore.getState();
     return (
-      store.providerConfig.providerId === 'gemini' ||
-      store.providerConfig.format === 'gemini'
+      state.providerConfig.providerId === 'gemini' ||
+      state.providerConfig.format === 'gemini'
     );
-  }, [store.providerConfig]);
+  }, []);
 
   /**
    * Check if current model is an image generation model
    */
   const isImageModel = useCallback(
     (model?: string): boolean => {
-      const currentModel = model ?? store.providerConfig.model ?? '';
-      const isXAIImage = store.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
+      const state = useStore.getState();
+      const currentModel = model ?? state.providerConfig.model ?? '';
+      const isXAIImage = state.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
       const isGeminiImage = isGeminiProvider() && GEMINI_IMAGE_MODELS.includes(currentModel);
       return isXAIImage || isGeminiImage;
     },
-    [store.providerConfig, isGeminiProvider]
+    [isGeminiProvider]
   );
 
   /**
@@ -100,10 +105,11 @@ export function useTools() {
    */
   const isXAIImageModel = useCallback(
     (model?: string): boolean => {
-      const currentModel = model ?? store.providerConfig.model ?? '';
-      return store.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
+      const state = useStore.getState();
+      const currentModel = model ?? state.providerConfig.model ?? '';
+      return state.providerConfig.providerId === 'xai' && XAI_IMAGE_MODELS.includes(currentModel);
     },
-    [store.providerConfig]
+    []
   );
 
   /**
@@ -111,7 +117,8 @@ export function useTools() {
    */
   const isGeminiImageModel = useCallback(
     (model?: string): boolean => {
-      const currentModel = model ?? store.providerConfig.model ?? '';
+      const state = useStore.getState();
+      const currentModel = model ?? state.providerConfig.model ?? '';
       return isGeminiProvider() && GEMINI_IMAGE_MODELS.includes(currentModel);
     },
     [isGeminiProvider]
@@ -124,17 +131,18 @@ export function useTools() {
    */
   const getAllTools = useCallback(
     async (options?: GetAllToolsOptions): Promise<MCPTool[]> => {
-      const providerId = options?.providerId ?? store.providerConfig.providerId;
-      const model = options?.model ?? store.providerConfig.model ?? '';
+      const state = useStore.getState();
+      const providerId = options?.providerId ?? state.providerConfig.providerId;
+      const model = options?.model ?? state.providerConfig.model ?? '';
       const enableGoogleSearchTool =
-        options?.enableGoogleSearchTool ?? store.enableGoogleSearchTool;
+        options?.enableGoogleSearchTool ?? state.enableGoogleSearchTool;
       const googleSearchApiKey =
-        options?.googleSearchApiKey ?? store.googleSearchApiKey;
+        options?.googleSearchApiKey ?? state.googleSearchApiKey;
 
       // Fetch MCP tools
       const mcpTools = await fetchMCPTools();
 
-      const isGemini = providerId === 'gemini' || store.providerConfig.format === 'gemini';
+      const isGemini = providerId === 'gemini' || state.providerConfig.format === 'gemini';
       const canUseFunctionCalling = supportsFunctionCalling(model);
 
       // Use toolRegistry to get all tools (MCP + built-in)
@@ -146,7 +154,7 @@ export function useTools() {
         isGemini,
       });
     },
-    [store, fetchMCPTools, supportsFunctionCalling]
+    [fetchMCPTools, supportsFunctionCalling]
   );
 
   /**
@@ -154,7 +162,8 @@ export function useTools() {
    */
   const getChatOptions = useCallback(
     (options?: { aspectRatio?: string; enableReasoning?: boolean }) => {
-      const currentModel = store.providerConfig.model || '';
+      const state = useStore.getState();
+      const currentModel = state.providerConfig.model || '';
       const isGemini = isGeminiProvider();
       const isXAIImg = isXAIImageModel();
       const isGeminiImg = isGeminiImageModel();
@@ -164,15 +173,15 @@ export function useTools() {
         enableReasoning?: boolean;
         aspectRatio?: string;
         stream?: boolean;
-        modelParameters?: typeof store.providerConfig.modelParameters;
+        modelParameters?: typeof state.providerConfig.modelParameters;
       } = {
         enableGoogleSearch:
-          store.enableGoogleSearch &&
+          state.enableGoogleSearch &&
           isGemini &&
           !GEMINI_NO_TOOLS_MODELS.includes(currentModel),
-        enableReasoning: options?.enableReasoning ?? store.enableReasoning,
-        stream: store.enableStreaming,
-        modelParameters: store.providerConfig.modelParameters,
+        enableReasoning: options?.enableReasoning ?? state.enableReasoning,
+        stream: state.enableStreaming,
+        modelParameters: state.providerConfig.modelParameters,
       };
 
       // Add aspect ratio for image models
@@ -182,7 +191,7 @@ export function useTools() {
 
       return chatOptions;
     },
-    [store, isGeminiProvider, isXAIImageModel, isGeminiImageModel]
+    [isGeminiProvider, isXAIImageModel, isGeminiImageModel]
   );
 
   return {
