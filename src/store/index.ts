@@ -93,6 +93,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   // MCP
   mcpServers: [],
+  isMCPReconnecting: false,
 
   // Conversations
   conversations: [],
@@ -247,6 +248,8 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setFetchingModels: (fetchingModels) => set({ fetchingModels }),
+
+  setMCPReconnecting: (isMCPReconnecting) => set({ isMCPReconnecting }),
 
   addMCPServer: (server) =>
     set((state) => ({

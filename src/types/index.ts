@@ -340,6 +340,7 @@ export interface AppState {
 
   // MCP
   mcpServers: MCPServer[];
+  isMCPReconnecting: boolean;
 
   // Conversations
   conversations: Conversation[];
@@ -419,6 +420,8 @@ export interface AppState {
   setShowCustomModel: (show: boolean) => void;
   setFetchedModels: (providerId: string, models: FetchedModelsCache) => void;
   setFetchingModels: (fetching: boolean) => void;
+
+  setMCPReconnecting: (reconnecting: boolean) => void;
 
   addMCPServer: (server: MCPServer) => void;
   removeMCPServer: (id: string) => void;

@@ -427,4 +427,8 @@ export class MCPManager {
   getClientCount(): number {
     return this.clients.size;
   }
+
+  getConnectedServerIds(): string[] {
+    return Array.from(this.clients.keys());
+  }
 }

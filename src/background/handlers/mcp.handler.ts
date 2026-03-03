@@ -75,6 +75,19 @@ export function handleMCPDisconnect(
 }
 
 /**
+ * Handle MCP get status — returns which server IDs are actually connected in-memory
+ * @param sendResponse - Response callback
+ */
+export function handleMCPGetStatus(sendResponse: SendResponse): void {
+  try {
+    const connectedIds = mcpManager.getConnectedServerIds();
+    sendResponse({ connectedIds });
+  } catch (e) {
+    sendResponse({ connectedIds: [], error: (e as Error).message });
+  }
+}
+
+/**
  * Handle MCP list tools
  * @param sendResponse - Response callback
  */
@@ -146,6 +159,7 @@ export async function restoreMCPServers(): Promise<void> {
 type ChromeMessage =
   | MCPConnectMessage
   | MCPDisconnectMessage
+  | { type: 'MCP_GET_STATUS' }
   | { type: 'MCP_LIST_TOOLS' }
   | MCPToolCallMessage;
 
@@ -164,6 +178,9 @@ export function registerMCPHandlers(
           return true;
         case 'MCP_DISCONNECT':
           handleMCPDisconnect(message as MCPDisconnectMessage, sendResponse);
+          return false;
+        case 'MCP_GET_STATUS':
+          handleMCPGetStatus(sendResponse);
           return false;
         case 'MCP_LIST_TOOLS':
           handleMCPListTools(sendResponse);

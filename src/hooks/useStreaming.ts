@@ -220,7 +220,7 @@ export function useStreaming() {
       fullContent: string,
       toolCalls?: ToolCall[],
       _groundingMetadata?: GroundingMetadata,
-      _generatedImages?: GeneratedImage[],
+      generatedImages?: GeneratedImage[],
       reasoningContent?: string,
       reasoningSignature?: string
     ) => {
@@ -230,6 +230,9 @@ export function useStreaming() {
       // Use toolCalls from parameter (sent by background via CHAT_STREAM_DONE) as primary source,
       // fall back to result.toolCalls from streamProcessor for client-side processed chunks.
       const finalToolCalls = (toolCalls && toolCalls.length > 0) ? toolCalls : result.toolCalls;
+      // Images are sent via CHAT_STREAM_DONE (too large for individual chunks), so prefer the
+      // parameter value. Fall back to result.images for any client-side path that uses processChunk.
+      const finalImages = (generatedImages && generatedImages.length > 0) ? generatedImages : result.images;
       const assistantMsg: {
         role: 'assistant';
         content: string;
@@ -243,7 +246,7 @@ export function useStreaming() {
         content: result.content || '',
         ...(finalToolCalls && finalToolCalls.length > 0 && { toolCalls: finalToolCalls }),
         ...(result.groundingMetadata && { groundingMetadata: result.groundingMetadata }),
-        ...(result.images && { generatedImages: result.images }),
+        ...(finalImages && finalImages.length > 0 && { generatedImages: finalImages }),
         ...(result.reasoningContent && { reasoningContent: result.reasoningContent }),
         ...(reasoningSignature && { reasoningSignature }),
       };
