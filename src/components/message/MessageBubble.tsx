@@ -284,27 +284,18 @@ export function MessageBubble({
       if (wrapper) {
         const cells = wrapper.querySelectorAll('.md-expandable-cell');
         const btn = expandAllBtn as HTMLElement;
-        const expandIcon = btn.querySelector('.expand-icon');
-        const collapseIcon = btn.querySelector('.collapse-icon');
 
-        // Check if any cell is expanded to determine current state
+        // Check if all cells are currently expanded
         const isExpanded = wrapper.classList.contains('all-expanded');
 
-        if (isExpanded) {
-          // Collapse all
-          cells.forEach(cell => cell.classList.remove('expanded'));
-          wrapper.classList.remove('all-expanded');
-          btn.setAttribute('title', 'Expand all cells');
-          expandIcon?.classList.remove('hidden');
-          collapseIcon?.classList.add('hidden');
-        } else {
-          // Expand all
-          cells.forEach(cell => cell.classList.add('expanded'));
-          wrapper.classList.add('all-expanded');
-          btn.setAttribute('title', 'Collapse all cells');
-          expandIcon?.classList.add('hidden');
-          collapseIcon?.classList.remove('hidden');
-        }
+        // Toggle all cells
+        cells.forEach(cell => cell.classList.toggle('expanded', !isExpanded));
+        wrapper.classList.toggle('all-expanded', !isExpanded);
+        btn.setAttribute('title', isExpanded ? 'Expand all cells' : 'Collapse all cells');
+
+        // Toggle icons
+        btn.querySelector('.expand-icon')?.classList.toggle('hidden', !isExpanded);
+        btn.querySelector('.collapse-icon')?.classList.toggle('hidden', isExpanded);
       }
       return;
     }
