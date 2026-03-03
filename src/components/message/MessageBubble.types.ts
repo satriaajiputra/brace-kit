@@ -76,7 +76,7 @@ export interface UserActionsProps {
   messageIndex?: number;
   isEditing: boolean;
   onEdit?: () => void;
-  onRegenerate?: (index: number) => void;
+  onRegenerate?: (index: number) => Promise<void> | void;
   onBranch?: (index: number) => void;
 }
 
