@@ -15,10 +15,10 @@ const emptyStatus: StatusState = { type: null, message: '' };
 function StatusMessage({ status }: { status: StatusState }) {
     if (!status.type) return null;
     return (
-        <div className={`flex items-start gap-2 px-2.5 py-2 rounded-md text-xs animate-in fade-in duration-200
+        <div className={`flex items-start gap-2 px-2.5 py-2 rounded-md text-sm animate-in fade-in duration-200
             ${status.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
-            status.type === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-            'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}
+                status.type === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                    'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}
         >
             {status.type === 'success' && <CheckCircle2Icon size={13} className="shrink-0 mt-0.5" />}
             {status.type === 'error' && <AlertCircleIcon size={13} className="shrink-0 mt-0.5" />}
@@ -158,7 +158,7 @@ export function DataSettings() {
             {/* Header */}
             <div className="flex flex-col gap-0.5 px-0.5">
                 <h3 className="text-sm font-semibold tracking-tight text-foreground">Data Management</h3>
-                <p className="text-xs text-muted-foreground leading-none">Backup, restore, and manage your extension data.</p>
+                <p className="text-sm text-muted-foreground leading-none">Backup, restore, and manage your extension data.</p>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -169,9 +169,9 @@ export function DataSettings() {
                     <div className={`flex items-center gap-2 px-3 py-2 border-b transition-colors duration-200
                         ${includeApiKeys ? 'bg-amber-500/5 border-amber-500/20' : 'bg-secondary/30 border-border/50'}`}>
                         <DownloadIcon size={12} className="text-muted-foreground shrink-0" />
-                        <span className="text-xs font-semibold text-foreground flex-1">Export Backup</span>
+                        <span className="text-sm font-semibold text-foreground flex-1">Export Backup</span>
                         {includeApiKeys && (
-                            <span className="text-xs text-amber-500 font-medium animate-in fade-in duration-200">+API keys</span>
+                            <span className="text-sm text-amber-500 font-medium animate-in fade-in duration-200">+API keys</span>
                         )}
                     </div>
 
@@ -180,7 +180,7 @@ export function DataSettings() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                                 <KeyRoundIcon size={11} className={`transition-colors duration-200 ${includeApiKeys ? 'text-amber-500' : 'text-muted-foreground'}`} />
-                                <span className="text-xs text-foreground">Include API Keys</span>
+                                <span className="text-sm text-foreground">Include API Keys</span>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer shrink-0">
                                 <input
@@ -200,10 +200,10 @@ export function DataSettings() {
                         {/* Password Field */}
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
                                     Password
                                 </label>
-                                <span className={`text-xs transition-colors duration-200 ${includeApiKeys ? 'text-amber-500' : 'text-muted-foreground/50'}`}>
+                                <span className={`text-sm transition-colors duration-200 ${includeApiKeys ? 'text-amber-500' : 'text-muted-foreground/50'}`}>
                                     {includeApiKeys ? 'required' : 'optional'}
                                 </span>
                             </div>
@@ -213,27 +213,27 @@ export function DataSettings() {
                                 onChange={(e) => setExportPassword(e.target.value)}
                                 placeholder={includeApiKeys ? 'Encrypt API keys' : 'Encrypt backup (optional)'}
                                 disabled={isExporting}
-                                className={`w-full h-8 px-2.5 text-xs bg-muted/40 border rounded-md
+                                className={`w-full h-8 px-2.5 text-sm bg-muted/40 border rounded-md
                                     focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all
                                     placeholder:text-muted-foreground/40 text-foreground disabled:opacity-50
                                     ${includeApiKeys && !exportPassword ? 'border-amber-500/40' : 'border-input'}`}
                             />
                             {exportPassword && (
-                                <p className="text-xs text-amber-500/80 leading-tight">
+                                <p className="text-sm text-amber-500/80 leading-tight">
                                     Remember this password — required to restore.
                                 </p>
                             )}
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <p className="text-xs text-muted-foreground/50 leading-tight">
+                            <p className="text-sm text-muted-foreground/50 leading-tight">
                                 App may freeze briefly during export.
                             </p>
                             <button
                                 onClick={handleExport}
                                 disabled={isExporting || (includeApiKeys && !exportPassword.trim())}
                                 className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-border
-                                    bg-background hover:bg-accent/40 transition-colors text-xs font-medium text-foreground
+                                    bg-background hover:bg-accent/40 transition-colors text-sm font-medium text-foreground
                                     disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                             >
                                 <DownloadIcon size={11} className="shrink-0" />
@@ -249,7 +249,7 @@ export function DataSettings() {
                 <div className="rounded-lg border border-border/60 overflow-hidden">
                     <div className="flex items-center gap-2 px-3 py-2 bg-secondary/30 border-b border-border/50">
                         <UploadIcon size={12} className="text-muted-foreground shrink-0" />
-                        <span className="text-xs font-semibold text-foreground">Restore Backup</span>
+                        <span className="text-sm font-semibold text-foreground">Restore Backup</span>
                     </div>
 
                     <div className="p-3 flex flex-col gap-2.5">
@@ -258,22 +258,22 @@ export function DataSettings() {
                             <div className="flex items-center gap-2 p-2 rounded-md bg-blue-500/5 border border-blue-500/20 animate-in fade-in duration-200">
                                 <FileJsonIcon size={13} className="text-blue-500 shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-foreground font-medium truncate leading-tight">{selectedFile.name}</p>
+                                    <p className="text-sm text-foreground font-medium truncate leading-tight">{selectedFile.name}</p>
                                     <div className="flex items-center gap-2 mt-0.5">
                                         {backupInfo.encrypted && (
-                                            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                                            <span className="text-sm text-muted-foreground flex items-center gap-0.5">
                                                 <LockIcon size={10} />
                                                 Encrypted
                                             </span>
                                         )}
                                         {backupInfo.hasApiKeys && (
-                                            <span className="text-xs text-amber-500 flex items-center gap-0.5">
+                                            <span className="text-sm text-amber-500 flex items-center gap-0.5">
                                                 <KeyRoundIcon size={10} />
                                                 Contains API keys
                                             </span>
                                         )}
                                         {!backupInfo.encrypted && !backupInfo.hasApiKeys && (
-                                            <span className="text-xs text-muted-foreground">Plain backup</span>
+                                            <span className="text-sm text-muted-foreground">Plain backup</span>
                                         )}
                                     </div>
                                 </div>
@@ -291,10 +291,10 @@ export function DataSettings() {
                         {needsConfirmation && (
                             <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-top-1 duration-200">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                                    <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
                                         Password
                                     </label>
-                                    <span className="text-xs text-red-500">required</span>
+                                    <span className="text-sm text-red-500">required</span>
                                 </div>
                                 <input
                                     type="password"
@@ -303,7 +303,7 @@ export function DataSettings() {
                                     placeholder={backupInfo?.hasApiKeys ? 'Decrypt API keys' : 'Decrypt backup'}
                                     disabled={isImporting}
                                     onKeyDown={(e) => e.key === 'Enter' && canImport && handleImportConfirm()}
-                                    className={`w-full h-8 px-2.5 text-xs bg-muted/40 border rounded-md
+                                    className={`w-full h-8 px-2.5 text-sm bg-muted/40 border rounded-md
                                         focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all
                                         placeholder:text-muted-foreground/40 text-foreground disabled:opacity-50
                                         ${!importPassword ? 'border-amber-500/40' : 'border-input'}`}
@@ -320,7 +320,7 @@ export function DataSettings() {
                                     onClick={handleCancelImport}
                                     disabled={isImporting}
                                     className="flex-1 h-8 flex items-center justify-center rounded-md border border-border
-                                        bg-background hover:bg-accent/40 transition-colors text-xs font-medium text-muted-foreground
+                                        bg-background hover:bg-accent/40 transition-colors text-sm font-medium text-muted-foreground
                                         disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Cancel
@@ -329,7 +329,7 @@ export function DataSettings() {
                                     onClick={handleImportConfirm}
                                     disabled={isImporting || !canImport}
                                     className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-md border border-primary/40
-                                        bg-primary/10 hover:bg-primary/20 transition-colors text-xs font-medium text-primary
+                                        bg-primary/10 hover:bg-primary/20 transition-colors text-sm font-medium text-primary
                                         disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                                 >
                                     <UploadIcon size={11} className="shrink-0" />
@@ -341,7 +341,7 @@ export function DataSettings() {
                                 onClick={handleImportClick}
                                 disabled={isImporting}
                                 className="w-full h-8 flex items-center justify-center gap-1.5 rounded-md border border-border
-                                    bg-background hover:bg-accent/40 transition-colors text-xs font-medium text-foreground
+                                    bg-background hover:bg-accent/40 transition-colors text-sm font-medium text-foreground
                                     disabled:opacity-50 active:scale-[0.98]"
                             >
                                 <UploadIcon size={11} className="shrink-0" />
@@ -351,7 +351,7 @@ export function DataSettings() {
 
                         <StatusMessage status={importStatus} />
 
-                        <p className="text-xs text-amber-500/70 leading-tight">
+                        <p className="text-sm text-amber-500/70 leading-tight">
                             Restoring will overwrite all current settings and history.
                         </p>
                     </div>
@@ -361,18 +361,18 @@ export function DataSettings() {
                 <div className="rounded-lg border border-destructive/50 overflow-hidden">
                     <div className="flex items-center gap-2 px-3 py-2 bg-destructive/15 border-b border-destructive/40">
                         <ShieldAlertIcon size={12} className="text-destructive shrink-0" />
-                        <span className="text-xs font-semibold text-destructive">Danger Zone</span>
+                        <span className="text-sm font-semibold text-destructive">Danger Zone</span>
                     </div>
                     <div className="p-3 flex flex-col gap-2.5">
                         <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs text-muted-foreground leading-tight flex-1">
+                            <p className="text-sm text-muted-foreground leading-tight flex-1">
                                 Permanently delete all conversations, providers, memory, and settings.
                             </p>
                             <button
                                 onClick={() => setShowResetConfirm(true)}
                                 disabled={isResetting}
                                 className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-destructive/60 shrink-0
-                                    bg-destructive/10 hover:bg-destructive/20 transition-colors text-xs font-medium text-destructive
+                                    bg-destructive/10 hover:bg-destructive/20 transition-colors text-sm font-medium text-destructive
                                     disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                             >
                                 <Trash2Icon size={11} className="shrink-0" />
