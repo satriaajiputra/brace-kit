@@ -420,6 +420,11 @@
     animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+.footnote-link.footnote-active {
+    @apply bg-primary text-primary-foreground rounded-sm px-0.5;
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @keyframes pulse-subtle {
 
     0%,

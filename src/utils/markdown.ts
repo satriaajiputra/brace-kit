@@ -274,6 +274,8 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
   // We do this by line to handle multi-line indented content properly
   const lines = processedText.split('\n');
   const nonDefLines: string[] = [];
+  // Track placeholder per id so orphaned defs can be rendered in-place
+  const defPlaceholders = new Map<string, string>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -313,6 +315,11 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
 
       // Store cleaned content (removing indentation)
       footnoteDefs.set(id, content.replace(/^(?: {4}|\t)/gm, '').trim());
+      // Keep a placeholder at the definition's position in the document
+      // so orphaned defs can be rendered in-place later
+      const defPh = `[[FN-DEF-${id}-END]]`;
+      defPlaceholders.set(id, defPh);
+      nonDefLines.push(defPh);
     } else {
       nonDefLines.push(line);
     }
@@ -334,6 +341,14 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
     const num = idToNum.get(id)!;
     // Use a unique placeholder that marked won't mess with
     return `[[FOOTNOTE-REF-${num}-${id}-END]]`;
+  });
+
+  // Remove def placeholders for referenced footnotes from inline content
+  // (they will be rendered in the "References & Notes" section at the bottom instead)
+  defPlaceholders.forEach((ph, id) => {
+    if (!idToNum.has(id)) return; // orphaned: keep placeholder for in-place rendering
+    const escaped = ph.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    processedText = processedText.replace(new RegExp(escaped, 'g'), '');
   });
 
   // Convert citation markers [1][2] to clickable superscript links (non-footnote citations)
@@ -374,7 +389,27 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
     html = html.replace(new RegExp(escapedPlaceholder, 'g'), fnHtml);
   });
 
-  // 4. Append Footnote Section at the bottom if any exist
+  // Render orphaned footnote definitions in-place (where they appeared in the document).
+  // This avoids a duplicate heading when the AI writes a heading like "## References"
+  // followed by bare [^1]: definitions — those defs become inline content under that heading.
+  let orphanNum = 0;
+  defPlaceholders.forEach((ph, id) => {
+    if (idToNum.has(id)) return; // referenced: placeholder already removed above
+    orphanNum++;
+    const content = footnoteDefs.get(id) || '';
+    const parsedContent = marked.parseInline(content, { async: false }) as string;
+    const escaped = ph.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    const inplaceHtml = `<span class="fn-def-item flex gap-1.5 text-sm text-muted-foreground/90 break-all leading-snug mb-3"><span class="shrink-0 font-bold text-primary/50 text-xs">${orphanNum}.</span><span>${parsedContent}</span></span>`;
+    html = html.replace(new RegExp(`<p>${escaped}</p>`, 'g'), inplaceHtml);
+    html = html.replace(new RegExp(escaped, 'g'), inplaceHtml);
+  });
+  // Clean up <br> between consecutive in-place items and empty <p> wrappers caused by
+  // marked's breaks:true inserting <br> between consecutive placeholder lines
+  html = html.replace(/(<\/span>)\s*<br\s*\/?>\s*(<span class="fn-def-item)/g, '$1$2');
+  html = html.replace(/<p>\s*(<span class="fn-def-item)/g, '$1');
+  html = html.replace(/(<\/span>)\s*<\/p>/g, '$1');
+
+  // 4. Append "References & Notes" section only for footnotes with inline back-references
   if (footnoteRefs.length > 0) {
     let fnSectionHtml = `
       <div class="mt-12 pt-6 border-t border-border/60 not-prose">
@@ -384,17 +419,17 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
 
     footnoteRefs.forEach(({ id, num }) => {
       const content = footnoteDefs.get(id) || '';
-      // Parse the content of the footnote as markdown
+      const parsedContent = marked.parseInline(content, { async: false }) as string;
+      // Back-link is a separate element to avoid nested <a> tags if content auto-links a URL
+      const contentHtml = `<span class="break-all">${parsedContent}</span><a href="#fnref-${id}" class="ml-1 text-primary/60 hover:text-primary transition-colors" title="Back to content">⏎</a>`;
+
       fnSectionHtml += `
-        <li id="fn-${id}" class="footnote-item group/fn flex gap-3 text-xs leading-relaxed text-muted-foreground hover:text-foreground transition-all duration-300">
-          <div class="shrink-0 font-bold text-primary/40 group-hover/fn:text-primary transition-colors mt-0.5 min-w-[1.2rem]">
+        <li id="fn-${id}" class="footnote-item group/fn flex gap-3 text-sm leading-relaxed text-muted-foreground hover:text-foreground transition-all duration-300">
+          <div class="shrink-0 font-bold text-primary/60 group-hover/fn:text-primary transition-colors mt-0.5 min-w-[1.2rem]">
             ${num}.
           </div>
           <div class="grow prose-compact">
-          <a href="#fnref-${id}" class="text-primary underline" title="Back to content">
-          ${content}
-              ⏎
-            </a>
+            ${contentHtml}
           </div>
         </li>
       `;
