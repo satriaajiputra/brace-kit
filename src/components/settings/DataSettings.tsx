@@ -190,7 +190,7 @@ export function DataSettings() {
                                     onChange={(e) => setIncludeApiKeys(e.target.checked)}
                                     disabled={isExporting}
                                 />
-                                <div className="w-8 h-[18px] bg-muted rounded-full peer peer-checked:bg-amber-500/80 transition-all duration-200
+                                <div className="w-8 h-[18px] bg-muted-foreground dark:bg-muted rounded-full peer peer-checked:bg-amber-500/80 transition-all duration-200
                                     after:content-[''] after:absolute after:top-[2px] after:left-[2px]
                                     after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all
                                     peer-checked:after:translate-x-3.5 peer-disabled:opacity-50" />
@@ -203,7 +203,7 @@ export function DataSettings() {
                                 <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
                                     Password
                                 </label>
-                                <span className={`text-sm transition-colors duration-200 ${includeApiKeys ? 'text-amber-500' : 'text-muted-foreground/50'}`}>
+                                <span className={`text-sm transition-colors duration-200 ${includeApiKeys ? 'text-amber-500' : 'text-muted-foreground'}`}>
                                     {includeApiKeys ? 'required' : 'optional'}
                                 </span>
                             </div>
@@ -215,7 +215,7 @@ export function DataSettings() {
                                 disabled={isExporting}
                                 className={`w-full h-8 px-2.5 text-sm bg-muted/40 border rounded-md
                                     focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all
-                                    placeholder:text-muted-foreground/40 text-foreground disabled:opacity-50
+                                    placeholder:text-muted-foreground text-foreground disabled:opacity-50
                                     ${includeApiKeys && !exportPassword ? 'border-amber-500/40' : 'border-input'}`}
                             />
                             {exportPassword && (
@@ -226,7 +226,7 @@ export function DataSettings() {
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <p className="text-sm text-muted-foreground/50 leading-tight">
+                            <p className="text-sm text-muted-foreground leading-tight">
                                 App may freeze briefly during export.
                             </p>
                             <button
