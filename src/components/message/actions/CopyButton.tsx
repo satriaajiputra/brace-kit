@@ -16,13 +16,13 @@ export function MessageCopyButton({ content }: MessageCopyButtonProps) {
 
   return (
     <Btn
-      size="icon-sm"
+      size="icon"
       variant="ghost"
       className={copied ? 'text-green-500! bg-green-500/10!' : ''}
       onClick={handleCopy}
       title="Copy"
     >
-      {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+      {copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
     </Btn>
   );
 }

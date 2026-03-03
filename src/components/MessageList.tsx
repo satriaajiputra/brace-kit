@@ -19,23 +19,29 @@ export function MessageList() {
   // Ref for throttled scroll during streaming
   const lastScrollTimeRef = useRef(0);
   const pendingScrollRef = useRef(false);
+  // Track previous scrollTop to detect scroll direction
+  const prevScrollTopRef = useRef(0);
 
   const isNearBottom = useCallback(() => {
     if (!containerRef.current) return true;
     const container = containerRef.current;
-    return container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 40;
   }, []);
 
   const handleScroll = useCallback(() => {
-    // Abaikan scroll event yang dipicu oleh kode kita sendiri
+    // Ignore scroll events triggered by our own programmatic scrolls
     if (isProgrammaticScrollRef.current) return;
     if (!containerRef.current) return;
 
+    const container = containerRef.current;
+    const isScrollingUp = container.scrollTop < prevScrollTopRef.current;
+    prevScrollTopRef.current = container.scrollTop;
+
     if (isNearBottom()) {
-      // User scroll balik ke bawah → aktifkan kembali autoscroll
+      // User scrolled back to bottom — re-enable autoscroll
       isUserScrollingRef.current = false;
-    } else {
-      // User scroll ke atas → jeda autoscroll
+    } else if (isScrollingUp) {
+      // User scrolled up — pause autoscroll
       isUserScrollingRef.current = true;
     }
   }, [isNearBottom]);
@@ -99,6 +105,23 @@ export function MessageList() {
     });
   }, []);
 
+  // Wheel event for immediate upward scroll intent detection.
+  // Fires BEFORE the scroll event, preventing the race condition where
+  // MutationObserver queues a scrollToBottom before isUserScrollingRef is set.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY < 0) {
+        isUserScrollingRef.current = true;
+      }
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: true });
+    return () => container.removeEventListener('wheel', onWheel);
+  }, []);
+
   // Use MutationObserver instead of ResizeObserver for streaming
   // It's more efficient and triggers less frequently
   useEffect(() => {
@@ -127,10 +150,18 @@ export function MessageList() {
   }, [isStreaming, scrollToBottom]);
 
   useEffect(() => {
-    // Pesan baru masuk (user kirim pesan / AI selesai) → selalu reset dan scroll ke bawah,
-    // mengabaikan apakah user sedang scroll ke atas atau tidak
-    isUserScrollingRef.current = false;
-    scrollToBottom();
+    if (messages.length === 0) return;
+    const lastMessage = messages[messages.length - 1];
+
+    if (lastMessage.role === 'user') {
+      // User sent a new message — always scroll to bottom and reset state
+      isUserScrollingRef.current = false;
+      scrollToBottom(true);
+    } else if (!isUserScrollingRef.current) {
+      // Tool call / assistant message arrived during streaming — only scroll
+      // if user is not scrolled up (do not force-reset their scroll state)
+      scrollToBottom(true);
+    }
   }, [messages.length, scrollToBottom]);
 
   useEffect(() => {

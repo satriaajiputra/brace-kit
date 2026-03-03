@@ -1,9 +1,10 @@
 import { memo, useRef } from 'react';
+import parse from 'html-react-parser';
 import { QuoteIcon } from 'lucide-react';
 import { useStore } from '../../store';
 import { renderMarkdown } from '../../utils/markdown';
 import { useMermaidHydration } from '../../hooks/useMermaidHydration';
-import { useImageGenerationCheck, useQuoteSelection } from '../../hooks';
+import { useImageGenerationCheck, useMarkdownInteractions, useQuoteSelection } from '../../hooks';
 import { ReasoningSection } from './sections/ReasoningSection';
 
 // Import shared UI components
@@ -33,6 +34,9 @@ function StreamingBubbleInternal() {
   const isImageGenerationModel = useImageGenerationCheck();
   const { quotePopup, handleMouseUp, handleQuoteClick } = useQuoteSelection(bubbleRef);
 
+  // Pasang event listener untuk copy code, table actions, image actions, link click
+  useMarkdownInteractions(bubbleRef);
+
   // Use mermaid hydration (disabled during streaming)
   useMermaidHydration(bubbleRef, { isStreaming: true });
 
@@ -40,7 +44,7 @@ function StreamingBubbleInternal() {
 
   return (
     <div className="group flex flex-col gap-1 max-w-[92%] self-start" data-streaming-bubble="true">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1.5">
+      <div className="text-2xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1.5">
         AI
       </div>
       <div
@@ -53,14 +57,13 @@ function StreamingBubbleInternal() {
           <ReasoningSection content={streamingReasoningContent} isStreaming={true} />
         )}
 
-        {/* Main content */}
+        {/* Main content — html-react-parser memungkinkan React reconciler
+            mendiff output renderMarkdown, sehingga elemen yang tidak berubah
+            (code block, table) dipertahankan dan tidak di-replace tiap token */}
         {hasContent ? (
-          <div
-            className="text-sm leading-relaxed"
-            dangerouslySetInnerHTML={{
-              __html: renderMarkdown(streamingContent, true),
-            }}
-          />
+          <div className="text-sm leading-relaxed">
+            {parse(renderMarkdown(streamingContent, true))}
+          </div>
         ) : (
           <LoadingDots />
         )}

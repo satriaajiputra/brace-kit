@@ -8,8 +8,8 @@ interface BranchButtonProps {
 
 export function BranchButton({ messageIndex, onBranch }: BranchButtonProps) {
   return (
-    <Btn size="icon-sm" variant="ghost" onClick={() => onBranch(messageIndex)} title="Branch">
-      <GitBranchIcon size={14} />
+    <Btn size="icon" variant="ghost" onClick={() => onBranch(messageIndex)} title="Branch">
+      <GitBranchIcon size={16} />
     </Btn>
   );
 }
