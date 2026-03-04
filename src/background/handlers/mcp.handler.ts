@@ -6,6 +6,7 @@
 import { MCPManager } from '../../services/mcp';
 import { isBuiltinTool, executeTool, type ToolExecutionContext } from '../tools/index';
 import { decryptApiKey } from '../../utils/keyEncryption.ts';
+import { MCP_DISCONNECT_PREFIX } from '../../types/index.ts';
 
 type SendResponse = (response?: unknown) => void;
 
@@ -75,12 +76,12 @@ export function handleMCPDisconnect(
 }
 
 /**
- * Handle MCP get status — returns which server IDs are actually connected in-memory
+ * Handle MCP get status — pings each connected server to verify liveness
  * @param sendResponse - Response callback
  */
-export function handleMCPGetStatus(sendResponse: SendResponse): void {
+export async function handleMCPGetStatus(sendResponse: SendResponse): Promise<void> {
   try {
-    const connectedIds = mcpManager.getConnectedServerIds();
+    const connectedIds = await mcpManager.getConnectedServerIds();
     sendResponse({ connectedIds });
   } catch (e) {
     sendResponse({ connectedIds: [], error: (e as Error).message });
@@ -131,6 +132,14 @@ export async function handleMCPToolCall(
       sendResponse({ error: `Tool "${name}" not found` } as ToolCallResponse);
       return;
     }
+
+    // Verify the server is still alive before executing the tool call
+    const alive = await found.client.ping();
+    if (!alive) {
+      sendResponse({ error: `${MCP_DISCONNECT_PREFIX}${found.serverName}` } as ToolCallResponse);
+      return;
+    }
+
     const result = await found.client.callTool(name, args);
     sendResponse(result as ToolCallResponse);
   } catch (e) {
@@ -181,7 +190,7 @@ export function registerMCPHandlers(
           return false;
         case 'MCP_GET_STATUS':
           handleMCPGetStatus(sendResponse);
-          return false;
+          return true;
         case 'MCP_LIST_TOOLS':
           handleMCPListTools(sendResponse);
           return false;

@@ -1,3 +1,12 @@
+// ==================== MCP Constants ====================
+
+/**
+ * Sentinel prefix for MCP server disconnect errors.
+ * Used to distinguish "server disconnected" from "tool execution error".
+ * Format: `MCP_DISCONNECT:<serverName>`
+ */
+export const MCP_DISCONNECT_PREFIX = 'MCP_DISCONNECT:';
+
 // ==================== Message Types ====================
 
 export interface ToolCall {
