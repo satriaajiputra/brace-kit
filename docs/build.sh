@@ -10,4 +10,5 @@ main() {
     ./zola build
 }
 
+
 set -euo pipefail
