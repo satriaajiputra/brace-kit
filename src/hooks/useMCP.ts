@@ -191,6 +191,11 @@ export function useMCP() {
     store.saveToStorage();
   }, [store]);
 
+  const toggleMCPTool = useCallback((serverId: string, toolName: string, enabled: boolean) => {
+    store.toggleMCPTool(serverId, toolName, enabled);
+    store.saveToStorage();
+  }, [store]);
+
   const listTools = useCallback(async () => {
     try {
       const result = await chrome.runtime.sendMessage({ type: 'MCP_LIST_TOOLS' });
@@ -218,6 +223,7 @@ export function useMCP() {
     addMCPServer,
     removeMCPServer,
     toggleMCPServer,
+    toggleMCPTool,
     updateMCPServer,
     listTools,
     callTool,

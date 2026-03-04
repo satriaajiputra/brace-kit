@@ -421,12 +421,12 @@ export class MCPManager {
     return tools;
   }
 
-  async callTool(name: string): Promise<{ client: MCPClient; tool: MCPTool; serverName: string } | null> {
+  async callTool(name: string): Promise<{ client: MCPClient; tool: MCPTool; serverName: string; serverId: string } | null> {
     // Find which server has this tool
-    for (const [, entry] of this.clients) {
+    for (const [serverId, entry] of this.clients) {
       const tool = entry.tools.find((t) => t.name === name);
       if (tool) {
-        return { client: entry.client, tool, serverName: entry.config.name };
+        return { client: entry.client, tool, serverName: entry.config.name, serverId };
       }
     }
     return null;

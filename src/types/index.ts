@@ -224,6 +224,7 @@ export interface MCPServer {
   connected?: boolean;
   enabled?: boolean;
   toolCount?: number;
+  disabledTools?: string[];
 }
 
 export interface MCPTool {
@@ -436,6 +437,7 @@ export interface AppState {
   removeMCPServer: (id: string) => void;
   updateMCPServer: (id: string, updates: Partial<MCPServer>) => void;
   toggleMCPServer: (id: string, enabled: boolean) => void;
+  toggleMCPTool: (serverId: string, toolName: string, enabled: boolean) => void;
 
   createConversation: (opts?: { title?: string; branchedFromId?: string; parentConvId?: string }) => Conversation;
   switchConversation: (id: string) => Promise<void>;

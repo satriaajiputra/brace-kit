@@ -275,6 +275,20 @@ export const useStore = create<AppState>((set, get) => ({
       ),
     })),
 
+  toggleMCPTool: (serverId, toolName, enabled) =>
+    set((state) => ({
+      mcpServers: state.mcpServers.map((s) => {
+        if (s.id !== serverId) return s;
+        const disabledTools = s.disabledTools || [];
+        return {
+          ...s,
+          disabledTools: enabled
+            ? disabledTools.filter((t) => t !== toolName)
+            : disabledTools.includes(toolName) ? disabledTools : [...disabledTools, toolName],
+        };
+      }),
+    })),
+
   createConversation: (opts?: { title?: string; branchedFromId?: string; parentConvId?: string }) => {
     const id = `conv_${Date.now()}`;
     const now = Date.now();

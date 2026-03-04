@@ -133,6 +133,15 @@ export async function handleMCPToolCall(
       return;
     }
 
+    // Enforce per-tool disable: check against persisted disabledTools in storage
+    const { mcpServers } = await chrome.storage.local.get('mcpServers');
+    const ownerServer = (mcpServers as { id: string; disabledTools?: string[] }[] | undefined)
+      ?.find((s) => s.id === found.serverId);
+    if (ownerServer?.disabledTools?.includes(name)) {
+      sendResponse({ error: `Tool "${name}" is disabled` } as ToolCallResponse);
+      return;
+    }
+
     // Verify the server is still alive before executing the tool call
     const alive = await found.client.ping();
     if (!alive) {
