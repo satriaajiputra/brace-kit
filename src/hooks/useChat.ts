@@ -217,6 +217,11 @@ export function useChat() {
       return;
     }
 
+    if (text.trim() === '/help') {
+      window.open('https://bracekit.nexifle.com/guide', '_blank');
+      return;
+    }
+
     // Auto compact check
     await checkAndAutoCompact();
 

@@ -241,7 +241,7 @@ const Onboarding = () => {
 
                 {/* Donation Button */}
                 <motion.a
-                    href="https://saweria.co/satriaajiputra"
+                    href="https://bracekit.nexifle.com/support"
                     target="_blank"
                     rel="noopener noreferrer"
                     initial={{ opacity: 0, y: 20 }}
@@ -264,7 +264,7 @@ const Onboarding = () => {
                 </motion.a>
 
                 <div className="mt-8 text-2xs text-white/20 uppercase tracking-[0.4em] font-medium text-center">
-                    BraceKit // v{chrome.runtime.getManifest().version} // Part of Nexifle Labs
+                    BraceKit // v{chrome.runtime.getManifest().version} // Crafted by Nexifle Labs
                 </div>
             </main>
         </div>

@@ -65,7 +65,7 @@ export function CustomProvidersSettings() {
       <div className="flex items-center justify-between px-0.5">
         <div className="flex flex-col gap-0.5">
           <h3 className="text-sm font-semibold tracking-tight text-foreground">Custom Providers</h3>
-          <p className="text-xs text-muted-foreground leading-none">Add your own API endpoints</p>
+          <p className="text-sm text-muted-foreground leading-none">Add your own API endpoints</p>
         </div>
         <button
           className={`w-7 h-7 flex items-center justify-center rounded-md transition-all ${showForm
@@ -90,7 +90,7 @@ export function CustomProvidersSettings() {
       <div className="flex flex-col gap-2">
         {customProviders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-4 px-2 text-center rounded-lg border border-dashed border-border/50 bg-secondary/10">
-            <p className="text-xs text-muted-foreground italic">No custom providers added yet.</p>
+            <p className="text-sm text-muted-foreground italic">No custom providers added yet.</p>
           </div>
         ) : (
           customProviders.map((cp) => (
@@ -98,11 +98,11 @@ export function CustomProvidersSettings() {
               <div className="flex-1 flex flex-col gap-0.5 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-medium text-foreground truncate">{cp.name}</span>
-                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-2xs font-bold uppercase tracking-wider">
+                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                     {formatLabel[cp.format]}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-2xs text-muted-foreground truncate opacity-70">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground truncate opacity-70">
                   {cp.apiUrl ? <span>{new URL(cp.apiUrl).hostname}</span> : null}
                   {cp.contextWindow ? <span> · {cp.contextWindow.toLocaleString()} ctx</span> : null}
                 </div>
@@ -129,21 +129,21 @@ export function CustomProvidersSettings() {
           {/* Name and Format fields in a grid row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1 px-0.5">
-              <label htmlFor="cp-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Name</label>
+              <label htmlFor="cp-name" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Name</label>
               <input
                 type="text"
                 id="cp-name"
-                className="w-full h-8 px-2.5 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
+                className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
                 placeholder="My Provider"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-1 px-0.5">
-              <label htmlFor="cp-format" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Format</label>
+              <label htmlFor="cp-format" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Format</label>
               <select
                 id="cp-format"
-                className="w-full h-8 px-2 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all text-foreground cursor-pointer"
+                className="w-full h-8 px-2 text-sm bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all text-foreground cursor-pointer"
                 value={format}
                 onChange={(e) => setFormat(e.target.value as ProviderFormat)}
               >
@@ -156,11 +156,11 @@ export function CustomProvidersSettings() {
 
           {/* Base URL input */}
           <div className="flex flex-col gap-1 px-0.5">
-            <label htmlFor="cp-url" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Base URL</label>
+            <label htmlFor="cp-url" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Base URL</label>
             <input
               type="url"
               id="cp-url"
-              className="w-full h-8 px-2.5 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
+              className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
               placeholder="https://api.example.com/v1"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -169,11 +169,11 @@ export function CustomProvidersSettings() {
 
           {/* Context Window input */}
           <div className="flex flex-col gap-1 px-0.5">
-            <label htmlFor="cp-window" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Context Window (Tokens)</label>
+            <label htmlFor="cp-window" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Context Window (Tokens)</label>
             <input
               type="number"
               id="cp-window"
-              className="w-full h-8 px-2.5 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
+              className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
               placeholder="128000"
               value={contextWindow}
               onChange={(e) => setContextWindow(e.target.value)}

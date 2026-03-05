@@ -3,6 +3,8 @@
 // =============================================================================
 import { useStore } from '../../store/index.ts';
 import { DEFAULT_SUMMARY_PROMPT } from '../../hooks/compact/compactUtils.ts';
+import { HelpCircleIcon } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/index.ts';
 
 // =============================================================================
 // Compact Settings Component
@@ -86,8 +88,14 @@ export function CompactSettings() {
         {compactConfig.enabled && (
           <div className="flex flex-col gap-1.5 px-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
             <div className="flex items-center justify-between">
-              <label htmlFor="compact-prompt" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
-                Compact Prompt
+              <label htmlFor="compact-prompt" className="flex items-center space-x-2 text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                <span>Compact Prompt</span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className="cursor-help"><HelpCircleIcon size={16} /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>Inspired from RooCode</TooltipContent>
+                </Tooltip>
               </label>
               {isUsingCustomPrompt && (
                 <button

@@ -116,7 +116,7 @@ export function ProviderSettings() {
     <section className="flex flex-col gap-3 py-3 border-b border-border last:border-0">
       <div className="flex flex-col gap-0.5 px-0.5">
         <h3 className="text-sm font-semibold tracking-tight text-foreground">AI Provider</h3>
-        <p className="text-xs text-muted-foreground leading-none">Select and configure your AI service</p>
+        <p className="text-sm text-muted-foreground leading-none">Select and configure your AI service</p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -132,7 +132,7 @@ export function ProviderSettings() {
                 return (
                   <div key={p.id} className="group relative">
                     <button
-                      className={`w-full h-10 px-2 flex items-center justify-center text-2xs font-bold uppercase tracking-tight rounded-md border transition-all truncate
+                      className={`w-full h-10 px-2 flex items-center justify-center text-xs font-bold uppercase tracking-tight rounded-md border transition-all truncate
                         ${isActive
                           ? 'bg-primary border-primary text-primary-foreground shadow-md'
                           : 'bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground'}`}
@@ -158,7 +158,7 @@ export function ProviderSettings() {
               })}
 
               <button
-                className={`h-10 border border-dashed rounded-md flex items-center justify-center gap-1.5 transition-all text-2xs font-bold uppercase tracking-tight
+                className={`h-10 border border-dashed rounded-md flex items-center justify-center gap-1.5 transition-all text-xs font-bold uppercase tracking-tight
                   ${showAddProvider
                     ? 'bg-primary/10 border-primary/40 text-primary'
                     : 'bg-transparent border-border/60 text-muted-foreground hover:bg-muted/20 hover:text-foreground'}`}
@@ -172,16 +172,16 @@ export function ProviderSettings() {
             {/* Inline Add Provider Form */}
             {showAddProvider && (
               <div className="flex flex-col gap-2.5 p-3 bg-secondary/30 border border-border/40 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
-                <p className="text-xs text-muted-foreground">Enter a name, API format, and base URL for your custom provider.</p>
+                <p className="text-sm text-muted-foreground">Enter a name, API format, and base URL for your custom provider.</p>
                 <div className="grid grid-cols-2 gap-2">
                   <input
-                    className="w-full h-8 px-2.5 text-xs bg-muted/40 border border-input rounded-md outline-none focus:border-primary/40 transition-all text-foreground placeholder:text-muted-foreground/40"
+                    className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md outline-none focus:border-primary/40 transition-all text-foreground placeholder:text-muted-foreground/40"
                     placeholder="Provider name"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                   />
                   <select
-                    className="w-full h-8 px-2 text-xs bg-muted/40 border border-input rounded-md outline-none cursor-pointer text-foreground"
+                    className="w-full h-8 px-2 text-sm bg-muted/40 border border-input rounded-md outline-none cursor-pointer text-foreground"
                     value={newFormat}
                     onChange={e => setNewFormat(e.target.value as ProviderFormat)}
                   >
@@ -192,13 +192,13 @@ export function ProviderSettings() {
                   </select>
                 </div>
                 <input
-                  className="w-full h-8 px-2.5 text-xs bg-muted/40 border border-input rounded-md outline-none focus:border-primary/40 transition-all text-foreground placeholder:text-muted-foreground/40"
+                  className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md outline-none focus:border-primary/40 transition-all text-foreground placeholder:text-muted-foreground/40"
                   placeholder="Base URL  (e.g. https://api.example.com/v1)"
                   value={newUrl}
                   onChange={e => setNewUrl(e.target.value)}
                 />
                 <button
-                  className="w-full h-8 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider rounded-md shadow-sm hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="w-full h-8 bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider rounded-md shadow-sm hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
                   onClick={handleAddProvider}
                   disabled={!newName.trim() || !newUrl.trim()}
                 >
@@ -216,7 +216,7 @@ export function ProviderSettings() {
 
             {/* API Key */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="api-key" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">API Key</label>
+              <label htmlFor="api-key" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">API Key</label>
               <div className="relative flex items-center">
                 <input
                   type={showKey ? 'text' : 'password'}
@@ -245,7 +245,7 @@ export function ProviderSettings() {
             {/* Base URL — custom providers and Ollama only */}
             {(isCustom || isOllama) && (
               <div className="flex flex-col gap-1.5 animate-in fade-in duration-200">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Base URL</label>
+                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Base URL</label>
                 <input
                   className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all text-foreground"
                   value={providerConfig.apiUrl}
@@ -256,13 +256,13 @@ export function ProviderSettings() {
 
             {/* Model */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Model</label>
+              <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Model</label>
               {isCustom ? (
                 // Custom providers: chip-based selector + add model
                 // Clicking a chip selects it; the active chip is highlighted
                 <div className="flex flex-col gap-2">
                   {availableModels.length === 0 ? (
-                    <p className="text-xs text-muted-foreground/60 py-1">
+                    <p className="text-sm text-muted-foreground/60 py-1">
                       No models added yet. Type a model name below to add one.
                     </p>
                   ) : (
@@ -270,7 +270,7 @@ export function ProviderSettings() {
                       {availableModels.map(m => (
                         <div
                           key={m}
-                          className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-all select-none
+                          className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-all select-none
                             ${m === providerConfig.model
                               ? 'bg-primary/15 border-primary/40 text-primary'
                               : 'bg-muted/30 border-border/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border'}`}
@@ -294,7 +294,7 @@ export function ProviderSettings() {
 
                   <div className="flex gap-2">
                     <input
-                      className="flex-1 h-8 px-2.5 text-xs bg-muted/40 border border-input rounded-md outline-none focus:border-primary/40 transition-all text-foreground placeholder:text-muted-foreground/40"
+                      className="flex-1 h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md outline-none focus:border-primary/40 transition-all text-foreground placeholder:text-muted-foreground/40"
                       placeholder="Add model name…"
                       value={newModelInput}
                       onChange={e => setNewModelInput(e.target.value)}
@@ -342,7 +342,7 @@ export function ProviderSettings() {
             <div className={isCustom ? 'grid grid-cols-2 gap-3' : ''}>
               {isCustom && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">API Format</label>
+                  <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">API Format</label>
                   <select
                     className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md outline-none text-foreground cursor-pointer"
                     value={providerConfig.format}
@@ -356,7 +356,7 @@ export function ProviderSettings() {
                 </div>
               )}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Context Window</label>
+                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Context Window</label>
                 <input
                   type="number"
                   className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md outline-none text-foreground placeholder:text-muted-foreground/40"

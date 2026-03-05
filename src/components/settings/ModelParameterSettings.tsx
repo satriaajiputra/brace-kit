@@ -31,7 +31,7 @@ function SliderRow({
   return (
     <div className="flex flex-col gap-1.5 px-0.5">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
           {label}
           {description && (
             <Tooltip>
@@ -44,12 +44,12 @@ function SliderRow({
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs text-muted-foreground">{description}</p>
+                <p className="text-sm text-muted-foreground">{description}</p>
               </TooltipContent>
             </Tooltip>
           )}
         </label>
-        <span className={`text-xs tabular-nums ${value !== undefined ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
+        <span className={`text-sm tabular-nums ${value !== undefined ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
           {displayValue}
         </span>
       </div>
@@ -86,7 +86,7 @@ function NumberRow({
 }) {
   return (
     <div className="flex flex-col gap-1.5 px-0.5">
-      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
         {label} {description && (
           <Tooltip>
             <TooltipTrigger>
@@ -98,7 +98,7 @@ function NumberRow({
               </button>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="text-xs text-muted-foreground">{description}</p>
+              <p className="text-sm text-muted-foreground">{description}</p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -145,7 +145,7 @@ export function ModelParameterSettings() {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-0.5 py-4">
         <div className="h-px bg-border/40 flex-1" />
-        <span className="text-2xs font-bold uppercase tracking-[0.3em] text-muted-foreground/40">Model Parameters</span>
+        <span className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground/40">Model Parameters</span>
         <div className="h-px bg-border/40 flex-1" />
       </div>
 
@@ -233,7 +233,7 @@ export function ModelParameterSettings() {
       {/* Keep Alive — Ollama only */}
       {isSupported('keepAlive') && (
         <div className="flex flex-col gap-1.5 px-0.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Keep Alive
             <Tooltip>
               <TooltipTrigger>
@@ -245,7 +245,7 @@ export function ModelParameterSettings() {
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs text-muted-foreground">How long to keep the model loaded in memory. Examples: "5m", "24h", "0" to unload immediately.</p>
+                <p className="text-sm text-muted-foreground">How long to keep the model loaded in memory. Examples: "5m", "24h", "0" to unload immediately.</p>
               </TooltipContent>
             </Tooltip>
           </label>
@@ -276,7 +276,7 @@ export function ModelParameterSettings() {
       {/* Reset button */}
       {hasAnyValue && (
         <button
-          className="self-start text-2xs text-primary hover:text-primary/80 transition-colors px-0.5"
+          className="self-start text-xs text-primary hover:text-primary/80 transition-colors px-0.5"
           onClick={() => {
             store.clearModelParameters();
             store.saveToStorage();

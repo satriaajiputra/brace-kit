@@ -47,14 +47,14 @@ export function SecuritySettings() {
     <section className="flex flex-col gap-3 py-3 border-b border-border last:border-0">
       <div className="flex flex-col gap-0.5 px-0.5">
         <h3 className="text-sm font-semibold tracking-tight text-foreground">Security</h3>
-        <p className="text-xs text-muted-foreground leading-none">Protect your conversations with a password</p>
+        <p className="text-sm text-muted-foreground leading-none">Protect your conversations with a password</p>
       </div>
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40 border border-border/50 hover:bg-secondary/60 transition-colors">
           <div className="flex flex-col gap-0.5 pr-2">
             <span className="text-sm font-medium text-foreground">Enable Lock</span>
-            <span className="text-xs text-muted-foreground leading-tight">Require password when opening sidebar</span>
+            <span className="text-sm text-muted-foreground leading-tight">Require password when opening sidebar</span>
           </div>
           <label className="relative inline-flex items-center cursor-pointer shrink-0">
             <input
@@ -70,7 +70,7 @@ export function SecuritySettings() {
         {store.security.isLockEnabled && (
           <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
             {!store.security.passwordHash && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/20 rounded-md text-warning text-xs">
+              <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/20 rounded-md text-warning text-sm">
                 <span className="shrink-0">⚠️</span>
                 <span>Please set a password to enable lock</span>
               </div>
@@ -78,7 +78,7 @@ export function SecuritySettings() {
 
             <div className="flex flex-col gap-3 px-0.5">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Set Password</label>
+                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Set Password</label>
                 <input
                   type="password"
                   className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
@@ -93,7 +93,7 @@ export function SecuritySettings() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Confirm Password</label>
+                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Confirm Password</label>
                 <input
                   type="password"
                   className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded-md focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
@@ -109,12 +109,12 @@ export function SecuritySettings() {
               </div>
 
               {error && (
-                <div className="px-2 py-1 text-xs text-destructive bg-destructive/10 rounded border border-destructive/20 animate-in shake-1 duration-200">
+                <div className="px-2 py-1 text-sm text-destructive bg-destructive/10 rounded border border-destructive/20 animate-in shake-1 duration-200">
                   {error}
                 </div>
               )}
               {success && (
-                <div className="px-2 py-1 text-xs text-success bg-success/10 rounded border border-success/20 animate-in fade-in duration-200">
+                <div className="px-2 py-1 text-sm text-success bg-success/10 rounded border border-success/20 animate-in fade-in duration-200">
                   {success}
                 </div>
               )}
@@ -130,7 +130,7 @@ export function SecuritySettings() {
               {store.security.passwordHash && (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                  <p className="text-xs text-muted-foreground">Password is set</p>
+                  <p className="text-sm text-muted-foreground">Password is set</p>
                 </div>
               )}
             </div>

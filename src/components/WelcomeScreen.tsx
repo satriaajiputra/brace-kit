@@ -62,7 +62,7 @@ export function WelcomeScreen() {
 
         {/* Donate Button */}
         <a
-          href="https://saweria.co/satriaajiputra"
+          href="https://bracekit.nexifle.com/support"
           target="_blank"
           rel="noopener noreferrer"
           className="animate-in slide-in-from-bottom-4 duration-700 delay-300 group relative overflow-hidden"
@@ -75,12 +75,6 @@ export function WelcomeScreen() {
             </span>
           </div>
         </a>
-
-        <div className="pt-2 animate-in fade-in duration-1000 delay-500">
-          <div className="text-2xs text-muted-foreground/40 font-bold uppercase tracking-[0.3em]">
-            Powered by Advanced Intelligence
-          </div>
-        </div>
       </div>
     </div>
   );

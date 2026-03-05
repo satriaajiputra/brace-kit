@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store/index.ts';
 import { IconButton } from './ui/IconButton.tsx';
-import { MoonIcon, SunIcon } from 'lucide-react';
+import { MoonIcon, SunIcon, HelpCircleIcon } from 'lucide-react';
 import { ConfirmDialog } from './ui/ConfirmDialog.tsx';
 import { Logo } from './ui/Logo.tsx';
 import { useChat } from '../hooks';
@@ -91,6 +91,13 @@ export function Header() {
             </svg>
           </IconButton>
         )}
+
+        <IconButton
+          title="Help & Feedback"
+          onClick={() => window.open('https://bracekit.nexifle.com/guide', '_blank')}
+        >
+          <HelpCircleIcon size={18} />
+        </IconButton>
 
         <IconButton
           title="Settings"

@@ -17,17 +17,16 @@ function ToolItem({
 
   return (
     <div
-      className={`flex flex-col gap-0.5 p-2 rounded border transition-colors ${
-        isEnabled
+      className={`flex flex-col gap-0.5 p-2 rounded border transition-colors ${isEnabled
           ? 'bg-muted/30 border-border/50 hover:bg-muted/50 cursor-pointer'
           : 'bg-muted/10 border-border/20 opacity-50 cursor-pointer'
-      } group/tool`}
+        } group/tool`}
       onClick={() => setIsExpanded(!isExpanded)}
     >
       <div className="flex items-center justify-between gap-1.5">
         <div className="flex items-center gap-1.5 min-w-0">
           <TerminalIcon size={10} className="text-primary/70 shrink-0" />
-          <span className={`text-xs font-mono font-bold truncate ${isEnabled ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+          <span className={`text-sm font-mono font-bold truncate ${isEnabled ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
             {tool.name}
           </span>
         </div>
@@ -53,7 +52,7 @@ function ToolItem({
         </div>
       </div>
       {tool.description && (
-        <p className={`text-xs text-muted-foreground/80 leading-snug pl-4 transition-all duration-200 ${isExpanded ? '' : 'line-clamp-2'}`}>
+        <p className={`text-sm text-muted-foreground/80 leading-snug pl-4 transition-all duration-200 ${isExpanded ? '' : 'line-clamp-2'}`}>
           {tool.description}
         </p>
       )}
@@ -188,7 +187,7 @@ export function MCPServersSettings() {
       <div className="flex items-center justify-between px-0.5">
         <div className="flex flex-col gap-0.5">
           <h3 className="text-sm font-semibold tracking-tight text-foreground">MCP Servers</h3>
-          <p className="text-xs text-muted-foreground leading-none">External tools and data sources</p>
+          <p className="text-sm text-muted-foreground leading-none">External tools and data sources</p>
         </div>
         <button
           className={`w-7 h-7 flex items-center justify-center rounded-md transition-all ${showForm && !editingServerId
@@ -215,39 +214,39 @@ export function MCPServersSettings() {
 
       {showForm && (
         <div className="flex flex-col gap-3 p-3 mb-2 rounded-lg bg-secondary/30 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="text-2xs font-bold uppercase tracking-[0.2em] text-primary">
+          <div className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
             {editingServerId ? 'Edit MCP Server' : 'New MCP Server'}
           </div>
           <div className="flex flex-col gap-1 px-0.5">
-            <label htmlFor="mcp-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Server Name</label>
+            <label htmlFor="mcp-name" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Server Name</label>
             <input
               type="text"
               id="mcp-name"
-              className="w-full h-8 px-2.5 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
+              className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
               placeholder="My MCP Server"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1 px-0.5">
-            <label htmlFor="mcp-url" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Server URL</label>
+            <label htmlFor="mcp-url" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Server URL</label>
             <input
               type="url"
               id="mcp-url"
-              className="w-full h-8 px-2.5 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
+              className="w-full h-8 px-2.5 text-sm bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
               placeholder="http://localhost:3000"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1 px-0.5">
-            <label htmlFor="mcp-headers" className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center justify-between">
-              Headers <span className="text-xs lowercase font-normal opacity-60">Key: Value (one per line)</span>
+            <label htmlFor="mcp-headers" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center justify-between">
+              Headers <span className="text-sm lowercase font-normal opacity-60">Key: Value (one per line)</span>
             </label>
             <textarea
               id="mcp-headers"
               rows={2}
-              className="w-full p-2 text-xs bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground resize-none"
+              className="w-full p-2 text-sm bg-muted/40 border border-input rounded focus-visible:ring-1 focus-visible:ring-ring outline-none transition-all placeholder:text-muted-foreground/40 text-foreground resize-none"
               placeholder="Authorization: Bearer sk-xxx"
               value={headers}
               onChange={(e) => setHeaders(e.target.value)}
@@ -291,7 +290,7 @@ export function MCPServersSettings() {
                   className="flex-1 flex flex-col gap-0.5 min-w-0 cursor-pointer group"
                   onClick={() => toggleExpand(server.id)}
                 >
-                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-tight text-xs text-foreground">
+                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-tight text-sm text-foreground">
                     <div
                       className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
                         }`}
@@ -303,10 +302,10 @@ export function MCPServersSettings() {
                       className={`ml-0.5 transition-transform duration-300 opacity-40 group-hover:opacity-100 ${isExpanded ? 'rotate-180 text-primary' : ''}`}
                     />
                   </div>
-                  <span className="text-xs font-medium text-muted-foreground truncate opacity-60 leading-tight">{server.url}</span>
+                  <span className="text-sm font-medium text-muted-foreground truncate opacity-60 leading-tight">{server.url}</span>
                   {server.toolCount ? (
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="inline-flex px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest">
+                      <span className="inline-flex px-1.5 py-0.5 rounded bg-primary/10 text-primary text-sm font-bold uppercase tracking-widest">
                         {server.toolCount} items
                       </span>
                     </div>
@@ -344,11 +343,11 @@ export function MCPServersSettings() {
               {isExpanded && (
                 <div className="px-2.5 pb-3 pt-1 border-t border-border/20 bg-background/40 animate-in slide-in-from-top-1 duration-300">
                   <div className="flex items-center justify-between mt-2 mb-1 px-1">
-                    <span className="text-2xs font-bold uppercase tracking-widest text-muted-foreground/50">Available Tools</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/50">Available Tools</span>
                     <button
                       onClick={(e) => handleRefresh(e, server.id)}
                       disabled={loadingServers[server.id]}
-                      className="flex items-center gap-1 text-2xs font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
                     >
                       <svg
                         width="10"
@@ -370,7 +369,7 @@ export function MCPServersSettings() {
                     {loadingServers[server.id] ? (
                       <div className="py-6 flex flex-col items-center justify-center gap-2 opacity-50">
                         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="text-2xs font-bold uppercase tracking-widest animate-pulse">Synchronizing...</span>
+                        <span className="text-xs font-bold uppercase tracking-widest animate-pulse">Synchronizing...</span>
                       </div>
                     ) : serverErrors[server.id] ? (
                       <div className="py-6 flex flex-col items-center justify-center gap-2 border border-destructive/20 rounded bg-destructive/5 px-4 text-center">
@@ -380,14 +379,14 @@ export function MCPServersSettings() {
                             <line x1="12" y1="8" x2="12" y2="12" />
                             <line x1="12" y1="16" x2="12.01" y2="16" />
                           </svg>
-                          <span className="text-2xs font-bold uppercase tracking-widest">Connection Error</span>
+                          <span className="text-xs font-bold uppercase tracking-widest">Connection Error</span>
                         </div>
-                        <p className="text-2xs text-muted-foreground leading-tight">
+                        <p className="text-xs text-muted-foreground leading-tight">
                           {serverErrors[server.id]}
                         </p>
                         <button
                           onClick={(e) => handleRefresh(e, server.id)}
-                          className="mt-1 text-2xs font-bold text-primary underline underline-offset-2 opacity-80 hover:opacity-100"
+                          className="mt-1 text-xs font-bold text-primary underline underline-offset-2 opacity-80 hover:opacity-100"
                         >
                           Try reconnecting
                         </button>
@@ -403,10 +402,10 @@ export function MCPServersSettings() {
                       ))
                     ) : (
                       <div className="py-6 flex flex-col items-center justify-center gap-2 border border-dashed border-border/40 rounded bg-muted/10">
-                        <span className="text-2xs font-bold text-muted-foreground/40 uppercase tracking-widest">No tools discovered</span>
+                        <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">No tools discovered</span>
                         <button
                           onClick={(e) => handleRefresh(e, server.id)}
-                          className="text-2xs font-bold text-primary underline underline-offset-2 opacity-60 hover:opacity-100"
+                          className="text-xs font-bold text-primary underline underline-offset-2 opacity-60 hover:opacity-100"
                         >
                           Try manual refresh
                         </button>

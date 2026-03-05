@@ -13,6 +13,7 @@ import { cn } from '../utils/cn.ts';
 const SLASH_COMMANDS = [
   { cmd: '/compact', desc: 'Summarize and compress conversation' },
   { cmd: '/rename', desc: 'Rename conversation based on history' },
+  { cmd: '/help', desc: 'Help and documentation' },
 ];
 
 export function InputArea() {
