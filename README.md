@@ -6,6 +6,8 @@ An AI-powered Chrome sidebar that reads the current page content and lets you ch
 
 > **Bring Your Own Key (BYOK)** — BraceKit is free to use. You supply your own API keys directly to your chosen providers. No subscriptions, no telemetry, no data sent to BraceKit servers.
 
+**[Documentation](https://bracekit.nexifle.com/guide/)**
+
 ## Features
 
 - **Page Context Reading** — Read entire page content or grab highlighted text
