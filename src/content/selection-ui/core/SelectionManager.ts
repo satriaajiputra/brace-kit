@@ -17,11 +17,14 @@ import {
   getSelectionUIStyles,
   calculateToolbarPosition,
   calculateToolbarPositionFromElement,
+  calculateToolbarPositionFromPoint,
   getEditableElement,
   applyTextToEditable,
   isExcludedElement,
   onContextInvalidated,
   isChromeRuntimeAvailable,
+  isGoogleDocsPage,
+  replaceTextInGoogleDocs,
   type ShadowContainer,
   logger,
 } from '../utils/index.ts';
@@ -38,6 +41,15 @@ interface ManagerState {
   currentRequestId: string | null;
   isActionInProgress: boolean;
   contextCleanup: (() => void) | null;
+  lastMousePosition: { x: number; y: number } | null;
+  selectionDebounceTimer: ReturnType<typeof setTimeout> | null;
+  // Google Docs annotated canvas support
+  googleDocsFrameDoc: Document | null;
+  googleDocsSelectionHandler: (() => void) | null;
+  googleDocsObserver: MutationObserver | null;
+  // Google Docs selection range (for restoring selection before apply)
+  googleDocsSelectionRange: { start: number; end: number } | null;
+  googleDocsFullText: string | null;
 }
 
 // === Selection Manager ===
@@ -63,9 +75,20 @@ export function createSelectionManager(): SelectionManager {
     currentRequestId: null,
     isActionInProgress: false,
     contextCleanup: null,
+    lastMousePosition: null,
+    selectionDebounceTimer: null,
+    googleDocsFrameDoc: null,
+    googleDocsSelectionHandler: null,
+    googleDocsObserver: null,
+    googleDocsSelectionRange: null,
+    googleDocsFullText: null,
   };
 
   // === Event Handlers ===
+
+  function handleMouseMove(e: MouseEvent): void {
+    state.lastMousePosition = { x: e.clientX, y: e.clientY };
+  }
 
   function handleMouseUp(e: MouseEvent): void {
     if (state.isActionInProgress) return;
@@ -73,11 +96,39 @@ export function createSelectionManager(): SelectionManager {
     const target = e.target as HTMLElement;
     if (target.closest?.('#bracekit-selection-ui')) return;
 
+    // Store mouse position for fallback positioning (e.g., canvas-based editors)
+    state.lastMousePosition = { x: e.clientX, y: e.clientY };
+
+    // In Google Docs, selection is handled by the iframe listener, not main frame
+    if (isGoogleDocsPage()) return;
+
     // Small delay to let selection finalize
     setTimeout(() => processSelection(), 10);
   }
 
+  function handleSelectionChange(): void {
+    console.log('[BraceKit] Main frame selectionchange fired, hostname:', window.location.hostname, 'isGoogleDocsPage:', isGoogleDocsPage());
+    if (state.isActionInProgress) return;
+
+    // In Google Docs, selection is handled by the iframe listener, not main frame
+    // Main frame's selectionchange fires but getSelection() is always empty
+    if (isGoogleDocsPage()) {
+      console.log('[BraceKit] Skipping main frame selectionchange in Google Docs');
+      return;
+    }
+
+    // Debounce — selection fires continuously while dragging; wait for it to settle
+    if (state.selectionDebounceTimer !== null) {
+      clearTimeout(state.selectionDebounceTimer);
+    }
+    state.selectionDebounceTimer = setTimeout(() => {
+      state.selectionDebounceTimer = null;
+      processSelection();
+    }, 300);
+  }
+
   function handleVisibilityChange(): void {
+    console.log('[BraceKit] visibilitychange fired, hidden:', document.hidden);
     if (document.hidden) cleanup();
   }
 
@@ -184,6 +235,22 @@ export function createSelectionManager(): SelectionManager {
       savedSelectionRect = editableToSave.getBoundingClientRect();
     }
 
+    // Fallback: use last known mouse position (handles canvas-based editors like Google Docs
+    // where getBoundingClientRect() returns a zero rect because text renders on a canvas overlay)
+    if (!position && state.lastMousePosition) {
+      position = calculateToolbarPositionFromPoint(
+        state.lastMousePosition.x,
+        state.lastMousePosition.y,
+        containerEl
+      );
+      savedSelectionRect = new DOMRect(
+        state.lastMousePosition.x,
+        state.lastMousePosition.y,
+        0,
+        0
+      );
+    }
+
     if (!position) {
       // No valid position, remove the container
       removeShadowContainer();
@@ -235,7 +302,8 @@ export function createSelectionManager(): SelectionManager {
       placement: toolbarPosition.placement,
     };
 
-    const isEditable = localEditable !== null;
+    // Show Apply button if we have an editable element OR we're on Google Docs
+    const isEditable = localEditable !== null || isGoogleDocsPage();
 
     try {
       const popover = createResultPopover(localShadow.shadow, {
@@ -271,11 +339,26 @@ export function createSelectionManager(): SelectionManager {
           }
         },
         onApply: () => {
-          if (localEditable) {
-            const content = popover.getContent();
-            if (content) {
-              applyTextToEditable(localEditable, content);
+          const content = popover.getContent();
+          if (!content) return;
+
+          // Use Google Docs inserter if on Google Docs
+          if (isGoogleDocsPage()) {
+            // Use saved selection range for accurate replacement
+            const result = replaceTextInGoogleDocs(
+              content,
+              state.googleDocsSelectionRange || undefined
+            );
+            if (result.success) {
+              // Close popover after successful apply
+              state.isActionInProgress = false;
+              forceCleanup();
+            } else {
+              logger.error('[BraceKit] Failed to apply text to Google Docs:', result.error);
             }
+          } else if (localEditable) {
+            // Standard editable element (input, textarea, contenteditable)
+            applyTextToEditable(localEditable, content);
           }
         },
         onClose: () => {
@@ -336,6 +419,127 @@ export function createSelectionManager(): SelectionManager {
     }
   }
 
+  // === Google Docs Annotated Canvas ===
+
+  /**
+   * Setup Google Docs annotated canvas support.
+   *
+   * The MAIN-world bridge script sets window._docs_annotate_canvas_by_ext to a
+   * whitelisted extension ID, which instructs Google Docs to overlay an
+   * accessibility DOM layer. This makes selection available via the
+   * docs-texteventtarget-iframe's contentDocument.
+   *
+   * We listen for selectionchange on that iframe's document and process
+   * selection like a normal page.
+   */
+  function setupGoogleDocsAnnotatedCanvas(): void {
+
+    const attachGoogleDocsListeners = (frameDoc: Document): void => {
+      state.googleDocsFrameDoc = frameDoc;
+
+      state.googleDocsSelectionHandler = () => {
+        if (state.isActionInProgress) return;
+
+        const settings = settingsService.getSettings();
+        if (!settings.enabled) return;
+
+        const selection = frameDoc.getSelection();
+        const text = selection?.toString().trim() || '';
+
+        // Only cleanup if text is empty AND we previously had a selection
+        // This prevents cleanup from firing on initial empty selection events
+        if (text.length < settings.minLength) {
+          if (state.currentSelection) {
+            cleanup();
+          }
+          return;
+        }
+
+        state.currentSelection = text;
+        state.currentEditableElement = null;
+
+        // Store selection range for later restoration before apply
+        // This is critical for Google Docs where selection is lost when popover opens
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const editableEl = frameDoc.querySelector('[contenteditable="true"]');
+
+          if (editableEl && editableEl.contains(range.startContainer)) {
+            // Calculate character offsets within the editable element
+            const fullText = editableEl.textContent || '';
+            const preSelectionRange = frameDoc.createRange();
+            preSelectionRange.selectNodeContents(editableEl);
+            preSelectionRange.setEnd(range.startContainer, range.startOffset);
+            const start = preSelectionRange.toString().length;
+            const end = start + text.length;
+
+            state.googleDocsSelectionRange = { start, end };
+            state.googleDocsFullText = fullText;
+          }
+        }
+
+        showToolbar(null); // uses lastMousePosition fallback
+      };
+
+      frameDoc.addEventListener('selectionchange', state.googleDocsSelectionHandler);
+    };
+
+    const findAndSetupIframe = (): void => {
+      const iframe = document.querySelector<HTMLIFrameElement>(
+        'iframe.docs-texteventtarget-iframe'
+      );
+
+      if (!iframe) {
+        if (!state.googleDocsObserver) {
+          state.googleDocsObserver = new MutationObserver(() => {
+            const found = document.querySelector<HTMLIFrameElement>(
+              'iframe.docs-texteventtarget-iframe'
+            );
+            if (found?.contentDocument) {
+              state.googleDocsObserver?.disconnect();
+              state.googleDocsObserver = null;
+              attachGoogleDocsListeners(found.contentDocument);
+            }
+          });
+          state.googleDocsObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+          });
+        }
+        return;
+      }
+
+      if (iframe.contentDocument) {
+        attachGoogleDocsListeners(iframe.contentDocument);
+      } else {
+        logger.warn('[BraceKit] Iframe found but contentDocument is null');
+      }
+    };
+
+    if (document.body) {
+      findAndSetupIframe();
+    } else {
+      document.addEventListener('DOMContentLoaded', findAndSetupIframe);
+    }
+  }
+
+  function teardownGoogleDocsAnnotatedCanvas(): void {
+    if (state.googleDocsObserver) {
+      state.googleDocsObserver.disconnect();
+      state.googleDocsObserver = null;
+    }
+
+    if (state.googleDocsFrameDoc && state.googleDocsSelectionHandler) {
+      state.googleDocsFrameDoc.removeEventListener(
+        'selectionchange',
+        state.googleDocsSelectionHandler
+      );
+    }
+
+    state.googleDocsFrameDoc = null;
+    state.googleDocsSelectionHandler = null;
+  }
+
   // === Lifecycle ===
 
   async function init(): Promise<void> {
@@ -351,6 +555,8 @@ export function createSelectionManager(): SelectionManager {
     await settingsService.loadSettings();
 
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+    document.addEventListener('selectionchange', handleSelectionChange);
     window.addEventListener('beforeunload', forceCleanup);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
@@ -363,6 +569,11 @@ export function createSelectionManager(): SelectionManager {
       forceCleanup();
     });
 
+    // Setup Google Docs annotated canvas support
+    if (isGoogleDocsPage()) {
+      setupGoogleDocsAnnotatedCanvas();
+    }
+
     state.isInitialized = true;
   }
 
@@ -370,6 +581,8 @@ export function createSelectionManager(): SelectionManager {
     if (!state.isInitialized) return;
 
     document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('selectionchange', handleSelectionChange);
     window.removeEventListener('beforeunload', forceCleanup);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
 
@@ -377,6 +590,11 @@ export function createSelectionManager(): SelectionManager {
     if (state.contextCleanup) {
       state.contextCleanup();
       state.contextCleanup = null;
+    }
+
+    // Teardown Google Docs annotated canvas support
+    if (isGoogleDocsPage()) {
+      teardownGoogleDocsAnnotatedCanvas();
     }
 
     forceCleanup();
@@ -397,11 +615,18 @@ export function createSelectionManager(): SelectionManager {
    */
   function resetState(force: boolean): void {
     if (!force && state.isActionInProgress) return;
+    if (state.selectionDebounceTimer !== null) {
+      clearTimeout(state.selectionDebounceTimer);
+      state.selectionDebounceTimer = null;
+    }
     removeShadowContainer();
     state.shadowContainer = null;
     state.currentSelection = '';
     state.currentEditableElement = null;
     state.currentRequestId = null;
+    // Clear Google Docs selection state
+    state.googleDocsSelectionRange = null;
+    state.googleDocsFullText = null;
     if (force) state.isActionInProgress = false;
   }
 

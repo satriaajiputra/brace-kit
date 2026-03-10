@@ -199,7 +199,14 @@ export async function fetchModels(
       case 'openai':
         return await fetchOpenAIModels(apiUrl, apiKey || '');
       case 'anthropic':
-        return { models: PROVIDER_PRESETS.anthropic.staticModels || [] };
+        // Only return the built-in static list for the official Anthropic preset.
+        // Custom providers using the anthropic format have their own model lists
+        // managed by the user, so we return empty here to avoid contaminating
+        // their fetchedModels cache with Anthropic's model names.
+        if (provider.id === 'anthropic') {
+          return { models: PROVIDER_PRESETS.anthropic.staticModels || [] };
+        }
+        return { models: [] };
       case 'gemini':
         return await fetchGeminiModels(apiUrl, apiKey || '');
       case 'ollama':

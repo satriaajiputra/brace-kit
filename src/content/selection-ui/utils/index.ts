@@ -16,6 +16,7 @@ export {
   getContainerOffset,
   calculateToolbarPosition,
   calculateToolbarPositionFromElement,
+  calculateToolbarPositionFromPoint,
   calculatePopoverPositionFromRect,
   getEditableElement,
   applyTextToEditable,
@@ -26,3 +27,10 @@ export {
   isChromeRuntimeAvailable,
   onContextInvalidated,
 } from './chromeErrorHandler.ts';
+export {
+  isGoogleDocsPage,
+  isGoogleDocsReady,
+  insertTextToGoogleDocs,
+  replaceTextInGoogleDocs,
+  type GoogleDocsInsertResult,
+} from './googleDocsInserter.ts';

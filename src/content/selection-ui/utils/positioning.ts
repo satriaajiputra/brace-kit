@@ -226,6 +226,45 @@ export function calculatePopoverPositionFromRect(
 }
 
 /**
+ * Calculate toolbar position from a viewport point (e.g., mouse cursor coordinates).
+ * Used as fallback when the selection range has no bounding rect (e.g., canvas-based editors
+ * like Google Docs where getBoundingClientRect() returns a zero rect).
+ */
+export function calculateToolbarPositionFromPoint(
+  clientX: number,
+  clientY: number,
+  containerElement?: HTMLElement
+): SelectionPosition {
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    scrollX: window.scrollX,
+    scrollY: window.scrollY,
+  };
+
+  const { offsetX, offsetY } = getContainerOffset(containerElement);
+
+  const spaceAbove = clientY;
+  let top: number;
+  let placement: 'top' | 'bottom';
+
+  if (spaceAbove >= TOOLBAR_HEIGHT + GAP) {
+    top = clientY + viewport.scrollY - TOOLBAR_HEIGHT - GAP - offsetY;
+    placement = 'top';
+  } else {
+    top = clientY + viewport.scrollY + GAP - offsetY;
+    placement = 'bottom';
+  }
+
+  let left = clientX + viewport.scrollX - TOOLBAR_WIDTH / 2 - offsetX;
+  const minLeft = viewport.scrollX + GAP - offsetX;
+  const maxLeft = viewport.scrollX + viewport.width - TOOLBAR_WIDTH - GAP - offsetX;
+  left = Math.max(minLeft, Math.min(left, maxLeft));
+
+  return { top, left, placement };
+}
+
+/**
  * Get the editable element containing the selection
  */
 export function getEditableElement(selection: Selection): Element | null {

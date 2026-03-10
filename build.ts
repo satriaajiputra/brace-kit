@@ -12,7 +12,7 @@ if (!existsSync(outDir)) {
 
 // Build the React app
 const result = await build({
-  entrypoints: ['./src/index.tsx', './src/content.ts', './src/onboarding.tsx', './src/background/index.ts'],
+  entrypoints: ['./src/index.tsx', './src/content.ts', './src/onboarding.tsx', './src/background/index.ts', './src/google-docs-bridge.ts'],
   outdir: outDir,
   format: 'esm',
   target: 'browser',
@@ -93,7 +93,7 @@ if (result.success) {
   // Flatten dist/src/* to dist/ (Bun preserves src/ subdir structure)
   const srcOutDir = join(outDir, 'src');
   if (existsSync(srcOutDir)) {
-    const flatFiles = ['index.js', 'content.js', 'index.css', 'onboarding.js', 'onboarding.css'];
+    const flatFiles = ['index.js', 'content.js', 'index.css', 'onboarding.js', 'onboarding.css', 'google-docs-bridge.js'];
     for (const file of flatFiles) {
       const from = join(srcOutDir, file);
       const to = join(outDir, file);

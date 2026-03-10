@@ -132,19 +132,28 @@ export function useProvider() {
   }, [store, getProvider]);
 
   const getAvailableModels = useCallback((providerId: string): string[] => {
-    const provider = getProvider(providerId) as ProviderPreset;
+    const provider = getProvider(providerId);
+
+    // For custom providers, always use user-defined models — never fall through
+    // to fetchedModels cache which can contain wrong data (e.g. Anthropic's
+    // built-in static models when the custom provider uses the anthropic format).
+    if (isCustomProvider(providerId)) {
+      return (provider as CustomProvider).models ?? [];
+    }
+
+    const providerPreset = provider as ProviderPreset;
     const cached = store.fetchedModels[providerId];
 
     if (cached?.models && cached.models.length > 0) {
       return cached.models;
-    } else if (provider?.staticModels?.length && provider.staticModels.length > 0) {
-      return provider.staticModels;
-    } else if (provider?.models?.length && provider.models.length > 0) {
-      return provider.models ?? [];
+    } else if (providerPreset?.staticModels?.length && providerPreset.staticModels.length > 0) {
+      return providerPreset.staticModels;
+    } else if (providerPreset?.models?.length && providerPreset.models.length > 0) {
+      return providerPreset.models ?? [];
     }
 
     return [];
-  }, [store.fetchedModels, getProvider]);
+  }, [store.fetchedModels, getProvider, isCustomProvider]);
 
   const addCustomProvider = useCallback((name: string, apiUrl: string, format: ProviderFormat, contextWindow?: number) => {
     const id = 'custom_' + Date.now();

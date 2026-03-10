@@ -308,5 +308,40 @@ describe('Providers Index - Unified Interfaces', () => {
       expect(result.models?.length).toBeGreaterThan(0);
       expect(result.models).toContain('claude-3-5-sonnet-20241022');
     });
+
+    // ── Regression tests ──────────────────────────────────────────────────
+    // Bug: fetchModels for 'anthropic' format always returned Anthropic's
+    // built-in staticModels even for custom providers using that format.
+    // This contaminated fetchedModels cache with Anthropic's model names,
+    // overriding the user's custom model list.
+
+    it('[REGRESSION] should NOT return Anthropic static models for a custom provider with anthropic format', async () => {
+      const customProvider = {
+        id: 'custom_12345',
+        name: 'My Anthropic-Compatible LLM',
+        apiUrl: 'https://my-llm.example.com/v1',
+        apiKey: 'sk-custom-key',
+        format: 'anthropic' as const,
+        models: ['my-model-1', 'my-model-2'],
+        defaultModel: 'my-model-1',
+      };
+
+      const result = await fetchModels(customProvider);
+
+      // Must NOT leak Anthropic's built-in model names into a custom provider cache.
+      expect(result.models).toEqual([]);
+      expect(result.models).not.toContain('claude-sonnet-4-6');
+      expect(result.models).not.toContain('claude-3-5-sonnet-20241022');
+    });
+
+    it('[REGRESSION] official Anthropic preset still returns its static models', async () => {
+      // Ensure the fix did not break the built-in Anthropic provider.
+      const provider = { ...PROVIDER_PRESETS.anthropic, apiKey: 'sk-real-key' };
+      const result = await fetchModels(provider);
+
+      expect(result.models).toBeDefined();
+      expect(result.models?.length).toBeGreaterThan(0);
+      expect(result.models).toContain('claude-sonnet-4-6');
+    });
   });
 });
