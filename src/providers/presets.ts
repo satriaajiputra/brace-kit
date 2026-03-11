@@ -144,6 +144,7 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     format: 'openai',
     models: [],
     supportsModelFetch: true,
+    supportsReasoningContent: true,
   },
   custom: {
     id: 'custom',

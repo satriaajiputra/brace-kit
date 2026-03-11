@@ -244,15 +244,20 @@ export function createChatService(): ChatService {
               conversationId: message.conversationId,
             } as StreamChunkMessage);
           } else if (chunk.type === 'reasoning') {
-            reasoningChunks.push(chunk.content || '');
-            streamingStarted = true;
-            chrome.runtime.sendMessage({
-              type: 'CHAT_STREAM_CHUNK',
-              chunkType: 'reasoning',
-              content: chunk.content,
-              requestId: message.requestId,
-              conversationId: message.conversationId,
-            } as StreamChunkMessage);
+            // Only forward reasoning chunks when the user has enabled reasoning mode.
+            // OpenAI-compatible providers (e.g. Groq) always stream delta.reasoning
+            // regardless of any request parameter, so we must filter here.
+            if (message.options?.enableReasoning !== false) {
+              reasoningChunks.push(chunk.content || '');
+              streamingStarted = true;
+              chrome.runtime.sendMessage({
+                type: 'CHAT_STREAM_CHUNK',
+                chunkType: 'reasoning',
+                content: chunk.content,
+                requestId: message.requestId,
+                conversationId: message.conversationId,
+              } as StreamChunkMessage);
+            }
           } else if (chunk.type === 'reasoning_signature') {
             reasoningSignatureChunks.push(chunk.content || '');
           } else if (chunk.type === 'image') {

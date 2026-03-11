@@ -135,6 +135,8 @@ export interface ProviderPreset {
   staticModels?: string[];
   supportsModelFetch?: boolean;
   contextWindow?: number;
+  /** Whether this provider accepts reasoning_content in message history (DeepSeek only) */
+  supportsReasoningContent?: boolean;
 }
 
 export interface CustomProvider {
@@ -149,6 +151,8 @@ export interface CustomProvider {
   staticModels?: string[];
   supportsModelFetch?: boolean;
   contextWindow?: number;
+  /** Whether this provider accepts reasoning_content in message history (DeepSeek only) */
+  supportsReasoningContent?: boolean;
 }
 
 // ==================== Model Parameters ====================

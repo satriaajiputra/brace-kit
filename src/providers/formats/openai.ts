@@ -27,12 +27,13 @@ import { createThinkTagParser } from '../utils/thinkTagParser.ts';
  * @returns Request configuration with URL and fetch options
  */
 export function formatOpenAI(
-  provider: { apiUrl: string; apiKey?: string; model?: string; defaultModel: string },
+  provider: { apiUrl: string; apiKey?: string; model?: string; defaultModel: string; supportsReasoningContent?: boolean },
   messages: Message[],
   tools: MCPTool[],
   _options: ChatOptions
 ): RequestConfig {
   const model = provider.model || provider.defaultModel;
+  const supportsReasoningContent = provider.supportsReasoningContent === true;
 
   // Transform messages to OpenAI format
   const processedMessages = messages.map((msg) => {
@@ -50,9 +51,9 @@ export function formatOpenAI(
           },
         })),
       };
-      // Required by DeepSeek thinking models (and similar OpenAI-compatible reasoning APIs)
-      // for conversation history replay when the assistant turn included reasoning.
-      if (msg.reasoningContent) {
+      // Only include reasoning_content for providers that explicitly support it (e.g. DeepSeek).
+      // Groq and most other OpenAI-compatible endpoints reject this field with a 400 error.
+      if (msg.reasoningContent && supportsReasoningContent) {
         result.reasoning_content = msg.reasoningContent;
       }
       return result;
@@ -67,14 +68,18 @@ export function formatOpenAI(
       };
     }
 
-    // For assistant messages without tool calls, map reasoningContent → reasoning_content
-    // (snake_case required by DeepSeek and OpenAI o1/o3 APIs)
-    if (msg.role === 'assistant' && msg.reasoningContent) {
-      return {
-        role: msg.role,
+    // For all assistant messages, return a clean object — strip internal fields like
+    // reasoningContent, toolCalls, toolCallId which are not valid OpenAI API fields.
+    // Only add reasoning_content for providers that explicitly support it (e.g. DeepSeek).
+    if (msg.role === 'assistant') {
+      const result: Record<string, unknown> = {
+        role: 'assistant',
         content: msg.content,
-        reasoning_content: msg.reasoningContent,
       };
+      if (msg.reasoningContent && supportsReasoningContent) {
+        result.reasoning_content = msg.reasoningContent;
+      }
+      return result;
     }
 
     return msg;
