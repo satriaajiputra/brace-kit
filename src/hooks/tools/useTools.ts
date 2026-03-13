@@ -219,6 +219,7 @@ export function useTools() {
         aspectRatio?: string;
         stream?: boolean;
         modelParameters?: typeof state.providerConfig.modelParameters;
+        groqBuiltinTools?: string[];
       } = {
         enableGoogleSearch:
           state.enableGoogleSearch &&
@@ -232,6 +233,11 @@ export function useTools() {
       // Add aspect ratio for image models
       if ((isXAIImg || isGeminiImg) && options?.aspectRatio) {
         chatOptions.aspectRatio = options.aspectRatio;
+      }
+
+      // Groq built-in tools via compound_custom
+      if (state.providerConfig.providerId === 'groq' && state.groqEnabledBuiltinTools.length > 0) {
+        chatOptions.groqBuiltinTools = state.groqEnabledBuiltinTools;
       }
 
       return chatOptions;

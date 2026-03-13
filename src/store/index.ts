@@ -47,6 +47,7 @@ interface StorageData {
   enableReasoning?: boolean;
   enableGoogleSearchTool?: boolean;
   googleSearchApiKey?: string;
+  groqEnabledBuiltinTools?: string[];
   enableStreaming?: boolean;
   security?: SecuritySettings;
   compactConfig?: CompactConfig;
@@ -120,6 +121,9 @@ export const useStore = create<AppState>((set, get) => ({
   // Google Search Tool (for non-Gemini providers)
   enableGoogleSearchTool: false,
   googleSearchApiKey: '',
+
+  // Groq built-in tools
+  groqEnabledBuiltinTools: [],
 
   // Streaming options (default: true for backward compatibility)
   enableStreaming: true,
@@ -574,6 +578,10 @@ export const useStore = create<AppState>((set, get) => ({
     set({ googleSearchApiKey });
     get().saveToStorage();
   },
+  setGroqEnabledBuiltinTools: (groqEnabledBuiltinTools) => {
+    set({ groqEnabledBuiltinTools });
+    get().saveToStorage();
+  },
   setEnableStreaming: (enableStreaming) => {
     set({ enableStreaming });
     get().saveToStorage();
@@ -744,6 +752,7 @@ export const useStore = create<AppState>((set, get) => ({
         'enableReasoning',
         'enableGoogleSearchTool',
         'googleSearchApiKey',
+        'groqEnabledBuiltinTools',
         'enableStreaming',
         'security',
         'compactConfig',
@@ -861,6 +870,9 @@ export const useStore = create<AppState>((set, get) => ({
       }
       if (data.enableGoogleSearchTool !== undefined) {
         updates.enableGoogleSearchTool = data.enableGoogleSearchTool;
+      }
+      if (data.groqEnabledBuiltinTools !== undefined) {
+        updates.groqEnabledBuiltinTools = data.groqEnabledBuiltinTools;
       }
       // Load and decrypt googleSearchApiKey
       if (data.googleSearchApiKey !== undefined) {
@@ -1032,6 +1044,7 @@ export const useStore = create<AppState>((set, get) => ({
         enableReasoning: state.enableReasoning,
         enableGoogleSearchTool: state.enableGoogleSearchTool,
         googleSearchApiKey: encryptedGoogleSearchApiKey,
+        groqEnabledBuiltinTools: state.groqEnabledBuiltinTools,
         enableStreaming: state.enableStreaming,
         // Jika aktif kosong, simpan null agar saat reload tidak coba load conversation ini
         activeConversationId: activeIsEmpty ? null : state.activeConversationId,

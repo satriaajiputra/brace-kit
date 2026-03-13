@@ -109,6 +109,15 @@ export function formatOpenAI(
     }));
   }
 
+  // Groq built-in tools via compound_custom
+  if (_options.groqBuiltinTools && _options.groqBuiltinTools.length > 0) {
+    body.compound_custom = {
+      tools: {
+        enabled_tools: _options.groqBuiltinTools,
+      },
+    };
+  }
+
   // Ensure URL ends with /chat/completions
   let url = provider.apiUrl;
   if (!url.endsWith('/chat/completions')) {

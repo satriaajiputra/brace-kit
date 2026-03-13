@@ -26,6 +26,8 @@ export interface ChatOptions {
   num_ctx?: number;
   /** Keep model loaded duration, e.g. "5m", "24h" (Ollama-specific) */
   keep_alive?: string;
+  /** Groq built-in tool IDs to enable via compound_custom (Groq-specific) */
+  groqBuiltinTools?: string[];
 }
 
 // ==================== Stream Chunk ====================

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useProvider } from '../../hooks/useProvider.ts';
-import { PROVIDER_PRESETS } from '../../providers';
+import { PROVIDER_PRESETS, GROQ_BUILTIN_TOOLS } from '../../providers';
 import { isOllamaLocalhost } from '../../utils/providerUtils.ts';
 import type { ProviderFormat, ProviderPreset } from '../../types/index.ts';
-import { PlusIcon, XIcon, LayersIcon, SlidersHorizontalIcon, Settings2Icon } from 'lucide-react';
+import { PlusIcon, XIcon, LayersIcon, SlidersHorizontalIcon, Settings2Icon, WrenchIcon } from 'lucide-react';
 import { ConfirmDialog } from '../ui/ConfirmDialog.tsx';
 import { ModelParameterSettings } from './ModelParameterSettings.tsx';
+import { useStore } from '../../store/index.ts';
 
 // =============================================================================
 // Shared sub-components (mirrors ChatSettings.tsx pattern)
@@ -47,6 +48,9 @@ export function ProviderSettings() {
     addModelToCustomProvider,
     removeModelFromCustomProvider,
   } = useProvider();
+
+  const groqEnabledBuiltinTools = useStore((s) => s.groqEnabledBuiltinTools);
+  const setGroqEnabledBuiltinTools = useStore((s) => s.setGroqEnabledBuiltinTools);
 
   const [showKey, setShowKey] = useState(false);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
@@ -370,6 +374,45 @@ export function ProviderSettings() {
             <ModelParameterSettings />
           </div>
         </SectionCard>
+
+        {/* ── GROQ BUILT-IN TOOLS ── */}
+        {providerConfig.providerId === 'groq' && (
+          <SectionCard>
+            <SectionHeader icon={<WrenchIcon size={12} />} title="Built-in Tools" />
+            <div className="p-3 flex flex-col gap-2">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Enable Groq's built-in tools sent via <code className="text-xs bg-muted/60 px-1 py-0.5 rounded">compound_custom</code>. These run server-side without consuming function call tokens.
+              </p>
+              <div className="flex flex-col gap-1">
+                {GROQ_BUILTIN_TOOLS.map((tool) => {
+                  const enabled = groqEnabledBuiltinTools.includes(tool.id);
+                  return (
+                    <label
+                      key={tool.id}
+                      className="flex items-start gap-2.5 px-2 py-2 rounded-md cursor-pointer hover:bg-muted/30 transition-colors select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 shrink-0 accent-primary"
+                        checked={enabled}
+                        onChange={() => {
+                          const next = enabled
+                            ? groqEnabledBuiltinTools.filter((id) => id !== tool.id)
+                            : [...groqEnabledBuiltinTools, tool.id];
+                          setGroqEnabledBuiltinTools(next);
+                        }}
+                      />
+                      <span className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-foreground">{tool.label}</span>
+                        <span className="text-xs text-muted-foreground">{tool.description}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </SectionCard>
+        )}
 
       </div>
 

@@ -28,6 +28,18 @@ export const GEMINI_IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-3-pro-imag
  */
 export const XAI_IMAGE_MODELS = ['grok-2-image-1212', 'grok-imagine-image', 'grok-imagine-image-pro'];
 
+/**
+ * Groq built-in provider tools available via compound_custom
+ * https://console.groq.com/docs/compound
+ */
+export const GROQ_BUILTIN_TOOLS: { id: string; label: string; description: string }[] = [
+  { id: 'web_search', label: 'Web Search', description: 'Access real-time web content with automatic citations' },
+  { id: 'visit_website', label: 'Visit Website', description: 'Fetch and analyze content from specific web pages' },
+  { id: 'browser_automation', label: 'Browser Automation', description: 'Interact with web pages through automated browser actions' },
+  { id: 'code_interpreter', label: 'Code Execution', description: 'Execute Python code in secure sandboxed environments' },
+  { id: 'wolfram_alpha', label: 'Wolfram Alpha', description: 'Access computational knowledge and mathematical calculations' },
+];
+
 // ==================== Feature Detection ====================
 
 /**
@@ -135,6 +147,15 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
       'grok-imagine-image',
       'grok-imagine-image-pro',
     ],
+  },
+  groq: {
+    id: 'groq',
+    name: 'Groq',
+    apiUrl: 'https://api.groq.com/openai/v1',
+    defaultModel: 'groq/compound-mini',
+    format: 'openai',
+    models: [],
+    supportsModelFetch: true,
   },
   deepseek: {
     id: 'deepseek',

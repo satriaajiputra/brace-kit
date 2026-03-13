@@ -383,6 +383,9 @@ export interface AppState {
   enableGoogleSearchTool: boolean;
   googleSearchApiKey: string;
 
+  // Groq built-in tools enabled via compound_custom
+  groqEnabledBuiltinTools: string[];
+
   // Streaming options
   enableStreaming: boolean;
 
@@ -473,6 +476,7 @@ export interface AppState {
   setEnableReasoning: (enabled: boolean) => void;
   setEnableGoogleSearchTool: (enabled: boolean) => void;
   setGoogleSearchApiKey: (key: string) => void;
+  setGroqEnabledBuiltinTools: (tools: string[]) => void;
   setEnableStreaming: (enabled: boolean) => void;
 
   addAttachment: (attachment: FileAttachment) => void;
