@@ -8,6 +8,8 @@ import {
   MaximizeIcon,
   DownloadIcon,
   XIcon,
+  CopyIcon,
+  CheckIcon,
 } from 'lucide-react';
 import { Btn } from '../../ui/Btn';
 
@@ -63,6 +65,7 @@ export function MermaidDiagram({ code, diagramId, isStreaming }: MermaidDiagramP
   const [isLoading, setIsLoading] = useState(true);
   const [theme, setTheme] = useState<Theme>('dark');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Detect parent theme from CSS class
   useEffect(() => {
@@ -311,6 +314,13 @@ export function MermaidDiagram({ code, diagramId, isStreaming }: MermaidDiagramP
     setIsFullscreen((prev) => !prev);
   }, []);
 
+  const handleCopyCode = useCallback(() => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [code]);
+
   // Error state
   if (error) {
     return (
@@ -376,6 +386,17 @@ export function MermaidDiagram({ code, diagramId, isStreaming }: MermaidDiagramP
             className={isFullscreen ? '' : 'opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200'}
           >
             <DownloadIcon size={16} />
+          </Btn>
+
+          {/* Copy Code Button */}
+          <Btn
+            variant="outline"
+            size="icon-sm"
+            onClick={handleCopyCode}
+            title="Copy diagram code"
+            className={isFullscreen ? '' : 'opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200'}
+          >
+            {copied ? <CheckIcon size={16} className="text-green-400" /> : <CopyIcon size={16} />}
           </Btn>
         </div>
       </div>
