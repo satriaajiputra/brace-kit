@@ -80,6 +80,17 @@ marked.use({ renderer });
 const blockquotePlaceholders = new Map<string, { type: 'blockquote' | CalloutType; content: string; config?: CalloutConfig }>();
 
 /**
+ * Sanitize mermaid code to fix common parse issues.
+ * Wraps node labels containing parentheses in quotes so Mermaid
+ * doesn't misinterpret () as a shape modifier.
+ * e.g. C[NER (BERT)] → C["NER (BERT)"]
+ */
+function sanitizeMermaidCode(code: string): string {
+  // Match [...] labels that contain (...) and are not already quoted
+  return code.replace(/\[([^\]"]*\([^)]*\)[^\]"]*)\]/g, '["$1"]');
+}
+
+/**
  * Extract mermaid code blocks and replace them with placeholders.
  * This allows React components to hydrate them with interactive diagrams.
  */
@@ -97,7 +108,7 @@ function extractMermaidBlocks(markdown: string): string {
     const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     const placeholder = `[[MERMAID-${id}-END]]`;
 
-    mermaidPlaceholders.set(placeholder, trimmedCode);
+    mermaidPlaceholders.set(placeholder, sanitizeMermaidCode(trimmedCode));
 
     return placeholder;
   });
