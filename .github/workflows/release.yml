@@ -55,6 +55,23 @@ jobs:
           cd dist
           zip -r "../bracekit-${VERSION}.zip" .
 
+      - name: Install Google Chrome
+        run: |
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+          sudo apt-get update -q
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Sign extension (.crx)
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+          VERSION: ${{ steps.vars.outputs.version }}
+        run: |
+          echo "${CRX_PRIVATE_KEY}" | base64 --decode > /tmp/crx_private_key.pem
+          google-chrome --pack-extension=dist --pack-extension-key=/tmp/crx_private_key.pem
+          mv dist.crx "bracekit-${VERSION}.crx"
+          rm -f /tmp/crx_private_key.pem
+
       - name: Create and push tag
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -70,7 +87,9 @@ jobs:
         with:
           tag_name: ${{ steps.vars.outputs.version }}
           name: BraceKit ${{ steps.vars.outputs.version }}
-          files: bracekit-${{ steps.vars.outputs.version }}.zip
+          files: |
+            bracekit-${{ steps.vars.outputs.version }}.zip
+            bracekit-${{ steps.vars.outputs.version }}.crx
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
