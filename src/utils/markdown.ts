@@ -360,10 +360,11 @@ function processBlockquotes(markdown: string): string {
 }
 
 // Replace placeholders with actual blockquote HTML after markdown parsing
-function replaceBlockquotePlaceholders(html: string, _isStreaming?: boolean): string {
+function replaceBlockquotePlaceholders(html: string, shields: Map<string, string>, _isStreaming?: boolean): string {
   blockquotePlaceholders.forEach((data, placeholder) => {
-    // Parse the markdown content inside the blockquote
-    const parsedContent = marked.parse(data.content, { async: false }) as string;
+    // Restore any code-block shields that were inside the blockquote before parsing
+    const restoredContent = restoreShields(data.content, shields);
+    const parsedContent = marked.parse(restoredContent, { async: false }) as string;
 
     let blockquoteHtml: string;
 
@@ -544,7 +545,7 @@ export function renderMarkdown(text: string, isStreaming?: boolean): string {
   let html = marked.parse(processedText, { async: false }) as string;
 
   // Replace blockquote placeholders with actual HTML
-  html = replaceBlockquotePlaceholders(html, isStreaming);
+  html = replaceBlockquotePlaceholders(html, shields, isStreaming);
 
   // Replace LaTeX placeholders with KaTeX-rendered HTML
   html = replaceLatexPlaceholders(html);
